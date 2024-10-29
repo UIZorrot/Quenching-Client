@@ -1,0 +1,985 @@
+﻿<Window x:Class="QuenchingModCN.MainWindow" 
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+        xmlns:local="clr-namespace:QuenchingModCN"
+        mc:Ignorable="d"
+        KeyDown="MainWindows_Keydown"
+        Title="QMClient v2.2" Height="635" Width="959.5" ResizeMode="NoResize" WindowStyle="None"  Background="Black" BorderThickness="2" BorderBrush="#FFC3C3C3" Padding="2">
+    <Window.Resources>
+        <FontFamily x:Key="ClassicBrush">pack://application:,,,/#Trajan Pro 3</FontFamily>
+    </Window.Resources>
+    <Grid HorizontalAlignment="Left" Margin="0,0,0,0" Width="960">
+
+
+        <MediaElement x:Name="mediaElement" HorizontalAlignment="Center" MediaEnded="mediaElement_MediaEnded" Height="637" VerticalAlignment="Top" Width="1160" Source="./quenching/mainmenu3.MP4" Volume="0" RenderTransformOrigin="0.5,0.5" LoadedBehavior="Manual" Margin="0,-8,0,0">
+            <MediaElement.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform AngleY="0.127"/>
+                    <RotateTransform/>
+                    <TranslateTransform Y="0.998"/>
+                </TransformGroup>
+            </MediaElement.RenderTransform>
+        </MediaElement>
+
+
+
+        <Grid x:Name="maingrid">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="29*"/>
+                <ColumnDefinition Width="291*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="370*"/>
+                <RowDefinition Height="251*"/>
+            </Grid.RowDefinitions>
+
+            <Image x:Name="image" HorizontalAlignment="Left" Height="283" Margin="255,35,0,0" VerticalAlignment="Top" Width="274" Source="logo.png" Grid.Column="1"/>
+
+
+            <TextBlock x:Name="textBlock" HorizontalAlignment="Left" Margin="230,158,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="44" Width="331" Text="淬 火 试 炼" TextDecorations="{x:Null}"  FontFamily="{StaticResource ClassicBrush}" TextAlignment="Center" Height="114" Grid.Column="1" FontWeight="Bold">
+                <TextBlock.Effect>
+                    <DropShadowEffect Color="#FFFCDB04" BlurRadius="21" Direction="0" ShadowDepth="0"/>
+                </TextBlock.Effect>
+                <TextBlock.Foreground>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="#FFFFEA58" Offset="1"/>
+                        <GradientStop Color="#FFFFCD00"/>
+                    </LinearGradientBrush>
+                </TextBlock.Foreground>
+            </TextBlock>
+            <TextBlock x:Name="textBlock_Copy" HorizontalAlignment="Left" Margin="284,134,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="18" Width="223" Foreground="#70F5F5F5" Text="魔 兽 重 制 版 增 强 模 组" FontFamily="{StaticResource ClassicBrush}" TextAlignment="Center" Height="47" Grid.Column="1"></TextBlock>
+            <TextBlock x:Name="maincheckt" HorizontalAlignment="Left" Margin="288,210,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="18" Width="208" Foreground="#70F5F5F5" TextAlignment="Center" Height="48" Grid.Column="1"><Run Text="目前版本为最新"/><LineBreak/><Run Text="v"/><Run Text="2."/><Run Language="zh-cn" Text="2"/><LineBreak/><Run/><LineBreak/><Run/></TextBlock>
+
+            <Button MouseEnter="entersound" x:Name="button2" Content="启 动 游 戏" HorizontalAlignment="Left" Margin="329,272,0,0" VerticalAlignment="Top" Width="134" Height="43" Foreground="#FF2C2C2C" BorderBrush="#FFC7C7C7" FontSize="16" Click="button2_Click" Grid.Column="1" FontWeight="Bold" FontFamily="Microsoft YaHei UI Light" IsCancel="True" FontStyle="Normal">
+                <Button.Effect>
+                    <DropShadowEffect Color="#FFEDD55E" BlurRadius="25" Direction="0" ShadowDepth="0"/>
+                </Button.Effect>
+                <Button.Background>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="#FFEDD55E"/>
+                        <GradientStop Color="#FFFFD500" Offset="1"/>
+                    </LinearGradientBrush>
+                </Button.Background>
+            </Button>
+            <TextBlock x:Name="textBlock_Copy3" HorizontalAlignment="Left" Margin="291,338,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="17" Width="208" Foreground="#70F5F5F5" TextAlignment="Center" Height="22" Text="常用功能" Grid.Column="1"/>
+            <Rectangle Grid.Column="1" HorizontalAlignment="Left" Height="1" Margin="449,349,0,0" VerticalAlignment="Top" Width="118" RenderTransformOrigin="0.5,0.5">
+                <Rectangle.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform ScaleY="-1"/>
+                        <SkewTransform/>
+                        <RotateTransform/>
+                        <TranslateTransform/>
+                    </TransformGroup>
+                </Rectangle.RenderTransform>
+                <Rectangle.Fill>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0" SpreadMethod="Pad">
+                        <LinearGradientBrush.RelativeTransform>
+                            <TransformGroup>
+                                <ScaleTransform CenterY="0.5" CenterX="0.5"/>
+                                <SkewTransform CenterX="0.5" CenterY="0.5"/>
+                                <RotateTransform Angle="90" CenterX="0.5" CenterY="0.5"/>
+                                <TranslateTransform/>
+                            </TransformGroup>
+                        </LinearGradientBrush.RelativeTransform>
+                        <GradientStop Color="Black"/>
+                        <GradientStop Color="#8CFFFFFF" Offset="0.498"/>
+                        <GradientStop Color="#00000000"/>
+                        <GradientStop Color="#00000000" Offset="1"/>
+                        <GradientStop Color="#3FFFFFFF" Offset="0.803"/>
+                        <GradientStop Color="#3FFFFFFF" Offset="0.186"/>
+                        <GradientStop Color="#00A7A7A7"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Rectangle Grid.Column="1" HorizontalAlignment="Left" Height="1" Margin="228,349,0,0" VerticalAlignment="Top" Width="118">
+                <Rectangle.Fill>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0" SpreadMethod="Pad">
+                        <LinearGradientBrush.RelativeTransform>
+                            <TransformGroup>
+                                <ScaleTransform CenterY="0.5" CenterX="0.5"/>
+                                <SkewTransform CenterX="0.5" CenterY="0.5"/>
+                                <RotateTransform Angle="90" CenterX="0.5" CenterY="0.5"/>
+                                <TranslateTransform/>
+                            </TransformGroup>
+                        </LinearGradientBrush.RelativeTransform>
+                        <GradientStop Color="Black"/>
+                        <GradientStop Color="#8CFFFFFF" Offset="0.498"/>
+                        <GradientStop Color="#00000000"/>
+                        <GradientStop Color="#00000000" Offset="1"/>
+                        <GradientStop Color="#3FFFFFFF" Offset="0.803"/>
+                        <GradientStop Color="#3FFFFFFF" Offset="0.186"/>
+                        <GradientStop Color="#00A7A7A7"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+            <Button x:Name="mainbtn_about" Content="关于我们" HorizontalAlignment="Left" Margin="457,6,0,0" VerticalAlignment="Top" Width="110" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="entersound" Click="mainbtn_about_Click" Grid.Column="1" Grid.Row="1" />
+            <Button  Visibility="Hidden" MouseEnter="entersound" x:Name="mainbtn_check_Copy2" Content="更新 (暂时无效)" HorizontalAlignment="Left" Margin="224,346,0,0" VerticalAlignment="Top" Width="107" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="mainbtn_check_Copy1_Click_1" Grid.RowSpan="2" Grid.Column="1"/>
+
+            <TextBlock x:Name="textBlock_Copy4" HorizontalAlignment="Left" Margin="283,127,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="12" Width="224" Foreground="#B2888888" FontFamily="{StaticResource ClassicBrush}" TextAlignment="Center" Height="47" Grid.Column="1" Grid.Row="1"><Run Text="Designed By Aron/Zorrot"/></TextBlock>
+
+            <TextBlock x:Name="textBlock_Copy2" HorizontalAlignment="Left" Margin="284,106,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="20" Width="223" Foreground="#B2FFFFFF" FontFamily="{StaticResource ClassicBrush}" TextAlignment="Center" Height="47" Grid.Column="1"><Run Text="重 制 "/><Run Text="版"/></TextBlock>
+
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy1" Content="安装MOD" HorizontalAlignment="Left" Margin="223,6,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="mb_mod_open" Grid.Column="1" Grid.Row="1"/>
+
+
+            <Button MouseEnter="entersound" x:Name="button2_Copy" Content="更换主题" HorizontalAlignment="Left" Margin="341,53,0,0" VerticalAlignment="Top" Width="108" Height="38" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="button2_Copy_Click" Grid.Row="1" Grid.Column="1" />
+            <!--
+            <Button x:Name="uibtnsm1_Copy" Content="改键" HorizontalAlignment="Left" Margin="223,53,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm1_Copy_Click" FontSize="14" Grid.Column="1" Grid.Row="1"  />
+            -->
+            <Button x:Name="uibtnsm1_Copy" Content="英文配音" HorizontalAlignment="Left" Margin="223,53,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm1_Copy_Click_1"
+              FontSize="14" Grid.Column="1" Grid.Row="1"  />
+
+
+            <Button x:Name="mainbtn_min_Copy5" Content="基础设置" HorizontalAlignment="Left" Margin="341,6,0,0" VerticalAlignment="Top" Width="108" Height="38" BorderBrush="#FFC7C7C7" Background="#00000000" Foreground="#FFC7C7C7" IsCancel="True" FontWeight="Normal" Click="mb_set_open" FontSize="14" Grid.Column="1" Grid.Row="1" />
+            <Button x:Name="mainbtn_about_Copy" Content="进入官网" HorizontalAlignment="Left" Margin="457,53,0,0" VerticalAlignment="Top" Width="110" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="entersound" Click="Button_Click_2" Grid.Column="1" Grid.Row="1" />
+            <Button x:Name="mainbtn_about_Copy1" Visibility="hidden" Content="关于我们" HorizontalAlignment="Left" Margin="457,6,0,0" VerticalAlignment="Top" Width="110" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="entersound" Click="mainbtn_about_Click" Grid.Column="1" Grid.Row="1" />
+
+        </Grid>
+
+
+
+        <Grid x:Name="setgrid" Background="#A8000000" >
+
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="31*"/>
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+
+                <RowDefinition Height="63*"/>
+                <RowDefinition Height="59*"/>
+                <RowDefinition Height="114*"/>
+                <RowDefinition Height="395*"/>
+
+            </Grid.RowDefinitions>
+
+            <Image Visibility="Hidden" x:Name="image2" HorizontalAlignment="Center" Height="543" Margin="0,-14,0,0" VerticalAlignment="Top" Width="874" Source="bg.png" Grid.RowSpan="4" Grid.Column="1"/>
+            <Grid x:Name="setshowcasegrid" Grid.RowSpan="4" Visibility="Hidden" Grid.ColumnSpan="2">
+                <Image x:Name="setbgi" HorizontalAlignment="Left" Height="320" Margin="442,127,0,0" VerticalAlignment="Top" Width="500" Source="ui2.png">
+                    <Image.Effect>
+                        <DropShadowEffect BlurRadius="10" ShadowDepth="10" Opacity="0.66"/>
+                    </Image.Effect>
+                </Image>
+                <TextBlock x:Name="setbgt11" HorizontalAlignment="Left" Margin="647,322,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="20" Text="边缘柔和" RenderTransformOrigin="0.7,0.76" TextAlignment="Right" Width="254"/>
+                <TextBlock x:Name="setbgt12" HorizontalAlignment="Left" Margin="628,352,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="15" RenderTransformOrigin="0.7,0.76" Width="273" Height="72" TextAlignment="Right"><Run Text="通过"/><Run Text="色调映射/边缘检测等技术"/><LineBreak/><Run Text="使画面"/><Run Text="整体更加平滑"/><LineBreak/><LineBreak/></TextBlock>
+            </Grid>
+            <TextBlock x:Name="textBlock1" HorizontalAlignment="Left" Margin="12,1,0,0" TextWrapping="Wrap" Text="综合设置" VerticalAlignment="Top" Foreground="White" FontSize="36" TextAlignment="Left" Width="346" Height="46" Grid.Column="1" Grid.Row="1">
+                <TextBlock.Effect>
+                    <DropShadowEffect Direction="90"/>
+                </TextBlock.Effect>
+            </TextBlock>
+
+            <!--<TextBlock x:Name="setbtn2" Text="额外装饰" HorizontalAlignment="Left" Margin="13,12,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" FontSize="18" MouseEnter="setbtn2_e" MouseLeave="setbtn2_l" Grid.Row="2" Grid.Column="1">
+
+            </TextBlock>
+            
+            <TextBlock x:Name="setbtn_about_Copy" Text="地形环境" HorizontalAlignment="Left" Margin="147,12,0,0" VerticalAlignment="Top" Width="123" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtnx_MouseEnter" MouseLeave="setbtnx_MouseLeave" Grid.Row="2" Grid.Column="1" >
+
+            </TextBlock>-->
+
+            <TextBlock x:Name="setbtn3" Text="反和谐" HorizontalAlignment="Left" Margin="12,35,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18"   MouseEnter="setbtn3_e" MouseLeave="setbtn3_l" Grid.Row="3" Grid.Column="1">
+
+            </TextBlock>
+            <Button x:Name="setbtnc3" Content="安装" HorizontalAlignment="Left" Margin="12,69,0,0" VerticalAlignment="Top" Width="106" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtnc3_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <TextBlock x:Name="setbtn6" Text="高级着色器" HorizontalAlignment="Left" Margin="12,80,0,0" VerticalAlignment="Top" Width="118" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtn6_MouseEnter" MouseLeave="setbtn6_MouseLeave" Grid.Row="2" Grid.RowSpan="2" Grid.Column="1"/>
+            <Button x:Name="setbtnc9" Content="打开" HorizontalAlignment="Left" Margin="11,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtnc9_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtnc10" Content="关闭" HorizontalAlignment="Left" Margin="61,1,0,0" VerticalAlignment="Top" Width="55" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtnc10_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <TextBlock x:Name="setbtn4" Text="水面" HorizontalAlignment="Left" Margin="18,11,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtn4_MouseEnter" MouseLeave="setbtn4_MouseLeave" Grid.Row="2" Grid.Column="1" >
+
+            </TextBlock>
+
+
+            <Button x:Name="setbtnc5" Content="清澈" HorizontalAlignment="Left" Margin="14,0,0,0" VerticalAlignment="Center" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtnc5_Click" FontSize="10" Grid.Row="2" Grid.Column="1"  />
+            <Button x:Name="setbtnc6" Content="反射" HorizontalAlignment="Left" Margin="64,0,0,0" VerticalAlignment="Center" Width="54" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtnc6_Click" FontSize="10" Grid.Row="2" Grid.Column="1"  />
+            <TextBlock x:Name="setbtn5" Text="植被" HorizontalAlignment="Left" Margin="148,12,0,0" VerticalAlignment="Top" Width="118" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtn5_MouseEnter" MouseLeave="setbtn5_MouseLeave" Grid.Row="2" Grid.Column="1" >
+
+            </TextBlock>
+            <Button x:Name="setbtnc7" Content="新版" HorizontalAlignment="Left" Margin="144,0,0,0" VerticalAlignment="Center" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtnc7_Click" FontSize="10" Grid.Row="2" Grid.Column="1"  />
+            <Button x:Name="setbtnc8" Content="原版" HorizontalAlignment="Left" Margin="194,0,0,0" VerticalAlignment="Center" Width="54" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtnc8_Click" FontSize="10" Grid.Row="2" Grid.Column="1"  />
+
+            <TextBlock x:Name="setbtn9" Text="光源方向" HorizontalAlignment="Left" Margin="144,80,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtn9_MouseEnter" MouseLeave="setbtn9_MouseLeave" Grid.Row="2" Grid.RowSpan="2" Grid.Column="1"/>
+            <Button x:Name="setbtnc11" Content="固定" HorizontalAlignment="Left" Margin="143,1,0,0" VerticalAlignment="Top" Width="53" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtnc11_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtnc12" Content="旋转" HorizontalAlignment="Left" Margin="196,1,0,0" VerticalAlignment="Top" Width="53" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtnc12_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+
+
+
+            <Button Visibility="Hidden"  Click="setbtnc3_Click"   x:Name="setbtn_about_Copy1" Content="预装功能" HorizontalAlignment="Left" Margin="12,69,0,0" VerticalAlignment="Top" Width="106" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="3" FontSize="10" Grid.Column="1"  />
+            <!--<Button x:Name="setbtnc1_Copy" Content="打开" HorizontalAlignment="Left" Margin="12,0,0,0" VerticalAlignment="Center" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtnc1c1_Click" FontStyle="Normal" FontSize="10" Grid.Row="2" Grid.Column="1"  />
+            <Button x:Name="setbtnc2_Copy" Content="关闭" HorizontalAlignment="Left" Margin="64,0,0,0" VerticalAlignment="Center" Width="52" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtnc2c1_Click" FontSize="10" Grid.Row="2" Grid.Column="1"  />-->
+            <!--<Button x:Name="setbtnc1_Copy1" Content="打开" HorizontalAlignment="Left" Margin="144,0,0,0" VerticalAlignment="Center" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtnc1c_Click" FontSize="10" Grid.Row="2" Grid.Column="1"  />
+            <Button x:Name="setbtnc2_Copy1" Content="关闭" HorizontalAlignment="Left" Margin="196,0,0,0" VerticalAlignment="Center" Width="52" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtnc2c_Click" FontSize="10" Grid.Row="2" Grid.Column="1"  />-->
+
+            <Button Visibility="Hidden" x:Name="setbtn_m"  Content="对战模式" HorizontalAlignment="Left" Margin="823,8,0,0" VerticalAlignment="Top" Width="113" Height="33" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7"  Click="setbtn4_Copy_Click" Grid.Column="1" Grid.Row="1" >
+                <Button.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="10" Opacity="0.66"/>
+                </Button.Effect>
+            </Button>
+
+            <Button Visibility="Hidden" x:Name="setbtn_n"  Content="普通模式" HorizontalAlignment="Left" Margin="701,8,0,0" VerticalAlignment="Top" Width="117" Height="33" RenderTransformOrigin="-0.059,0.553" Background="#FFC8C8C8" Foreground="#FF373737" BorderBrush="#FFC7C7C7" Click="setbtn_n_Click" Grid.Column="1" Grid.Row="1" >
+                <Button.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="10" Opacity="0.66"/>
+                </Button.Effect>
+            </Button>
+            <Button x:Name="uibtn1" Content="原版" HorizontalAlignment="Left" Margin="11,139,0,0" VerticalAlignment="Top" Width="79" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="10" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Click="uibtn1_Click" Grid.Row="3" Grid.Column="1">
+                <Button.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="10" Opacity="0.66"/>
+                </Button.Effect>
+            </Button>
+            <TextBlock x:Name="uit2" HorizontalAlignment="Left" Margin="12,105,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="18" TextAlignment="Left" Width="120" Grid.Row="3" Height="23" Grid.Column="1">
+                <TextBlock.Effect>
+                    <DropShadowEffect Direction="90"/>
+                </TextBlock.Effect><Run Text="主"/><Run Text="要"/><Run Text="界面"/></TextBlock>
+            <Button x:Name="uibtn2" Content="淬火" HorizontalAlignment="Left" Margin="174,139,0,0" VerticalAlignment="Top" Width="75" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" MouseEnter="uibtn2_MouseEnter" MouseLeave="uibtn2_MouseLeave" Click="uibtn2_Click" Grid.Row="3" Grid.Column="1">
+                <Button.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="10" Opacity="0.66"/>
+                </Button.Effect>
+            </Button>
+            <Button x:Name="uibtnsm1" Content="打开" HorizontalAlignment="Left" Margin="143,69,0,0" VerticalAlignment="Top" Width="53" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm1_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="uibtnsm2" Content="关闭" HorizontalAlignment="Left" Margin="196,69,0,0" VerticalAlignment="Top" Width="53" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="uibtnsm2_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="uibtn3" Content="嘉年华" HorizontalAlignment="Left" Margin="94,139,0,0" VerticalAlignment="Top" Width="76" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" MouseEnter="uibtn3_MouseEnter" MouseLeave="uibtn3_MouseLeave" Click="uibtn3_Click" Grid.Row="3" Grid.Column="1">
+                <Button.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="10" Opacity="0.66"/>
+                </Button.Effect>
+            </Button>
+            <TextBlock x:Name="uibtn6" Text="半身头像" HorizontalAlignment="Left" Margin="284,35,0,0" VerticalAlignment="Top" Width="120" Height="34" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="uibtn6_MouseEnter" MouseLeave="uibtn6_MouseLeave" Grid.Row="3" Grid.Column="1">
+
+            </TextBlock>
+            <Button x:Name="uibtnsm5" Content="打开" HorizontalAlignment="Left" Margin="284,69,0,0" VerticalAlignment="Top" Width="53" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm5_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="uibtnsm6" Content="关闭" HorizontalAlignment="Left" Margin="337,69,0,0" VerticalAlignment="Top" Width="53" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="uibtnsm6_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button Visibility="Hidden"  FontSize="10" x:Name="uibtn_unitc" Content="怀旧禁用" HorizontalAlignment="Left" Margin="10,69,0,0" VerticalAlignment="Top" Width="108" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="3" Grid.Column="1"  />
+            <TextBlock x:Name="uibtn4" Text="缩减光晕" HorizontalAlignment="Left" Margin="146,35,0,0" VerticalAlignment="Top" Width="120" Height="34" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="uibtn4_MouseEnter" MouseLeave="uibtn4_MouseLeave" Grid.Row="3" Grid.Column="1">
+
+            </TextBlock>
+            <TextBlock x:Name="uit2_Copy" HorizontalAlignment="Left" Margin="12,172,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="18" TextAlignment="Left" Width="120" Grid.Row="3" Height="23" Grid.Column="1">
+                <TextBlock.Effect>
+                    <DropShadowEffect Direction="90"/>
+                </TextBlock.Effect><Run Language="zh-cn" Text="亮度"/></TextBlock>
+            <Button x:Name="setbtn_light_2" Content="2" Tag="2" HorizontalAlignment="Left" Margin="64,207,0,0" VerticalAlignment="Top" Width="54" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Grid.Row="3" Click="setbtn_light_level" Grid.Column="1"  />
+            <Button x:Name="setbtn_light_3" Content="3" Tag="3" HorizontalAlignment="Left" Margin="117,207,0,0" VerticalAlignment="Top" Width="54" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Grid.Row="3" Click="setbtn_light_level" Grid.Column="1"  />
+            <TextBlock x:Name="setbtn9_Copy" HorizontalAlignment="Left" Margin="285,80,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtn10_MouseEnter" MouseLeave="setbtn9_MouseLeave" Grid.Row="2" Grid.RowSpan="2" Grid.Column="1"><Run Language="zh-cn" Text="初始迷雾"/></TextBlock>
+            <Button x:Name="setbtnc9_Copy" Content="打开" HorizontalAlignment="Left" Margin="282,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm1_Copy2_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtnc10_Copy" Content="关闭" HorizontalAlignment="Left" Margin="332,1,0,0" VerticalAlignment="Top" Width="55" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="uibtnsm2_Copy2_Click" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_light_1" Content="1" Tag="1" HorizontalAlignment="Left" Margin="12,207,0,0" VerticalAlignment="Top" Width="53" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" FontSize="10" Grid.Row="3" Click="setbtn_light_level" Grid.Column="1"  />
+            <Button Visibility="Hidden" x:Name="setbtn_no1" FontSize="10"  Content="不可用" HorizontalAlignment="Left" Margin="12,0,0,0" VerticalAlignment="Center" Width="104" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="2" Grid.Column="1"  />
+            <Button Visibility="Hidden" x:Name="setbtn_no2" Content="不可用" HorizontalAlignment="Left" Margin="144,0,0,0" VerticalAlignment="Center" Width="104" Height="18" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="2" Grid.Column="1"  />
+            <Button Visibility="Hidden" x:Name="setbtn_no3" FontSize="10" Content="不可用" HorizontalAlignment="Left" Margin="422,0,0,0" VerticalAlignment="Center" Width="104" Height="17" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="2" Grid.Column="1"  />
+            <Button Visibility="Hidden" x:Name="setbtn_no4" FontSize="10"  Content="不可用" HorizontalAlignment="Left" Margin="12,207,0,0" VerticalAlignment="Top" Width="159" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="3" Grid.Column="1"  />
+            <Button  Visibility="Hidden" FontSize="10" x:Name="setbtn_no9"  Content="不可用" HorizontalAlignment="Left" Margin="284,69,0,0" VerticalAlignment="Top" Width="106" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="3" Grid.Column="1"  />
+            <Button Visibility="Hidden" FontSize="10" x:Name="setbtn_no8" Content="不可用" HorizontalAlignment="Left" Margin="143,1,0,0" VerticalAlignment="Top" Width="106" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="3" Grid.Column="1"  />
+            <Button Visibility="Hidden" FontSize="10" x:Name="setbtn_no7"  Content="不可用" HorizontalAlignment="Left" Margin="11,1,0,0" VerticalAlignment="Top" Width="105" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="3" Grid.Column="1"  />
+            <Button Visibility="Hidden" x:Name="setbtn_no6" FontSize="10" Content="不可用" HorizontalAlignment="Left" Margin="282,0,0,0" VerticalAlignment="Center" Width="104" Height="18" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="2" Grid.Column="1"  />
+            <Button  Visibility="Hidden" FontSize="10"  x:Name="setbtn_no5"  Content="不可用" HorizontalAlignment="Left" Margin="144,69,0,0" VerticalAlignment="Top" Width="105" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="3" Grid.Column="1"  />
+            <TextBlock x:Name="setbtn_tree_text" HorizontalAlignment="Left" Margin="425,80,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtn2_e" MouseLeave="_" Grid.Row="2" Grid.RowSpan="2" Grid.Column="1"><Run Language="zh-cn" Text="树木类型"/></TextBlock>
+            <Button x:Name="setbtn_tree_b1" Content="原版" HorizontalAlignment="Left" Margin="422,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_origin" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tree_b2" Content="高耸" HorizontalAlignment="Left" Margin="472,1,0,0" VerticalAlignment="Top" Width="55" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtn_tree_20" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tree_b3" Content="低垂" HorizontalAlignment="Left" Margin="527,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_20_short" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tree_b4" Content="1.8 样式" HorizontalAlignment="Left" Margin="578,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_18" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tree_b5" Content="1.6 样式" HorizontalAlignment="Left" Margin="629,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_16" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <TextBlock x:Name="setbtn_tile_text" HorizontalAlignment="Left" Margin="425,34,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtnx_MouseEnter" MouseLeave="setbtnx_MouseLeave" Grid.Row="3" Grid.Column="1"><Run Language="zh-cn" Text="地形类型"/></TextBlock>
+            <Button x:Name="setbtn_tile_b1" Content="原版" HorizontalAlignment="Left" Margin="422,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile_origin" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tile_b2" Content="怀旧" HorizontalAlignment="Left" Margin="472,69,0,0" VerticalAlignment="Top" Width="55" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtn_tile_00" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tile_b3" Content="1.6 地形" HorizontalAlignment="Left" Margin="527,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile_16" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tile_b4" Content="1.8 地形" HorizontalAlignment="Left" Margin="578,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile_18" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tile_b5" Content="2.0 地形" HorizontalAlignment="Left" Margin="629,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile_20" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_light_4" Content="对战" Tag="4" HorizontalAlignment="Left" Margin="170,207,0,0" VerticalAlignment="Top" Width="54" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Grid.Row="3" Click="setbtn_light_level" Grid.Column="1"  />
+
+        </Grid>
+
+
+        <Grid x:Name="uikey" Visibility="Hidden" Background="#E0000000"  HorizontalAlignment="Left" Width="960">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="13*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Style="{StaticResource BtnInfoStyle}" x:Name="uibtnsm2_Copy1" Visibility="hidden" Content="x" HorizontalAlignment="Left" Margin="283,435,0,0" VerticalAlignment="Top" Width="40" Height="40" RenderTransformOrigin="-0.03,0.566" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" Click="uibtnsm2_Copy1_Click" FontSize="24" FontStyle="Normal" FontWeight="Normal" Grid.Column="1"  />
+            <Button Style="{StaticResource BtnInfoStyle}" x:Name="uibtnsm2_Copy11" Content="x" HorizontalAlignment="Left" Margin="250,435,0,0" VerticalAlignment="Top" Width="108" Height="40" RenderTransformOrigin="-0.03,0.566" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" Click="uibtnsm2_Copy1_Click" FontSize="24" FontStyle="Normal" FontWeight="Normal" Grid.Column="1"  />
+            <TextBox Tag="1" MaxLength="1" x:Name="num1" HorizontalAlignment="Left" Height="38" Margin="44,194,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="62" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" TextChanged="textBox_TextChanged" VerticalContentAlignment="Center" Grid.Column="1" MouseDown="num1_MouseDown"/>
+            <TextBox Tag="3" MaxLength="1" x:Name="num3" HorizontalAlignment="Left" Height="38" Margin="44,240,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center" Grid.Column="1"/>
+            <TextBox Tag="5" MaxLength="1" x:Name="num5" HorizontalAlignment="Left" Height="38" Margin="44,288,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center" Grid.Column="1"/>
+            <TextBox Tag="2" MaxLength="1" x:Name="num2" HorizontalAlignment="Left" Height="38" Margin="120,194,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" RenderTransformOrigin="0.818,0.539" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center" Grid.Column="1"/>
+            <TextBox Tag="4" MaxLength="1" x:Name="num4" HorizontalAlignment="Left" Height="38" Margin="120,240,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center" Grid.Column="1"/>
+            <TextBox Tag="6" MaxLength="1" x:Name="num6" HorizontalAlignment="Left" Height="38" Margin="120,288,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" RenderTransformOrigin="0.705,0.461" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center" Grid.Column="1"/>
+            <TextBlock x:Name="uit2_Copy5" HorizontalAlignment="Left" Margin="85,152,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="20" Text="物品栏" Grid.Column="1" Height="25" Width="60">
+                <TextBlock.Effect>
+                    <DropShadowEffect Direction="90"/>
+                </TextBlock.Effect></TextBlock>
+            <TextBlock x:Name="uit2_Copy6" HorizontalAlignment="Left" Margin="348,152,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="20" Text="命令栏" Grid.Column="1" Height="25" Width="60">
+                <TextBlock.Effect>
+                    <DropShadowEffect Direction="90"/>
+                </TextBlock.Effect></TextBlock>
+            <Grid x:Name="keyc_grid" IsEnabled="False" Grid.ColumnSpan="2">
+                <TextBox Tag="7" x:Name="ck1" HorizontalAlignment="Left" Height="38" Margin="374,194,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="60" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" TextChanged="textBox_TextChanged" VerticalContentAlignment="Center"/>
+                <TextBox Tag="11" x:Name="ck5" HorizontalAlignment="Left" Height="38" Margin="374,240,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="60" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+                <TextBox Tag="15" x:Name="ck9" HorizontalAlignment="Left" Height="38" Margin="374,288,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="60" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+                <TextBox Tag="8" x:Name="ck2" HorizontalAlignment="Center" Height="38" Margin="0,194,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" RenderTransformOrigin="0.818,0.539" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+                <TextBox Tag="12" x:Name="ck6" HorizontalAlignment="Center" Height="38" Margin="0,240,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+                <TextBox Tag="16" x:Name="ck10" HorizontalAlignment="Center" Height="38" Margin="0,288,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" RenderTransformOrigin="0.705,0.461" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+                <TextBox Tag="9" x:Name="ck3" HorizontalAlignment="Left" Height="38" Margin="527,194,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="62" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" TextChanged="textBox_TextChanged" VerticalContentAlignment="Center"/>
+                <TextBox Tag="13" x:Name="ck7" HorizontalAlignment="Left" Height="38" Margin="527,240,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+                <TextBox Tag="17" x:Name="ck11" HorizontalAlignment="Left" Height="38" Margin="527,288,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+                <TextBox Tag="10" x:Name="ck4" HorizontalAlignment="Left" Height="38" Margin="603,194,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" RenderTransformOrigin="0.818,0.539" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+                <TextBox Tag="14" x:Name="ck8" HorizontalAlignment="Left" Height="38" Margin="603,240,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+                <TextBox Tag="18" x:Name="ck12" HorizontalAlignment="Left" Height="38" Margin="603,288,0,0" TextWrapping="Wrap" Text=" " VerticalAlignment="Top" Width="62" RenderTransformOrigin="0.705,0.461" Background="{x:Null}" Foreground="White" TextAlignment="Center" FontSize="16" VerticalContentAlignment="Center"/>
+            </Grid>
+            <Button x:Name="uibtn2_Copy" Content="原版" HorizontalAlignment="Left" Margin="495,194,0,0" VerticalAlignment="Top" Width="64" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="uibtn2_Copy_Click" Grid.Column="1" >
+            </Button>
+            <Button x:Name="uibtn2_Copy3" Content="网格" HorizontalAlignment="Left" Margin="495,241,0,0" VerticalAlignment="Top" Width="64" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="uibtn2_Copy3_Click" Grid.Column="1" >
+            </Button>
+            <Button x:Name="uibtn2_Copy4" Content="自定" HorizontalAlignment="Left" Margin="495,288,0,0" VerticalAlignment="Top" Width="64" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="uibtn2_Copy4_Click" Grid.Column="1" >
+            </Button>
+            <Button x:Name="uibtn2_Copy1" Content="仅英雄" HorizontalAlignment="Left" Margin="422,337,0,0" VerticalAlignment="Top" Width="62" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="uibtn2_Copy1_Click" Grid.Column="1" >
+            </Button>
+            <Button x:Name="uibtn2_Copy2" Content="Shift" HorizontalAlignment="Left" Margin="44,337,0,0" VerticalAlignment="Top" Width="62" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="uibtn2_Copy2_Click" Grid.Column="1" >
+            </Button>
+            <Button IsEnabled="False" x:Name="uibtn2_Copy5" Content="应用" HorizontalAlignment="Left" Margin="496,337,0,0" VerticalAlignment="Top" Width="64" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="uibtn2_Copy5_Click" Grid.Column="1"  />
+        </Grid>
+
+
+        <Grid x:Name="uigrid" Visibility="Hidden" >
+
+            <Border HorizontalAlignment="Center" Height="637" VerticalAlignment="Top" Width="1160" RenderTransformOrigin="0.5,0.5" Margin="0,-8,0,0" Background="#A8000000"/>
+
+            <TextBlock x:Name="newBlock1" HorizontalAlignment="Left" Margin="44,64,0,0" TextWrapping="Wrap" Text="最新内容" VerticalAlignment="Top" Foreground="White" FontSize="36" TextAlignment="Left" Width="346" Height="46">
+                <TextBlock.Effect>
+                    <DropShadowEffect Direction="90"/>
+                </TextBlock.Effect>
+            </TextBlock>
+
+
+
+            <Grid x:Name="newshowcase2">
+                <Image x:Name="newshowi2" HorizontalAlignment="Left" Height="124" Margin="44,119,0,0" VerticalAlignment="Top" Width="404"  Source="wn1.png"/>
+                <TextBlock x:Name="newt2t1" HorizontalAlignment="Left" Margin="44,127,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="16" RenderTransformOrigin="-0.88,0.433" Width="209">
+                    <TextBlock.Effect>
+                        <DropShadowEffect Direction="90"/>
+                    </TextBlock.Effect><Run Language="zh-cn" Text="复古模式"/></TextBlock>
+                <TextBlock x:Name="newt2t2" HorizontalAlignment="Left" Margin="44,155,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="12" RenderTransformOrigin="0.651,0.16" Height="44" Width="371"><Run Text="怀旧模式经过细致的考虑重新回归"/><LineBreak/><Run Text="体验最经典的魔兽画面"/></TextBlock>
+                <Button x:Name="newt2b1" Content="打开" HorizontalAlignment="Left" Margin="44,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="newt2b1_Click" FontSize="10"  />
+                <Button x:Name="newt2b2" Content="关闭" HorizontalAlignment="Left" Margin="104,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="newt2b2_Click" FontSize="10"  />
+                <Image x:Name="newshowi2_Copy" HorizontalAlignment="Left" Height="129" Margin="474,120,0,0" VerticalAlignment="Top" Width="400"  Source="/wn4.png"/>
+                <TextBlock x:Name="newt2t1_Copy1" HorizontalAlignment="Left" Margin="482,127,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="16" RenderTransformOrigin="-0.88,0.433" Width="209">
+                    <TextBlock.Effect>
+                        <DropShadowEffect Direction="90"/>
+                    </TextBlock.Effect><Run Language="zh-cn" Text="树木高度"/></TextBlock>
+                <TextBlock x:Name="newt2t2_Copy" HorizontalAlignment="Left" Margin="482,155,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="12" RenderTransformOrigin="0.651,0.16" Height="44" Width="371"><Run Text="将默认的淬火树木降低一些"/><LineBreak/><Run Text="对复古模式无效"/></TextBlock>
+                <Button x:Name="newt3b1" Content="打开" HorizontalAlignment="Left" Margin="482,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="newt3b1_Click" FontSize="10"  />
+                <Button x:Name="newt3b2" Content="关闭" HorizontalAlignment="Left" Margin="542,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="newt3b2_Click" FontSize="10"  />
+
+            </Grid>
+
+
+
+
+
+            <Grid x:Name="uishowcase" >
+                <Image x:Name="uishowi_Copy" HorizontalAlignment="Left" Height="124" Margin="459,242,0,0" VerticalAlignment="Top" Width="402"  Source="/wn3.png"/>
+                <Image x:Name="uishowi" HorizontalAlignment="Left" Height="124" Margin="44,245,0,0" VerticalAlignment="Top" Width="401"  Source="wn2.png"/>
+                <TextBlock x:Name="uit2_new" HorizontalAlignment="Left" Margin="44,253,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="16" RenderTransformOrigin="-0.88,0.433" Width="209">
+                    <TextBlock.Effect>
+                        <DropShadowEffect Direction="90"/>
+                    </TextBlock.Effect><Run Language="zh-cn" Text="暗夜孤星"/></TextBlock>
+                <TextBlock x:Name="uishowt2" HorizontalAlignment="Left" Margin="44,278,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="12" RenderTransformOrigin="0.651,0.16" Height="46" Width="368"><Run Text="以恐怖之潮作为背景的全新战役"/><LineBreak/><Run Text="快抢先体验序章吧"/></TextBlock>
+                <Button Visibility="hidden" x:Name="uibtnsm1_Copy2" Content="立刻下载" HorizontalAlignment="Left" Margin="44,335,0,0" VerticalAlignment="Top" Width="121" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm1_Copy2_Click" FontSize="10"  />
+                <TextBlock x:Name="newt2t1_Copy" HorizontalAlignment="Left" Margin="480,253,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="16" RenderTransformOrigin="-0.88,0.433" Width="209">
+                    <TextBlock.Effect>
+                        <DropShadowEffect Direction="90"/>
+                    </TextBlock.Effect><Run Language="zh-cn" Text="客户端更新"/></TextBlock>
+                <TextBlock x:Name="uishowt2_Copy" HorizontalAlignment="Left" Margin="480,278,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="12" RenderTransformOrigin="0.651,0.16" Height="46" Width="366"><Run Text="战役支持更多最大关卡以及支择难度"/><LineBreak/><Run Text="涂装界面更加直观了"/></TextBlock>
+                <Button x:Name="uibtnsm1_Copy1" Content="详细日志" HorizontalAlignment="Left" Margin="480,320,0,0" VerticalAlignment="Top" Width="121" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm1_Copy1_Click" FontSize="10"  />
+                <Button x:Name="uibtnsm1_Copy5" Content="立刻开始" HorizontalAlignment="Left" Margin="44,320,0,0" VerticalAlignment="Top" Width="121" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm1_Copy5_Click" FontSize="10"  />
+            </Grid>
+
+
+
+
+
+
+        </Grid>
+
+        <Grid x:Name="cosgrid" Background="#A8000000" HorizontalAlignment="Left" Width="960" Visibility="Hidden">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="226*"/>
+                <RowDefinition Height="405*"/>
+            </Grid.RowDefinitions>
+
+            <Image x:Name="iconhalo1" Margin="29,225,831,306" Source="icon_halo.png" Width="100" Height="100" Grid.RowSpan="2" />
+            <Image x:Name="iconhalo2" Visibility="Hidden" Margin="107,225,753,306" Source="icon_halo.png" Width="100" Height="100" Grid.RowSpan="2" />
+            <Image x:Name="iconhalo3" Visibility="Hidden" Margin="188,225,672,306" Source="icon_halo.png" Width="100" Height="100" Grid.RowSpan="2" />
+            <Image x:Name="iconhalo4"  Visibility="Hidden" Margin="270,225,590,306" Source="icon_halo.png" Width="100" Height="100" Grid.RowSpan="2" />
+            <Image x:Name="iconhalo5" Visibility="Hidden" Margin="351,225,509,306" Source="icon_halo.png" Width="100" Height="100" Grid.RowSpan="2" />
+            <Image x:Name="___nightelf_icon_pressed_png1" Margin="44,14,846,321" Source="/human-icon-pressed.png" Width="70" Height="70" Grid.Row="1" MouseDown="cos_to_hum" />
+
+            <Image x:Name="___nightelf_icon_pressed_png5" Margin="366,14,524,321" Source="/random-icon-.png" Width="70" Height="70" Grid.Row="1"  MouseDown="cos_to_t"  />
+
+            <Image x:Name="___nightelf_icon_pressed_png4" Margin="285,14,605,321" Source="/nightelf-icon-pressed.png" Width="70" Height="70" Grid.Row="1"  MouseDown="cos_to_ne"  />
+
+            <Image x:Name="___nightelf_icon_pressed_png3" Margin="203,14,687,321" Source="/undead-icon-pressed.png" Width="70" Height="70" Grid.Row="1"  MouseDown="cos_to_ud" />
+
+            <Image x:Name="___nightelf_icon_pressed_png2" Margin="122,14,768,321" Source="/orc-icon-pressed.png" Width="70" Height="70" Grid.Row="1" MouseDown="cos_to_orc" />
+
+            <TextBlock x:Name="cost" HorizontalAlignment="Left" Margin="44,64,0,0" TextWrapping="Wrap" Text="单位涂装" VerticalAlignment="Top" Foreground="White" FontSize="36" TextAlignment="Left" Width="431" />
+            <TextBlock x:Name="cost1" Text="类别" HorizontalAlignment="Left" Margin="44,129,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="18" TextAlignment="Left" Width="120"/>
+            <Button x:Name="cosbtn1" Content="英 雄" HorizontalAlignment="Left" Margin="45,167,0,0" VerticalAlignment="Top" Width="104" Height="20" RenderTransformOrigin="-0.059,0.553" Background="#FFFFDE00" Foreground="#FF2C2C2C" BorderBrush="#FFC7C7C7" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Click="cosbtn1_Click" FontSize="10"/>
+            <Button x:Name="cosbtn1_Copy" Content="单 位" HorizontalAlignment="Left" Margin="155,167,0,0" VerticalAlignment="Top" Width="104" Height="20" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Click="cosbtn1_Copy_Click" FontSize="10"/>
+            <TextBlock x:Name="cost1_Copy" HorizontalAlignment="Left" Margin="47,104,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="18" TextAlignment="Left" Width="160" Grid.Row="1"><Run Text="选择"/></TextBlock>
+            <TextBlock x:Name="cost2_Copy" HorizontalAlignment="Right" Margin="0,202,754,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="18" TextAlignment="Left" Width="161"><Run Language="zh-cn" Text="种族"/></TextBlock>
+
+            <Grid Name="cosh" Height="405" VerticalAlignment="Center" Grid.Row="1" >
+                <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="55" Margin="47,142,0,0" VerticalAlignment="Top" Width="56" Grid.Row="1">
+                    <Image x:Name="cosimage1" Source="p14.png" RenderTransformOrigin="0.509,0.5" MouseDown="cosi_MouseDown" Tag="1"/>
+                </Border>
+                <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="55" Margin="188,142,0,0" VerticalAlignment="Top" Width="56" Grid.Row="1">
+                    <Image x:Name="cosimage2" Source="p06.png"  MouseDown="cosi_MouseDown" Tag="2"/>
+                </Border>
+                <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="56" Margin="260,142,0,0" VerticalAlignment="Top" Width="56" Grid.Row="1">
+                    <Image x:Name="cosimage3" Source="p032.png"  MouseDown="cosi_MouseDown" Tag="3"/>
+                </Border>
+                <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="55" Margin="117,142,0,0" VerticalAlignment="Top" Width="56" Grid.Row="1">
+                    <Image x:Name="cosimage4" Source="p12.png"  MouseDown="cosi_MouseDown" Tag="4"/>
+                </Border>
+                <Button x:Name="cosbtn1_Copy3" Visibility="Hidden" Content="&gt;" HorizontalAlignment="Left" Margin="330,143,0,0" VerticalAlignment="Top" Width="28" Height="55" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" BorderThickness="1" Padding="1,0,1,1" Click="cos_to_t2" Grid.Row="1"/>
+                <TextBlock x:Name="cosherotext" HorizontalAlignment="Left" Margin="78,229,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" Width="116" TextAlignment="Center" Height="26" FontSize="14" TextDecorations="{x:Null}"><Run Language="zh-cn" Text="原版"/></TextBlock>
+                <Button x:Name="cosbtn1_Copy16" Content="&gt;" HorizontalAlignment="Left" Margin="193,226,0,0" VerticalAlignment="Top" Width="28" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" BorderThickness="1" Padding="1,0,1,1" Click="cosbtn1_Copy16_Click"/>
+                <Button x:Name="cosbtn1_Copy17" Content="&lt;" HorizontalAlignment="Left" Margin="47,226,0,0" VerticalAlignment="Top" Width="28" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" BorderThickness="1" Padding="1,0,1,1" Click="cosbtn1_Copy17_Click" Grid.Row="1"/>
+                <Image x:Name="cosihero" Source="cosh_h13.png" Margin="428,-187,-2,105" RenderTransformOrigin="0.531,0.453"/>
+                <Button x:Name="cosbtn1_Copy2" Content="选定" HorizontalAlignment="Left" Margin="234,226,0,0" VerticalAlignment="Top" Width="82" Height="29" RenderTransformOrigin="-0.059,0.553" Background="#FFFFDE00" Foreground="#FF2C2C2C" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" BorderThickness="1" Padding="1,0,1,1" Click="cosc1_Click"/>
+            </Grid>
+
+            <Grid Name="cosu" Visibility="Hidden"   Height="401" VerticalAlignment="Top" Margin="0,4,0,0" Grid.Row="1">
+                <TextBlock x:Name="cosutext" HorizontalAlignment="Left" Margin="82,162,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" Width="110" TextAlignment="Center" Height="22" FontSize="14" TextDecorations="{x:Null}"><Run Language="zh-cn" Text="原版"/></TextBlock>
+                <Button x:Name="cosu_Copy16" Content="&gt;" HorizontalAlignment="Left" Margin="199,156,0,0" VerticalAlignment="Top" Width="28" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" BorderThickness="1" Padding="1,0,1,1" Click="cosbtn1_u_Click1"/>
+                <Button x:Name="cosu_Copy17" Content="&lt;" HorizontalAlignment="Left" Margin="47,156,0,0" VerticalAlignment="Top" Width="28" Height="30" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" BorderThickness="1" Padding="1,0,1,1" Click="cosbtn1_u_Click2" Grid.Row="1"/>
+                <Image x:Name="cosiunit" Source="cosu_h1.png" Margin="429,-137,0,108" RenderTransformOrigin="0.531,0.453"/>
+                <Button x:Name="cosbtn1_u" Content="选定" HorizontalAlignment="Left" Margin="47,200,0,0" VerticalAlignment="Top" Width="180" Height="30" RenderTransformOrigin="-0.059,0.553" Background="Black" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" BorderThickness="1" Padding="1,0,1,1" Click="cosbtn1_Copy11_Click"/>
+            </Grid>
+
+
+            <Grid x:Name="coshero" Visibility="Hidden" Grid.RowSpan="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="61*"/>
+                    <ColumnDefinition Width="131*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="261" Margin="8,148,0,0" VerticalAlignment="Top" Width="134" Grid.Column="1">
+                    <Image x:Name="cosi1" Source="coshum5.png"/>
+                </Border>
+                <TextBlock x:Name="cost1_Copy1" HorizontalAlignment="Left" Margin="8,106,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="18" Grid.Column="1" Height="23" Width="36"><Run Text="涂装"/></TextBlock>
+                <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="261" Margin="162,148,0,0" VerticalAlignment="Top" Width="134" Grid.Column="1">
+                    <Image x:Name="cosi2" Source="coshum6.png"/>
+                </Border>
+                <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="261" Margin="316,148,0,0" VerticalAlignment="Top" Width="134" Grid.Column="1">
+                    <Image x:Name="cosi3" Source="coshum29.png"/>
+                </Border>
+                <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="261" Margin="470,148,0,0" VerticalAlignment="Top" Width="134" Grid.Column="1">
+                    <Image x:Name="cosi4" Source="cosnew39.png"/>
+                </Border>
+                <Button Tag="1" Click="cosc1_Click" x:Name="cosc1" Content="原版" HorizontalAlignment="Left" Margin="8,419,0,0" VerticalAlignment="Top" Width="134" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Grid.Column="1"/>
+                <Button Tag="2" Click="cosc1_Click" x:Name="cosc2" Content="吉安娜" HorizontalAlignment="Left" Margin="162,419,0,0" VerticalAlignment="Top" Width="134" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Grid.Column="1"/>
+                <Button Tag="3" Click="cosc1_Click" x:Name="cosc3" Content="安东尼达斯" HorizontalAlignment="Left" Margin="316,419,0,0" VerticalAlignment="Top" Width="134" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Grid.Column="1"/>
+                <Button Tag="4" Click="cosc1_Click" x:Name="cosc4" Content="精灵大法师" HorizontalAlignment="Left" Margin="470,419,0,0" VerticalAlignment="Top" Width="134" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Grid.Column="1"/>
+
+                <Button x:Name="cosbtn1_Copy1" Content="&gt;" Margin="613,147,19,0" VerticalAlignment="Top" Height="262" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" BorderThickness="1" Padding="1,0,1,1" Click="cosbtn1_Copy1_Click" Grid.Column="1" />
+
+            </Grid>
+
+            <Grid Name="cosunit" Visibility="Hidden" Grid.RowSpan="2">
+                <Button x:Name="cosbtn1_Copy7" Content="人 类" HorizontalAlignment="Left" Margin="17,215,0,0" VerticalAlignment="Top" Width="120" Height="32" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" Click="cosbtn1_Copy7_Click" />
+                <Button x:Name="cosbtn1_Copy8" Content="兽 人" HorizontalAlignment="Left" Margin="17,252,0,0" VerticalAlignment="Top" Width="120" Height="32" RenderTransformOrigin="-0.059,0.553" Background="#A8FFFFFF" Foreground="Black" BorderBrush="#FFC7C7C7" FontSize="14" Click="cosbtn1_Copy8_Click"/>
+                <Button x:Name="cosbtn1_Copy9" Content="不 死 族" HorizontalAlignment="Left" Margin="17,289,0,0" VerticalAlignment="Top" Width="120" Height="32" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" Click="cosbtn1_Copy9_Click" />
+                <Button x:Name="cosbtn1_Copy10" Content="暗 夜 精 灵" HorizontalAlignment="Left" Margin="17,326,0,0" VerticalAlignment="Top" Width="120" Height="32" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" Click="cosbtn1_Copy10_Click" />
+                <TextBlock x:Name="cosunitt" HorizontalAlignment="Left" Margin="313,106,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="18"><Run Text="战团"/><Run Text="涂装"/></TextBlock>
+                <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="264" Margin="313,148,0,0" VerticalAlignment="Top" Width="628" Background="#70000000">
+                    <Image x:Name="cosuniti" Source="cosunitorc0.png"/>
+                </Border>
+                <TextBlock x:Name="cosunitt1" HorizontalAlignment="Left" Margin="369,277,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="20" Text="原版"/>
+                <Button x:Name="cosunitbtn2" Content="部落荣耀" HorizontalAlignment="Left" Margin="461,417,0,0" VerticalAlignment="Top" Width="148" Height="32" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="cubtn1_MouseEnter" MouseLeave="cuoldbtn_MouseLeave" Tag="2" Click="cosbtn1_Copy11_Click"/>
+                <Button x:Name="cosunitbtn3" Content="未制作" HorizontalAlignment="Left" Margin="608,417,0,0" VerticalAlignment="Top" Width="150" Height="32" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="cubtn1_MouseEnter" MouseLeave="cuoldbtn_MouseLeave" Tag="3" Click="cosbtn1_Copy11_Click"/>
+                <Button x:Name="cosunitbtn4" Content="未制作" HorizontalAlignment="Left" Margin="757,417,0,0" VerticalAlignment="Top" Width="149" Height="32" RenderTransformOrigin="-0.059,0.553" Background="#A86F6F6F" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="cubtn1_MouseEnter" MouseLeave="cuoldbtn_MouseLeave" Tag="4" Click="cosbtn1_Copy11_Click"/>
+                <Button x:Name="cosunitbtn1" Content="原版" HorizontalAlignment="Left" Margin="313,417,0,0" VerticalAlignment="Top" Width="149" Height="32" RenderTransformOrigin="-0.059,0.553" Background="#A8FFFFFF" Foreground="Black" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="cubtn1_MouseEnter" MouseLeave="cuoldbtn_MouseLeave" Tag="1" Click="cosbtn1_Copy11_Click"/>
+                <Button x:Name="cosunitbtn5" Content="&gt;" HorizontalAlignment="Left" Margin="905,417,0,0" VerticalAlignment="Top" Width="36" Height="32" RenderTransformOrigin="-0.059,0.553" Background="#A86F6F6F" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="16" MouseEnter="cubtn1_MouseEnter" MouseLeave="cuoldbtn_MouseLeave" Tag="0"/>
+                <TextBlock x:Name="cosunitt2" HorizontalAlignment="Left" Margin="369,309,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="16" Width="392"><Run Text="在淬火引擎"/><Run Text="中模型会表现的更加细致"/><LineBreak/><Run Text="原版可使用"/><Run Text=" "/><Run Text="[ "/><Run Text="单位辨识 ] "/><Run Text="选项"/></TextBlock>
+            </Grid>
+            <Button x:Name="cuoldbtn" Visibility="Hidden" Content="怀旧模式" HorizontalAlignment="Left" Margin="825,54,0,0" VerticalAlignment="Top" Width="116" Height="32" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="cuoldbtn_MouseEnter" MouseLeave="cuoldbtn_MouseLeave"/>
+            <Button MouseEnter="entersound" x:Name="button2_Copy1" Content="自 定 义" HorizontalAlignment="Left" Margin="263,167,0,0" VerticalAlignment="Top" Width="114" Height="20" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="button2_Copy1_Click" />
+
+
+        </Grid>
+
+        <Grid x:Name="achmain" Grid.ColumnSpan="2" Visibility="Hidden">
+            <Border x:Name="cosbg1" HorizontalAlignment="Center" Height="543" Margin="0,-14,0,0" VerticalAlignment="Top" Width="960" Background="#CC000000"/>
+            <TextBlock x:Name="ccos" HorizontalAlignment="Center" Margin="0,85,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="26" Width="612" TextAlignment="Center" ><Run Text="- "/><Run Language="zh-cn" Text="自定义皮肤"/><Run Text=" -"/></TextBlock>
+            <Border BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="48" Margin="294,389,0,0" VerticalAlignment="Top" Width="380" Background="#70000000"/>
+            <Image x:Name="ccos_btn1"  HorizontalAlignment="Left" Margin="213,151,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnpeasant.png"  Tag="0"/>
+            <Button x:Name="achbtn1_Copy29" Content="&lt;" HorizontalAlignment="Left" Margin="214,389,0,0" VerticalAlignment="Top" Width="80" Height="49" RenderTransformOrigin="-0.059,0.553" Foreground="#A8000000" BorderBrush="#FFC7C7C7" FontSize="36"  Background="#A8FFFFFF" Click="achbtn1_Copy29_Click"/>
+            <Button x:Name="achbtn1_Copy36" Content="&gt;" HorizontalAlignment="Left" Margin="674,389,0,0" VerticalAlignment="Top" Width="78" Height="49" RenderTransformOrigin="-0.059,0.553" Foreground="#A8000000" BorderBrush="#FFC7C7C7" FontSize="36"  Background="#A8FFFFFF" Click="achbtn1_Copy36_Click"/>
+            <TextBlock x:Name="achmaint1" HorizontalAlignment="Left" Margin="348,400,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="20" Foreground="#A8FFFFFF" Width="272" TextAlignment="Center"><Run Language="zh-cn" Text="人类"/></TextBlock>
+
+
+            <Grid x:Name="achtext" Visibility="Hidden" >
+
+                <Border BorderBrush="White" BorderThickness="1" HorizontalAlignment="Left" Height="147" Margin="248,293,0,0" VerticalAlignment="Top" Width="608" Background="#CC000000">
+                    <Border.Effect>
+                        <DropShadowEffect Color="#FF1284B9" ShadowDepth="0" BlurRadius="20"/>
+                    </Border.Effect>
+                </Border>
+
+                <Button x:Name="achdi" HorizontalAlignment="Left" Margin="275,321,0,0" VerticalAlignment="Top" Width="97" Height="92" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="36" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Background="{x:Null}" Content="?">
+                </Button>
+
+                <Button x:Name="achdi1" Content="X" HorizontalAlignment="Left" Margin="780,317,0,0" VerticalAlignment="Top" Width="26" Height="24" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Background="#6C000000" VerticalContentAlignment="Center" FontSize="16" Click="achdi1_Click"/>
+                <TextBlock x:Name="achdt1" HorizontalAlignment="Left" Margin="400,317,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#E0FFFFFF" FontSize="20"><Run Text="混沌的"/><Run Text="信徒"/></TextBlock>
+                <TextBlock x:Name="achdt2" HorizontalAlignment="Left" Margin="400,348,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#E0FFFFFF" FontSize="14"><Run Text="击杀丛林深处藏匿"/><Run Text="的"/><Run Text="堕落"/><Run Text="术士"/></TextBlock>
+                <TextBlock x:Name="achdt3" HorizontalAlignment="Left" Margin="400,378,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#70FFFFFF" FontSize="14" Height="40"><Run Text="神秘先知的到来早已引起恶魔"/><Run Text="忠犬"/><Run Text="们"/><Run Text="的注意"/><LineBreak/><Run Text="其中就包括萨尔的手足同胞"/><LineBreak/><LineBreak/><Run/></TextBlock>
+                <Image x:Name="iachdir" Margin="275,320,588,207"/>
+            </Grid>
+
+            <Image x:Name="ccos_btn1_Copy"  HorizontalAlignment="Left" Margin="294,151,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnfootman.png"  Tag="1"/>
+            <Image x:Name="ccos_btn1_Copy1"  HorizontalAlignment="Left" Margin="448,151,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnknight.png"  Tag="3"/>
+            <Image x:Name="ccos_btn1_Copy2"  HorizontalAlignment="Left" Margin="524,151,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnmortarteam.png"  Tag="4"/>
+            <Image x:Name="ccos_btn1_Copy3"  HorizontalAlignment="Left" Margin="599,151,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btngyrocopter.png" Tag="5"/>
+            <Image x:Name="ccos_btn1_Copy4"  HorizontalAlignment="Left" Margin="676,151,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btngryphonrider.png"  Tag="6"/>
+            <Image x:Name="ccos_btn1_Copy5"  HorizontalAlignment="Left" Margin="214,229,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btndragonhawkriderv1.png"  Tag="7"/>
+            <Image x:Name="ccos_btn1_Copy6"  HorizontalAlignment="Left" Margin="370,151,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnrifleman.png"  Tag="2"/>
+            <Image x:Name="ccos_btn1_Copy7"  HorizontalAlignment="Left" Margin="292,229,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnpriest.png"  Tag="8"/>
+            <Image x:Name="ccos_btn1_Copy10"  HorizontalAlignment="Left" Margin="524,229,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnspellbreaker.png"  Tag="11"/>
+            <Image x:Name="ccos_btn1_Copy11"  HorizontalAlignment="Left" Margin="448,229,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnseigeengine.png"  Tag="10"/>
+            <Image x:Name="ccos_btn1_Copy12"  HorizontalAlignment="Left" Margin="370,229,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnsorceress.png"  Tag="9"/>
+            <Image x:Name="ccos_btn1_Copy13"  HorizontalAlignment="Left" Margin="214,307,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnheroarchmage.png"  Tag="12"/>
+            <Image x:Name="ccos_btn1_Copy14"  HorizontalAlignment="Left" Margin="292,307,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnheropaladin.png"  Tag="13"/>
+            <Image x:Name="ccos_btn1_Copy15"  HorizontalAlignment="Left" Margin="370,307,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnheromountainking.png" Tag="14"/>
+            <Image x:Name="ccos_btn1_Copy16"  HorizontalAlignment="Left" Margin="448,307,0,0" VerticalAlignment="Top" Width="76" Height="73" RenderTransformOrigin="-0.059,0.553" MouseDown="achbtn1_Copy21_Click" Source="/btnherobloodelfprince.png"  Tag="15"/>
+            <Button x:Name="achbtn1_Copy" Content="Re" HorizontalAlignment="Left" Margin="214,204,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="0" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy5" Content="Re" HorizontalAlignment="Left" Margin="294,204,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="1" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy6" Content="Re" HorizontalAlignment="Left" Margin="370,204,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="2" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy7" Content="Re" HorizontalAlignment="Left" Margin="448,204,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="3" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy8" Content="Re" HorizontalAlignment="Left" Margin="524,204,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="4" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy9" Content="Re" HorizontalAlignment="Left" Margin="599,204,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="5" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy10" Content="Re" HorizontalAlignment="Left" Margin="676,204,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="6" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy11" Content="Re" HorizontalAlignment="Left" Margin="213,282,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="7" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy12" Content="Re" HorizontalAlignment="Left" Margin="213,360,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="12" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy13" Content="Re" HorizontalAlignment="Left" Margin="292,360,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="13" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy14" Content="Re" HorizontalAlignment="Left" Margin="293,282,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="8" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy15" Content="Re" HorizontalAlignment="Left" Margin="371,282,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="9" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy16" Content="Re" HorizontalAlignment="Left" Margin="370,360,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="14" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy17" Content="Re" HorizontalAlignment="Left" Margin="448,360,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="15" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy18" Content="Re" HorizontalAlignment="Left" Margin="447,282,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="10" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy19" Content="Re" HorizontalAlignment="Left" Margin="524,282,0,0" VerticalAlignment="Top" Width="72" Height="20" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="11" Click="achbtn1_Copy_Click"/>
+            <Button x:Name="achbtn1_Copy20" Content="X" HorizontalAlignment="Left" Margin="460,452,0,0" VerticalAlignment="Top" Width="50" Height="27" RenderTransformOrigin="-0.059,0.553" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7"  Background="#A8222222" Tag="15" Click="achbtn1_Copy20_Click" />
+
+        </Grid>
+
+        <Grid x:Name="achgrid" Margin="-2,0,2,0" Visibility="Hidden">
+
+            <Border HorizontalAlignment="Center" Height="637" VerticalAlignment="Top" Width="1160" RenderTransformOrigin="0.5,0.5" Margin="0,-8,0,0" Background="#A8000000">
+            </Border>
+            <Image Visibility="Hidden" x:Name="achbg" HorizontalAlignment="Left" Height="543" Margin="42,-14,0,0" VerticalAlignment="Top" Width="874" Source="bg.png" Grid.ColumnSpan="2"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_reset_Copy" Content="读取战役" HorizontalAlignment="Left" Margin="47,140,0,462" Width="154" RenderTransformOrigin="0.5,0.5" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="mainbtn_reset_Copy_Click"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy4" Content="战役解锁" HorizontalAlignment="Left" Margin="365,0,0,462" VerticalAlignment="Bottom" Width="153" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="mainbtn_check_Copy4_Click"/>
+            <TextBlock x:Name="acht" HorizontalAlignment="Left" Margin="42,55,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="36" TextAlignment="Center" ><Run Language="zh-cn" Text="自定义战役"/></TextBlock>
+            <TextBlock x:Name="acht1" Margin="45,106,141,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="18" TextAlignment="Left"><Run Text="战役列表"/></TextBlock>
+            <TextBlock x:Name="acht1_Copy1" HorizontalAlignment="Left" Margin="47,258,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="18" Width="471"><Run Language="zh-cn" Text="请读取战役"/></TextBlock>
+
+            <Grid x:Name="achcustom" Visibility="Hidden" Grid.ColumnSpan="2">
+
+
+                <Button x:Name="achbtn1_Copy2" Content="血色使命" HorizontalAlignment="Left" Margin="70,305,0,0" VerticalAlignment="Top" Width="120" Height="30" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" MouseEnter="achbtn4_MouseEnter" MouseLeave="achbtn4_MouseLeave" FontSize="14" />
+                <Button x:Name="achbtn1_Copy3" Content="黑潮演示" HorizontalAlignment="Left" Margin="70,340,0,0" VerticalAlignment="Top" Width="120" Height="30" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" MouseEnter="achbtn5_MouseEnter" MouseLeave="achbtn5_MouseLeave" FontSize="14" />
+                <Button x:Name="achbtn1_Copy4" Content="读取战役" HorizontalAlignment="Left" Margin="70,410,0,0" VerticalAlignment="Top" Width="120" Height="30" RenderTransformOrigin="-0.059,0.553" Background="#FF646464" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" Click="achbtn1_Copy4_Click" />
+
+
+                <Button x:Name="achcbtn1" Content="未找到文件" HorizontalAlignment="Left" Margin="248,148,0,0" VerticalAlignment="Top" Width="130" Height="36" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+                <Button x:Name="achcbtn1_Copy" Content="未找到文件" HorizontalAlignment="Left" Margin="248,183,0,0" VerticalAlignment="Top" Width="130" Height="37" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+                <Button x:Name="achcbtn1_Copy1" Content="未找到文件" HorizontalAlignment="Left" Margin="248,220,0,0" VerticalAlignment="Top" Width="130" Height="39" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+                <Button x:Name="achcbtn1_Copy2" Content="未找到文件" HorizontalAlignment="Left" Margin="248,259,0,0" VerticalAlignment="Top" Width="130" Height="37" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+                <Button x:Name="achcbtn1_Copy4" Content="未找到文件" HorizontalAlignment="Left" Margin="248,296,0,0" VerticalAlignment="Top" Width="130" Height="36" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+                <Button x:Name="achcbtn1_Copy6" Content="未找到文件" HorizontalAlignment="Left" Margin="248,366,0,0" VerticalAlignment="Top" Width="130" Height="37" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+                <Button x:Name="achcbtn1_Copy7" Content="未找到文件" HorizontalAlignment="Left" Margin="248,332,0,0" VerticalAlignment="Top" Width="130" Height="34" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+                <Image x:Name="customimage" HorizontalAlignment="Left" Height="290" Margin="378,149,0,0" VerticalAlignment="Top" Width="477" />
+                <Button x:Name="achcbtn1_Copy5" Content="读取到自定义战役" HorizontalAlignment="Left" Margin="377,403,0,0" VerticalAlignment="Top" Width="238" Height="37" RenderTransformOrigin="-0.059,0.553" Background="#C4FFFFFF" Foreground="#A8000000" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+                <Button x:Name="achcbtn1_Copy8" Content="取消读取" HorizontalAlignment="Left" Margin="614,403,0,0" VerticalAlignment="Top" Width="242" Height="37" RenderTransformOrigin="-0.059,0.553" Background="#FF535353" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+                <Button x:Name="achcbtn1_Copy3" Content="未找到文件" HorizontalAlignment="Left" Margin="248,403,0,0" VerticalAlignment="Top" Width="130" Height="37" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
+            </Grid>
+
+
+            <Grid x:Name="achshow" Visibility="Hidden" Grid.ColumnSpan="2" >
+                <Image x:Name="achshowi" HorizontalAlignment="Left" Height="290" VerticalAlignment="Top" Width="606"  Margin="249,149,0,0"/>
+                <TextBlock x:Name="achshowt1" HorizontalAlignment="Left" Margin="263,161,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#C4FFFFFF" FontSize="20" Height="25" Width="289"><Run Text="兽族"/><Run Text="大逃亡"/><Run Text=" "/><LineBreak/><Run/><LineBreak/><Run/></TextBlock>
+                <TextBlock x:Name="achshowt2" HorizontalAlignment="Left" Margin="263,193,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#8CFFFFFF" FontSize="14" Height="132" Width="289" LineHeight="20"><Run Text="前所未有的"/><Run Text="游戏实机画面"/><LineBreak/><Run Text="更丰富的支线任务"/><LineBreak/><Run Text="剧情和游戏性的扩展"/><LineBreak/><Run Text="绑定离线成就系统"/><LineBreak/><LineBreak/><Run/><LineBreak/><Run/></TextBlock>
+            </Grid>
+
+
+            <WebBrowser Visibility="Hidden" x:Name="achbow" HorizontalAlignment="Left" Height="488" VerticalAlignment="Top" Width="960" Grid.ColumnSpan="2" Margin="0,40,0,0"/>
+            <Button x:Name="level_1" Content="#1" HorizontalAlignment="Left" Margin="47,296,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="1" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="achbtn1_Copy1" Content="删除战役" Margin="206,140,0,0" VerticalAlignment="Top" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="10" Click="achbtn1_Copy1_Click_1" HorizontalAlignment="Left" Width="154" />
+
+            <Button x:Name="level_1_Copy" Content="#2" HorizontalAlignment="Left" Margin="47,328,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="2" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy1" Content="#3" HorizontalAlignment="Left" Margin="47,362,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="3" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy2" Content="#8" HorizontalAlignment="Left" Margin="206,296,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="8" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy3" Content="#15" HorizontalAlignment="Left" Margin="365,296,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="15" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy4" Content="#22" HorizontalAlignment="Left" Margin="523,296,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="22" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy5" Content="#4" HorizontalAlignment="Left" Margin="47,392,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="4" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy6" Content="#5" HorizontalAlignment="Left" Margin="47,424,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="5" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy7" Content="#6" HorizontalAlignment="Left" Margin="47,454,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="6" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy8" Content="#7" HorizontalAlignment="Left" Margin="47,486,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="7" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy9" Content="#9" HorizontalAlignment="Left" Margin="206,328,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="9" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy10" Content="#10" HorizontalAlignment="Left" Margin="206,362,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="10" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy11" Content="#11" HorizontalAlignment="Left" Margin="206,392,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="11" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy12" Content="#12" HorizontalAlignment="Left" Margin="206,424,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="12" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy13" Content="#13" HorizontalAlignment="Left" Margin="206,454,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="13" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy14" Content="#14" HorizontalAlignment="Left" Margin="206,484,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="14" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy15" Content="#16" HorizontalAlignment="Left" Margin="365,328,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="16" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy16" Content="#17" HorizontalAlignment="Left" Margin="365,362,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="17" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy17" Content="#18" HorizontalAlignment="Left" Margin="365,392,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="18" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy18" Content="#19" HorizontalAlignment="Left" Margin="365,424,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="19" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy19" Content="#20" HorizontalAlignment="Left" Margin="365,454,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="20" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy20" Content="#21" HorizontalAlignment="Left" Margin="365,484,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="21" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy21" Content="#23" HorizontalAlignment="Left" Margin="523,328,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="23" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy22" Content="#24" HorizontalAlignment="Left" Margin="523,362,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="24" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy23" Content="#25" HorizontalAlignment="Left" Margin="523,392,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="25" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy24" Content="#26" HorizontalAlignment="Left" Margin="523,424,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="26" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy25" Content="#27" HorizontalAlignment="Left" Margin="523,454,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="27" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy26" Content="#28" HorizontalAlignment="Left" Margin="523,484,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="28" Click="achbtn2_Copy3_Click_1" />
+            <TextBlock x:Name="acht1_Copy" Margin="47,181,139,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="18" TextAlignment="Left"><Run Language="zh-cn" Text="难度选择"/></TextBlock>
+            <Button MouseEnter="entersound" x:Name="mainbtn_reset_Copy1" Content="简单" HorizontalAlignment="Left" Margin="47,218,0,384" Width="154" RenderTransformOrigin="0.5,0.5" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click=" map_diff_0"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy10" Content="困难" HorizontalAlignment="Left" Margin="365,0,0,384" VerticalAlignment="Bottom" Width="153" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click=" map_diff_2"/>
+            <Button x:Name="achbtn1_Copy21" Content="中等" Margin="206,218,0,0" VerticalAlignment="Top" Height="29" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="10" Click=" map_diff_1" HorizontalAlignment="Left" Width="154" />
+            <Button x:Name="level_1_Copy27" Content="#29" HorizontalAlignment="Left" Margin="682,296,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="29" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy28" Content="#30" HorizontalAlignment="Left" Margin="682,328,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="30" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy29" Content="#31" HorizontalAlignment="Left" Margin="682,362,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="31" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy30" Content="#32" HorizontalAlignment="Left" Margin="682,392,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="32" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy31" Content="#33" HorizontalAlignment="Left" Margin="682,424,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="33" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy32" Content="#34" HorizontalAlignment="Left" Margin="682,454,0,0" VerticalAlignment="Top" Width="154" Height="26" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="34" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy33" Content="#35" HorizontalAlignment="Left" Margin="682,484,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="35" Click="achbtn2_Copy3_Click_1" />
+            <Button x:Name="level_1_Copy34" Content="单开地图" HorizontalAlignment="Left" Margin="523,141,0,0" VerticalAlignment="Top" Width="154" Height="28" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" Tag="1" Click="achbtn2_Copy3_Click" FontSize="10" />
+
+
+        </Grid>
+
+
+
+        <Button x:Name="btnset" Style="{StaticResource BtnInfoStyle}" Content="综合" HorizontalAlignment="Left" Height="93" Margin="172,528,0,0" VerticalAlignment="Top" Width="172" BorderBrush="#00C98C8C" BorderThickness="0" FontSize="24" Foreground="White" Click="button_Click" Background="#0043A9C7"/>
+        <Button x:Name="btnui" Style="{StaticResource BtnInfoStyle}" Content="更新" HorizontalAlignment="Left" Height="93" Margin="0,528,0,0" VerticalAlignment="Top" Width="172" BorderBrush="#00707070" BorderThickness="0" FontSize="24" Foreground="White" Click="panel_update_click" Background="#0043A9C7"/>
+        <Button x:Name="btnmain"  Style="{StaticResource BtnInfoStyle}" Content="淬火试炼" Margin="344,525,342,0" FontSize="30" FontWeight="Bold" Foreground="White" IsDefault="True" Height="96" VerticalAlignment="Top" Padding="1" UseLayoutRounding="True" BorderThickness="1" Click="button_Copy_Click" BorderBrush="#00E5E5E5">
+            <Button.Background>
+                <ImageBrush/>
+            </Button.Background>
+        </Button>
+        <Button x:Name="btncos" Style="{StaticResource BtnInfoStyle}"  Content="涂装" HorizontalAlignment="Left" Height="93" Margin="618,528,0,0"  VerticalAlignment="Top" Width="170" BorderBrush="#00C98C8C" BorderThickness="0" FontSize="24" Foreground="White" Click="btncos_Click" Background="#0043A9C7" />
+        <Button x:Name="btnach" Style="{StaticResource BtnInfoStyle}" Content="战役" HorizontalAlignment="Left" Height="93" Margin="788,528,0,0" VerticalAlignment="Top" Width="168" BorderBrush="#00707070" BorderThickness="0" FontSize="24" Foreground="White" Click="btnach_Click" Background="#0043A9C7"/>
+        <Rectangle  x:Name="mb2" Visibility="Hidden"   HorizontalAlignment="Left" Height="3" Margin="220,602,0,0"  VerticalAlignment="Top" Width="76" Fill="#FFFFDE00">
+            <Rectangle.Effect>
+                <DropShadowEffect Color="#FFFFDE00" BlurRadius="15" Direction="90" ShadowDepth="3"/>
+            </Rectangle.Effect>
+
+        </Rectangle>
+        <Rectangle  x:Name="mb1" Visibility="Hidden"  HorizontalAlignment="Left" Height="3" Margin="48,601,0,0" VerticalAlignment="Top" Width="76" Fill="#FFFFDE00" >
+            <Rectangle.Effect>
+                <DropShadowEffect Color="#FFFFDE00" BlurRadius="15" Direction="90" ShadowDepth="3"/>
+            </Rectangle.Effect>
+
+        </Rectangle>
+        <Rectangle x:Name="mb" HorizontalAlignment="Center" Height="5" Margin="0,601,0,0"  VerticalAlignment="Top" Width="136" Fill="#FFFFDE00">
+            <Rectangle.Effect>
+                <DropShadowEffect Color="#FFFFDE00" BlurRadius="25" Direction="90" ShadowDepth="6"/>
+            </Rectangle.Effect>
+
+        </Rectangle>
+        <Rectangle  x:Name="mb3" Visibility="Hidden"  HorizontalAlignment="Left" Height="3" Margin="666,600,0,0" VerticalAlignment="Top" Width="75" Fill="#FFFFDE00" RenderTransformOrigin="0.5,0.5">
+            <Rectangle.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform/>
+                    <RotateTransform Angle="-0.278"/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Rectangle.RenderTransform>
+            <Rectangle.Effect>
+                <DropShadowEffect Color="#FFFFDE00" BlurRadius="15" Direction="90" ShadowDepth="3"/>
+            </Rectangle.Effect>
+
+        </Rectangle>
+        <Rectangle x:Name="mb4" Visibility="Hidden"  HorizontalAlignment="Left" Height="3" Margin="835,599,0,0" VerticalAlignment="Top" Width="75" Fill="#FFFFDE00" RenderTransformOrigin="0.5,0.5">
+            <Rectangle.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform/>
+                    <SkewTransform/>
+                    <RotateTransform Angle="-0.278"/>
+                    <TranslateTransform/>
+                </TransformGroup>
+            </Rectangle.RenderTransform>
+            <Rectangle.Effect>
+                <DropShadowEffect Color="#FFFFDE00" BlurRadius="15" Direction="90" ShadowDepth="3"/>
+            </Rectangle.Effect>
+
+        </Rectangle>
+        <Rectangle HorizontalAlignment="Left" Height="89" Margin="172,532,0,0" VerticalAlignment="Top" Width="1">
+            <Rectangle.Fill>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#8CFFFFFF" Offset="0.498"/>
+                    <GradientStop Color="#00000000"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                    <GradientStop Color="#3FFFFFFF" Offset="0.803"/>
+                    <GradientStop Color="#3FFFFFFF" Offset="0.186"/>
+                    <GradientStop Color="#00A7A7A7"/>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        <Rectangle HorizontalAlignment="Left" Height="89" Margin="788,532,0,0" VerticalAlignment="Top" Width="1">
+            <Rectangle.Fill>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#8CFFFFFF" Offset="0.498"/>
+                    <GradientStop Color="#00000000"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                    <GradientStop Color="#3FFFFFFF" Offset="0.803"/>
+                    <GradientStop Color="#3FFFFFFF" Offset="0.186"/>
+                    <GradientStop Color="#00A7A7A7"/>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        <Rectangle HorizontalAlignment="Left" Height="89" Margin="618,532,0,0" VerticalAlignment="Top" Width="1">
+            <Rectangle.Fill>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#8CFFFFFF" Offset="0.498"/>
+                    <GradientStop Color="#00000000"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                    <GradientStop Color="#3FFFFFFF" Offset="0.803"/>
+                    <GradientStop Color="#3FFFFFFF" Offset="0.186"/>
+                    <GradientStop Color="#00A7A7A7"/>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+        <Rectangle HorizontalAlignment="Left" Height="89" Margin="344,532,0,0" VerticalAlignment="Top" Width="1">
+            <Rectangle.Fill>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#8CFFFFFF" Offset="0.498"/>
+                    <GradientStop Color="#00000000"/>
+                    <GradientStop Color="#00000000" Offset="1"/>
+                    <GradientStop Color="#3FFFFFFF" Offset="0.803"/>
+                    <GradientStop Color="#3FFFFFFF" Offset="0.186"/>
+                    <GradientStop Color="#00A7A7A7"/>
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+
+
+
+
+
+
+
+        <Grid x:Name="thanks" Background="#BF000000" Visibility="hidden">
+
+            <TextBlock x:Name="thxt" HorizontalAlignment="Center" Margin="0,40,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="36" TextAlignment="Center" Width="272" ><Run Text="介绍"/><Run Text="鸣谢"/></TextBlock>
+            <Grid x:Name="aboutgrid"  >
+                <TextBlock x:Name="thxt1" HorizontalAlignment="Center" Margin="0,133,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#CCFFFFFF" FontSize="20" TextAlignment="Center" Width="240"><Run Text="- "/><Run Text="关于"/><Run Text="淬火"/><Run Text=" "/><Run Text="-"/></TextBlock>
+                <TextBlock x:Name="thxt1_Copy" HorizontalAlignment="Center" Margin="0,172,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#7FFFFFFF" FontSize="15" Height="213" Width="544" TextAlignment="Center" LineHeight="24"><Run Text="这是一款"/><Run Text="由 [天下正义] "/><Run Text="制作的"/><Run Text="魔兽重制版改良模组"/><LineBreak/><Run Text="感谢社区和魔兽爱好者们帮助"/><LineBreak/><Run Text="我们得到了许多HTML界面和着色器方面的支持"/><LineBreak/><Run/><LineBreak/><Run Text="这是一个遵循cc4.0的开源项目"/><LineBreak/><Run Text="你不仅能够免费体验, 而且署名之后也可以使用其中的素材"/><Run Text="  "/><LineBreak/><Run/><LineBreak/><Run Text="我们由于经济和生活压力, 只能使用业余时间制作"/><LineBreak/><Run Text="您的支持对我们"/><Run Text="有重要的意义"/><LineBreak/><Run/><LineBreak/><Run/><LineBreak/><InlineUIContainer>
+                        <Border BorderBrush="Black" BorderThickness="1" Height="22" Width="295"/>
+                    </InlineUIContainer><LineBreak/></TextBlock>
+                <Image x:Name="_21d39a30b6f638c5081d47fce3daf453_png" Margin="304,412,555,99" Source="21d39a30b6f638c5081d47fce3daf453.png" Stretch="Fill"/>
+                <Image x:Name="_962b388fc81544d58b857d7dedade73e_png" Margin="432,412,429,101" Source="962b388fc81544d58b857d7dedade73e.png" Stretch="Fill"/>
+                <Image x:Name="_21d39a30b6f638c5081d47fce3daf4522_png" Margin="560,412,301,101" Source="QR.png" Stretch="Fill"/>
+                <Button x:Name="button_Copy99" Content="Paypal" HorizontalAlignment="Left" Margin="560,500,0,0" VerticalAlignment="Top" Width="99" RenderTransformOrigin="0.608,-4.789" Background="Black" Foreground="White" BorderBrush="White" Height="27" Opacity="0.8"/>
+                <Button x:Name="button_Copy3" Content="微信捐赠" HorizontalAlignment="Left" Margin="304,500,0,0" VerticalAlignment="Top" Width="101" RenderTransformOrigin="0.608,-4.789" Background="Black" Foreground="White" BorderBrush="White" Height="27" Opacity="0.8"/>
+                <Button x:Name="button_Copy4" Content="支付宝捐赠" HorizontalAlignment="Left" Margin="432,500,0,0" VerticalAlignment="Top" Width="99" RenderTransformOrigin="0.608,-4.789" Background="Black" Foreground="White" BorderBrush="White" Height="27" Opacity="0.8"/>
+                <Button x:Name="button_Copy5" Content="?" HorizontalAlignment="Left" Margin="671,295,0,0" VerticalAlignment="Top" Width="16" RenderTransformOrigin="0.608,-4.789" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" Height="15" Opacity="0.8" FontSize="9" FontWeight="Bold" Click="button_Copy5_Click"/>
+                <Border x:Name="aboutlic" BorderBrush="#A8FFFFFF" BorderThickness="1" HorizontalAlignment="Left" Height="21" Margin="285,334,0,0" VerticalAlignment="Top" Width="402" Visibility="Hidden">
+                    <TextBox x:Name="textBox1" TextWrapping="Wrap" Text="可以用于商业, 但是请务必在非常显眼的地方注明 [淬火试炼] [天下正义] 以及产品 ICON" Background="{x:Null}" Foreground="#8BFFFFFF" BorderBrush="{x:Null}" FontSize="10" Grid.IsSharedSizeScope="True" VerticalContentAlignment="Center" TextAlignment="Center"/>
+                </Border>
+            </Grid>
+            <Grid x:Name="supportgrid" Visibility="hidden">
+                <TextBlock Width="240" x:Name="thxt3" HorizontalAlignment="Center" Margin="0,133,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#CCFFFFFF" FontSize="20" TextAlignment="Center"><Run Text="- "/><Run Text="支持 "/><Run Text="-"/></TextBlock>
+                <TextBlock x:Name="thxtt1" HorizontalAlignment="Center" Margin="0,170,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#7FFFFFFF" Height="405" Width="267" TextAlignment="Center" LineHeight="15" FontSize="15"><Run Text="- 暴雪经典组 -"/><LineBreak/><Run Text="他们贡献了大部分代码"/><LineBreak/><Run Text="没有它们MOD是无法完成的"/><LineBreak/><Run/><LineBreak/><Run Text="- 网易暴雪 -"/><LineBreak/><Run Text="在比赛中的使用和转播"/><LineBreak/><Run/><LineBreak/><Run Text="- Back2Warcraft -"/><LineBreak/><Run Text="使用MOD转播国外比赛"/><LineBreak/><Run Text="同时非常感谢他的慷慨捐赠"/><LineBreak/><Run/><LineBreak/><Run Text="- 玉米Yumiko -"/><LineBreak/><Run Text="使用MOD进行实机游戏"/><LineBreak/><Run Text="最早支持我们的主播"/><LineBreak/><Run/><LineBreak/><Run Text="- 桥林 -"/><LineBreak/><Run Text="使用MOD进行赛事转播"/><LineBreak/><Run Text="帮助推荐以及传播"/></TextBlock>
+
+                <TextBlock Visibility="hidden" x:Name="textBlock4" HorizontalAlignment="Center" Height="21" Margin="0,531,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="148" FontSize="17" Foreground="#A8FFFFFF" Text="1" TextAlignment="Center"/>
+                <Button x:Name="button1" Content="&lt;" HorizontalAlignment="Left" Margin="233,308,0,0" VerticalAlignment="Top" Width="35" Height="34" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" Click="button1_Click" FontSize="20" RenderTransformOrigin="1.571,0.441"/>
+                <Button x:Name="button1_Copy" Content="&gt;" HorizontalAlignment="Left" Margin="695,308,0,0" VerticalAlignment="Top" Width="35" Height="34" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" FontSize="20" Click="button1_Copy_Click"/>
+
+            </Grid>
+            <Grid x:Name="thxlist" Visibility="hidden">
+                <TextBlock Width="240" x:Name="thxlistt1" HorizontalAlignment="Center" Margin="0,134,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#CCFFFFFF" FontSize="20" Text="- 鸣谢 -" TextAlignment="Center"/>
+                <TextBlock x:Name="thxt5_Copy3" HorizontalAlignment="Center" Margin="0,172,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#7FFFFFFF" Height="412" Width="250" TextAlignment="Center" LineHeight="15" FontSize="15"><Run Text="由于人数过多"/><LineBreak/><Run Text="我们将会将该名单迁至网站"/><LineBreak/><Run/><LineBreak/><Run Text="新的主页预计五月上线"/><LineBreak/><Run Text="请注意您是否出现"/><LineBreak/><Run/><LineBreak/><Run Text="如果发现了遗漏"/><LineBreak/><Run Text="或者你希望更改展示姓名"/><LineBreak/><Run Text="请尽快联系我们"/></TextBlock>
+
+            </Grid>
+
+            <Button x:Name="button" Content="支持" HorizontalAlignment="Center" Margin="0,100,0,0" VerticalAlignment="Top" Width="110" RenderTransformOrigin="0.608,-4.789" Background="{x:Null}" Foreground="White" BorderBrush="White" Height="17" Opacity="0.8" Click="button_Click_1" FontSize="10"/>
+            <Button x:Name="button_Copy" Content="关于" HorizontalAlignment="Left" Margin="294,100,0,0" VerticalAlignment="Top" Width="110" RenderTransformOrigin="0.608,-4.789" Background="{x:Null}" Foreground="White" BorderBrush="White" Height="17" Opacity="0.8" Click="button_Copy_Click_1" FontSize="10"/>
+            <Button x:Name="button_Copy1" Content="鸣谢" HorizontalAlignment="Left" Margin="554,100,0,0" VerticalAlignment="Top" Width="110" RenderTransformOrigin="0.608,-4.789" Background="{x:Null}" Foreground="White" BorderBrush="White" Height="17" Opacity="0.8" Click="button_Copy1_Click" FontSize="10"/>
+            <Button x:Name="button_Copy2" Content="X" HorizontalAlignment="Center" Margin="0,554,0,0" VerticalAlignment="Top" Width="24" RenderTransformOrigin="0.608,-4.789" Background="{x:Null}" Foreground="White" BorderBrush="White" Height="23" Opacity="0.8" Click="button_Copy2_Click"/>
+        </Grid>
+
+        <Grid x:Name="update" Background="#BF000000" Visibility="Hidden">
+            <TextBlock x:Name="updatet" HorizontalAlignment="Left" Margin="408,40,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="36" Text="游戏更新" />
+            <TextBlock x:Name="updatet1" HorizontalAlignment="Left" Margin="306,91,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="16" Height="414" Width="350" TextAlignment="Center" LineHeight="22" ><Run Text="v1."/><Run Text="2"/><LineBreak/><Run/><LineBreak/><Run Text="修改了地形法线算法"/><LineBreak/><Run Text="修改了地面的光照方向"/><LineBreak/><Run Text="现在兼容w3champion了"/><LineBreak/><Run Text="修改了大量地形贴图"/><LineBreak/><Run Text="增加了实验性纹理荒芜之地"/><LineBreak/><Run Text="增加了"/><Run Text="遮蔽效果强度"/><LineBreak/><Run Text="重做了Ramp"/><LineBreak/><Run Text="提供完整的兽族大逃亡战役"/><LineBreak/><Run Text="增加游戏内成就系统"/><LineBreak/><Run Text="增加斯坦索姆画面演示"/><LineBreak/><Run Text="增加了城邦的独立树木装饰物"/><LineBreak/><Run Text="增加自定义战役模块"/><LineBreak/><Run Text="重做植被效果"/><LineBreak/><Run Text="修改了树木的法线算法修改"/><LineBreak/><Run Text="边缘柔和更变为高级着色器"/><LineBreak/><Run Text="加入部分次时代画面调整算法"/><LineBreak/><Run Text="反和谐与战役内置不可开关"/><LineBreak/><LineBreak/><Run/></TextBlock>
+            <Button x:Name="button3" Content="返回" HorizontalAlignment="Left" Height="35" Margin="387,516,0,0" VerticalAlignment="Top" Width="195" FontSize="16" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" Click="button3_Click"/>
+
+        </Grid>
+
+
+        <Grid x:Name="oldmode" Background="#A8000000" Visibility="Hidden" >
+            <Button MouseEnter="entersound" Click="oldbtn1_Click" x:Name="oldbtn1" Content="退出怀旧模式" HorizontalAlignment="Left" Margin="408,345,0,0" VerticalAlignment="Top" Width="146" Height="33" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="White" BorderBrush="#FFDEDEDE" FontSize="14" />
+            <TextBlock x:Name="textBlock3" HorizontalAlignment="Left" Margin="306,194,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="127" Width="348" Foreground="White" FontSize="24" TextAlignment="Center"><Run Text="怀旧模式"/><LineBreak/></TextBlock>
+            <TextBlock x:Name="textBlock3_Copy" HorizontalAlignment="Left" Margin="193,218,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="127" Width="572" Foreground="#A8FFFFFF" FontSize="19" TextAlignment="Center"><Run Text=""/><LineBreak/><Run Text="所有的单位模型将使用经典版本"/><LineBreak/><Run Text="为了避免冲突"/><LineBreak/><Run Text="在这个模式下无法更换任何英雄和涂装"/></TextBlock>
+        </Grid>
+
+        <Grid x:Name="theme" Background="#BF000000" Visibility="hidden">
+            <TextBlock x:Name="themet1" HorizontalAlignment="Center" Margin="0,85,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="26" ><Run Text="- "/><Run Language="zh-cn" Text="更换主题"/><Run Text=" -"/></TextBlock>
+            <TextBlock x:Name="themet2" HorizontalAlignment="Left" Margin="207,128,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#8CFFFFFF" FontSize="18" TextAlignment="Center" LineHeight="24" Height="73" Width="551" ><Run Text="更换游戏内的背景文件"/><LineBreak/><Run Text="如果使用自定义请确保文件为webm或者m"/><Run Language="zh-cn" Text="p4格式"/></TextBlock>
+            <Button x:Name="themey" Content="原版" HorizontalAlignment="Left" Height="33" Margin="169,442,0,0" VerticalAlignment="Top" Width="142" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" FontSize="15" Click="themey_Click" />
+            <Button x:Name="themey_Copy" Content="锻炉" HorizontalAlignment="Left" Height="33" Margin="332,442,0,0" VerticalAlignment="Top" Width="142" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" FontSize="15" Click="themey_Copy_Click" />
+            <Button x:Name="themey_Copy1" Content="黑潮" HorizontalAlignment="Left" Height="33" Margin="496,442,0,0" VerticalAlignment="Top" Width="142" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" FontSize="15" Click="themey_Copy1_Click" />
+            <Button x:Name="themey_Copy2" Content="自定义" HorizontalAlignment="Left" Height="33" Margin="662,442,0,0" VerticalAlignment="Top" Width="142" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" FontSize="15" Click="themey_Copy2_Click" />
+            <Image x:Name="image1" HorizontalAlignment="Left" Height="234" Margin="172,200,0,0" VerticalAlignment="Top" Width="141" Source="/theme1.png"/>
+            <Image x:Name="image_Copy" HorizontalAlignment="Left" Height="234" Margin="333,200,0,0" VerticalAlignment="Top" Width="141" Source="/theme2.png" Stretch="Fill"/>
+            <Image x:Name="image_Copy1" HorizontalAlignment="Left" Height="234" Margin="497,200,0,0" VerticalAlignment="Top" Width="141" Source="/theme3.png" Stretch="Fill"/>
+            <Image x:Name="image_Copy2" HorizontalAlignment="Left" Height="234" Margin="663,200,0,0" VerticalAlignment="Top" Width="141" Source="/theme4.png" Stretch="Fill"/>
+            <Button Style="{StaticResource BtnInfoStyle}" x:Name="themey_Copy3" Visibility="hidden" Content="x" HorizontalAlignment="Left" Height="33" Margin="454,496,0,0" VerticalAlignment="Top" Width="64" Foreground="White" FontSize="24" Click="themey_Copy3_Click" Background="{x:Null}" BorderBrush="{x:Null}" />
+            <Button Style="{StaticResource BtnInfoStyle}" x:Name="themey_Copy31" Content="x" HorizontalAlignment="Left" Height="33" Margin="454,496,0,0" VerticalAlignment="Top" Width="64" Foreground="White" FontSize="24" Click="themey_Copy3_Click" Background="{x:Null}" BorderBrush="{x:Null}" />
+        </Grid>
+
+
+
+        <Grid x:Name="dl_m_set" Background="#E0000000" Visibility="Hidden">
+            <TextBlock x:Name="dlogot1" HorizontalAlignment="Left" Margin="283,94,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="26" Text="- 基础设置 -" Width="400" TextAlignment="Center" />
+            <Button x:Name="dlogoy" Style="{StaticResource BtnInfoStyle}" Content="x" HorizontalAlignment="Left" Height="50" Margin="422,500,0,0" VerticalAlignment="Top" Width="122" Background="Transparent" Foreground="White" BorderBrush="{x:Null}"  FontSize="21"  Click="mb_set_close"/>
+
+            <Button x:Name="mainbtn_min_Copy4" Content="锁定重制版" HorizontalAlignment="Left" Margin="369,180,0,0" VerticalAlignment="Top" Width="108" Height="38" BorderBrush="#3FC7C7C7" Background="#FFFFD300" Foreground="#FF2C2C2C" IsCancel="True" FontWeight="Normal" Click="mainbtn_min_Copy4_Click" FontSize="14" />
+            <Button x:Name="mainbtn_min_Copy3" Content="锁定经典版" HorizontalAlignment="Left" Margin="494,180,0,0" VerticalAlignment="Top" Width="108" Height="38" BorderBrush="#FFC7C7C7" Background="#00000000" Foreground="#FFC7C7C7" IsCancel="True" FontWeight="Normal" Click="mainbtn_min_Copy3_Click" FontSize="14" />
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy5" Content="关闭MOD" HorizontalAlignment="Left" Margin="490,364,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="mainbtn_check_Copy5_Click" />
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy6" Content="打开MOD" HorizontalAlignment="Left" Margin="364,364,0,0" VerticalAlignment="Top" Width="110" Height="38" RenderTransformOrigin="-0.059,0.553" Background="#FFFFD300" Foreground="#FF2C2C2C" FontSize="14" Click="mainbtn_check_Copy6_Click" BorderBrush="#FF707070" />
+            <Button x:Name="mb_gpu_1" Content="Intel/AMD" HorizontalAlignment="Left" Margin="493,271,0,0" VerticalAlignment="Top" Width="108" Height="38" BorderBrush="#FFC7C7C7" Background="#00000000" Foreground="#FFC7C7C7" IsCancel="True" FontWeight="Normal" Click="SetGPU_AMD" FontSize="14" />
+            <Button x:Name="mb_gpu_2" Content="Nvidia" HorizontalAlignment="Left" Margin="366,271,0,0" VerticalAlignment="Top" Width="108" Height="38" BorderBrush="#FFC7C7C7" Background="#FFFFD300" Foreground="#FF2C2C2C" IsCancel="True" FontWeight="Normal" Click="SetGPU_NV" FontSize="14" />
+            <TextBlock x:Name="dlogot1_Copy" HorizontalAlignment="Left" Margin="283,143,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="20" Width="400" TextAlignment="Center" ><Run Language="zh-cn" Text="版本"/></TextBlock>
+            <TextBlock x:Name="dlogot1_Copy1" HorizontalAlignment="Center" Margin="0,233,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="20" Width="400" TextAlignment="Center" ><Run Language="zh-cn" Text="显卡"/></TextBlock>
+            <TextBlock x:Name="dlogot1_Copy2" HorizontalAlignment="Center" Margin="0,329,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="20" Width="400" TextAlignment="Center" ><Run Language="zh-cn" Text="开关"/></TextBlock>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy" Content="1.32" HorizontalAlignment="Left" Margin="490,451,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="to132" />
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy7" Content="1.33+" HorizontalAlignment="Left" Margin="364,451,0,0" VerticalAlignment="Top" Width="110" Height="38" RenderTransformOrigin="-0.059,0.553" Background="#FFFFD300" Foreground="#FF2C2C2C" FontSize="14" Click="to133" BorderBrush="#FF707070" />
+            <TextBlock x:Name="dlogot1_Copy3" HorizontalAlignment="Center" Margin="0,416,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="20" Width="400" TextAlignment="Center" ><Run Language="zh-cn" Text="版本"/></TextBlock>
+        </Grid>
+
+        <Grid x:Name="dl_m_mod" Background="#E0000000" Visibility="hidden">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="278*"/>
+                <RowDefinition Height="249*"/>
+                <RowDefinition Height="104*"/>
+            </Grid.RowDefinitions>
+            <TextBlock x:Name="dl_m_mod_title" HorizontalAlignment="Left" Margin="288,87,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="26" Text="- 安装设置 -" Width="400" TextAlignment="Center" Height="33" />
+            <Button x:Name="dl_m_mod_back" Style="{StaticResource BtnInfoStyle}" Content="x" HorizontalAlignment="Left" Height="46" Margin="432,232,0,0" VerticalAlignment="Top" Width="112" Background="Transparent" Foreground="White" BorderBrush="{x:Null}"  FontSize="24" Click="mb_mod_close" Grid.RowSpan="2" Grid.Row="1" RenderTransformOrigin="0.495,0.529"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy9" Content="手动安装" HorizontalAlignment="Left" Margin="437,166,0,0" VerticalAlignment="Top" Width="107" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="mainbtn_check_Click1"/>
+            <Button Visibility="Hidden" MouseEnter="entersound" x:Name="mainbtn_update" Content="更新日志" HorizontalAlignment="Left" Margin="336,19,0,90" Width="113" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="mainbtn_update_Click" Grid.RowSpan="2"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_reset" Content="删除MOD" HorizontalAlignment="Left" Margin="554,166,0,74" Width="107" RenderTransformOrigin="0.5,0.5" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="mainbtn_del_Click"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy8" Content="安装/更新" HorizontalAlignment="Left" Margin="320,166,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" Click="mainbtn_check_Click"/>
+            <TextBlock x:Name="dl_m_mod_title_Copy" HorizontalAlignment="Left" Margin="288,132,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="20" Width="400" TextAlignment="Center" Height="25" ><Run Language="zh-cn" Text="更改设置"/></TextBlock>
+            <TextBlock x:Name="dl_m_mod_title_Copy1" HorizontalAlignment="Left" Margin="288,26,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="20" Width="400" TextAlignment="Center" Grid.Row="1" Height="25" ><Run Language="zh-cn" Text="已下载包体"/></TextBlock>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy11" Content="1" HorizontalAlignment="Left" Margin="254,66,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy12" Content="2" HorizontalAlignment="Left" Margin="372,66,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy13" Content="4" HorizontalAlignment="Left" Margin="610,66,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy14" Content="3" HorizontalAlignment="Left" Margin="491,66,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy15" Content="5" HorizontalAlignment="Left" Margin="254,88,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy16" Content="9" HorizontalAlignment="Left" Margin="254,110,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy17" Content="13" HorizontalAlignment="Left" Margin="254,132,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy18" Content="17" HorizontalAlignment="Left" Margin="254,154,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy19" Content="21" HorizontalAlignment="Left" Margin="254,176,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy20" Content="6" HorizontalAlignment="Left" Margin="372,88,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy21" Content="10" HorizontalAlignment="Left" Margin="372,110,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy22" Content="14" HorizontalAlignment="Left" Margin="372,132,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy23" Content="18" HorizontalAlignment="Left" Margin="372,154,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy24" Content="22" HorizontalAlignment="Left" Margin="372,176,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy25" Content="7" HorizontalAlignment="Left" Margin="491,88,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy26" Content="11" HorizontalAlignment="Left" Margin="491,110,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy27" Content="15" HorizontalAlignment="Left" Margin="491,132,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy28" Content="19" HorizontalAlignment="Left" Margin="491,154,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy29" Content="23" HorizontalAlignment="Left" Margin="491,176,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy30" Content="8" HorizontalAlignment="Left" Margin="610,88,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy31" Content="12" HorizontalAlignment="Left" Margin="610,110,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy32" Content="16" HorizontalAlignment="Left" Margin="610,132,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy33" Content="20" HorizontalAlignment="Left" Margin="610,154,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <Button MouseEnter="entersound" Visibility="Hidden" x:Name="mainbtn_check_Copy34" Content="24" HorizontalAlignment="Left" Margin="610,176,0,0" VerticalAlignment="Top" Width="108" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Click="Mod_Setup_OneZip" Grid.Row="1"/>
+            <TextBlock x:Name="dl_m_mod_title_Copy2" HorizontalAlignment="Left" Margin="288,208,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" Width="400" TextAlignment="Center" Text="注意：这里指的是自动安装的包体" Grid.Row="1" Height="15" />
+            <TextBlock x:Name="dl_m_mod_title_Copy3" HorizontalAlignment="Left" Margin="288,220,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="20" Width="400" TextAlignment="Center" Height="25" ><Run Language="zh-cn" Text="线路设置"/></TextBlock>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy35" Content="主要" HorizontalAlignment="Left" Margin="375,254,0,0" VerticalAlignment="Top" Width="106" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFCAC7C7" FontSize="14"  Grid.RowSpan="2" Click="mainbtn_check_Copy35_Click"/>
+            <Button MouseEnter="entersound" x:Name="mainbtn_check_Copy36" Content="备用" HorizontalAlignment="Left" Margin="494,254,0,0" VerticalAlignment="Top" Width="106" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFCAC7C7" FontSize="14"  Grid.RowSpan="2" Click="mainbtn_check_Copy36_Click"/>
+        </Grid>
+
+        <Grid x:Name="dl_m_lang" Background="#E0000000" Visibility="Hidden">
+            <TextBlock x:Name="dl_m_lang_title" HorizontalAlignment="Left" Margin="283,127,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="26" Text="- 语言设置 -" Width="400" TextAlignment="Center" />
+            <Button x:Name="dl_m_lang_back" Style="{StaticResource BtnInfoStyle}" Content="x" HorizontalAlignment="Left" Height="50" Margin="422,436,0,0" VerticalAlignment="Top" Width="122" Background="Transparent" Foreground="White" BorderBrush="{x:Null}" Click="mb_lang_close" FontSize="21"/>
+            <Button x:Name="mainbtn_min_Copy1" Content="中文" HorizontalAlignment="Left" Margin="434,186,0,0" VerticalAlignment="Top" Width="98" Height="35" BorderBrush="#A8FFFFFF" Background="#FFFFD300" Foreground="#FF2C2C2C" IsCancel="True" FontWeight="Normal" Click="mainbtn_min_Copy1_Click"/>
+            <Button x:Name="mainbtn_min_Copy2" Content="English" HorizontalAlignment="Left" Margin="434,230,0,0" VerticalAlignment="Top" Width="99" Height="35" BorderBrush="White" Background="#00000000" Foreground="White" IsCancel="True" FontWeight="Bold" Click="mainbtn_min_Copy2_Click"/>
+
+            <Button x:Name="mainbtn_min_Copy6" Content="Português" HorizontalAlignment="Left" Margin="434,275,0,0" VerticalAlignment="Top" Width="99" Height="36" BorderBrush="White" Background="#00000000" Foreground="White" IsCancel="True" FontWeight="Bold" Click="mainbtn_min_Copy6_Click"/>
+            <Button x:Name="mainbtn_min_Copy7" Content="Pусский" HorizontalAlignment="Left" Margin="434,321,0,0" VerticalAlignment="Top" Width="99" Height="35" BorderBrush="White" Background="#00000000" Foreground="White" IsCancel="True" FontWeight="Bold" Click="mainbtn_min_Copy7_Click_1" />
+            <Button x:Name="mainbtn_min_Copy8" Content="Français" HorizontalAlignment="Left" Margin="434,369,0,0" VerticalAlignment="Top" Width="99" Height="35" BorderBrush="White" Background="#00000000" Foreground="White" IsCancel="True" FontWeight="Bold" Click="mainbtn_min_Copy7_Click"/>
+        </Grid>
+
+
+
+        <Grid x:Name="Msg_mod_setup" Background="#E0000000" Visibility="Hidden">
+            <TextBlock x:Name="Msg_mod_t1" HorizontalAlignment="Left" Margin="436,212,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="26" Text="- 提示 -" />
+            <TextBlock x:Name="Msg_mod_t2" HorizontalAlignment="Left" Margin="207,273,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#8CFFFFFF" FontSize="18" TextAlignment="Center" LineHeight="24" Height="53" Width="551" ><Run Text="检测到你已经安装过MOD"/><LineBreak/><Run Text="是否要重新安装？"/></TextBlock>
+            <Button x:Name="Msg_mod_y" Content="确定" HorizontalAlignment="Left" Height="33" Margin="363,350,0,0" VerticalAlignment="Top" Width="110" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" FontSize="15" Click="Msg_mod_y_Click"/>
+            <Button x:Name="Msg_mod_n" Content="取消" HorizontalAlignment="Left" Height="33" Margin="491,350,0,0" VerticalAlignment="Top" Width="117" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" FontSize="15" Click="Msg_mod_n_Click"/>
+        </Grid>
+
+        <Grid x:Name="Msg_mod_update" Background="#E0000000" Visibility="Hidden">
+            <TextBlock x:Name="Msg_update_t1" HorizontalAlignment="Left" Margin="436,212,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="26" Text="- 提示 -" />
+            <TextBlock x:Name="Msg_update_t2" HorizontalAlignment="Left" Margin="207,273,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#8CFFFFFF" FontSize="18" TextAlignment="Center" LineHeight="24" Height="53" Width="551" ><Run Language="zh-cn" Text="检测到有版本更新"/><LineBreak/><Run Language="zh-cn" Text="是否开始安装"/></TextBlock>
+            <Button x:Name="Msg_update_y" Content="确定" HorizontalAlignment="Left" Height="33" Margin="363,350,0,0" VerticalAlignment="Top" Width="110" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" FontSize="15" Click="Msg_mod_y_Click"/>
+            <Button x:Name="Msg_update_n" Content="取消" HorizontalAlignment="Left" Height="33" Margin="491,350,0,0" VerticalAlignment="Top" Width="117" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#A8FFFFFF" FontSize="15" Click="Msg_mod_n_Click"/>
+        </Grid>
+
+        <Grid x:Name="pb" Visibility="Hidden">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="203*"/>
+                <ColumnDefinition Width="277*"/>
+            </Grid.ColumnDefinitions>
+            <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="635" Margin="-2,-14,0,0" VerticalAlignment="Top" Width="962" Background="#7F000000" Grid.ColumnSpan="2"/>
+            <ProgressBar x:Name="pbp" HorizontalAlignment="Left" Height="22" Margin="212,474,0,0" VerticalAlignment="Top" Width="536" Value="44" IsEnabled="False" BorderBrush="{x:Null}" Background="#54000000" OpacityMask="Black" Grid.ColumnSpan="2">
+                <ProgressBar.Effect>
+                    <DropShadowEffect Color="#FFFFCD00" BlurRadius="22" Direction="0" RenderingBias="Quality" ShadowDepth="0"/>
+                </ProgressBar.Effect>
+                <ProgressBar.Foreground>
+                    <LinearGradientBrush EndPoint="0.5,1" MappingMode="RelativeToBoundingBox" StartPoint="0.5,0">
+                        <GradientStop Color="#FF967D27" Offset="0.099"/>
+                        <GradientStop Color="#FFFFDE55" Offset="0.594"/>
+                        <GradientStop Color="#FF272727" Offset="1"/>
+                        <GradientStop Color="#FFFFCD00" Offset="0.363"/>
+                        <GradientStop Color="#FF575757"/>
+                    </LinearGradientBrush>
+                </ProgressBar.Foreground>
+            </ProgressBar>
+            <Image x:Name="setpbbg" HorizontalAlignment="Left" Height="32" Margin="209,469,0,0" VerticalAlignment="Top" Width="548" Source="loading.png" OpacityMask="Black" Grid.ColumnSpan="2"/>
+            <TextBlock x:Name="pbtext1" HorizontalAlignment="Left" Margin="134,506,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="11" Text="解压文件 Quenching/units/half" Grid.ColumnSpan="2" TextAlignment="Center" Width="689" Height="14"></TextBlock>
+            <TextBlock x:Name="pbtext2" HorizontalAlignment="Left" Margin="388,450,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="12.5" RenderTransformOrigin="0.893,0.591" Width="181" TextAlignment="Center" Grid.ColumnSpan="2"><Run Text="文件更新中"/><Run Text="请勿关闭"/></TextBlock>
+        </Grid>
+
+
+        <Button x:Name="mainbtn_min" Content="一" HorizontalAlignment="Left" Margin="886,13,0,0" VerticalAlignment="Top" Width="25" Height="23" BorderBrush="{x:Null}" Background="#00000000" Foreground="White" IsCancel="True" FontWeight="Bold" Click="mainbtn_min_Click"/>
+        <Button Visibility="Hidden" x:Name="mainbtn_un" Content="U" HorizontalAlignment="Left" Margin="45,0,0,0" VerticalAlignment="Top" Width="25" Height="23" BorderBrush="White" Background="#00000000" Foreground="White" IsCancel="True" Click="mainbtn_un_Click" FontWeight="Bold" Padding="1"/>
+        <Button Visibility="Hidden" x:Name="mainbtn_del" Content="D" HorizontalAlignment="Left" Margin="77,0,0,0" VerticalAlignment="Top" Width="25" Height="23" BorderBrush="White" Background="#00000000" Foreground="White" IsCancel="True" Click="mainbtn_del_Click" FontWeight="Bold" Padding="1"/>
+        <Button x:Name="mainbtn_qu" Content="?" HorizontalAlignment="Left" Margin="15,13,0,594" Width="25" BorderBrush="{x:Null}" Background="{x:Null}" Foreground="White" IsCancel="True" FontWeight="Bold" RenderTransformOrigin="0.88,0.522" FontSize="14" Click="mainbtn_check_Copy3_Click_3"/>
+        <Button x:Name="mainbtn_min_close" Content="X" HorizontalAlignment="Left" Margin="916,0,0,595" VerticalAlignment="Bottom" Width="25" Height="23" BorderBrush="{x:Null}" Background="#00000000" Foreground="White" IsCancel="True" FontWeight="Bold" Click="mainbtn_min_Copy_Click"/>
+        <Button x:Name="mainbtn_min_lang" Style="{StaticResource BtnInfoStyle}" Content="中文" HorizontalAlignment="Left" Margin="44,13,0,0" VerticalAlignment="Top" Width="80" Height="23" BorderBrush="{x:Null}" Background="{x:Null}" Foreground="White" IsCancel="True" FontWeight="Bold" Click="mb_lang_open"/>
+        <Button Visibility="Hidden" MouseEnter="entersound" x:Name="mainbtn_check_Copy3" Content="使用说明" HorizontalAlignment="Left" Margin="45,13,0,594" Width="110" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="White" BorderBrush="{x:Null}" FontWeight="Bold" Click="mainbtn_qu_Click"/>
+
+        <!-- backup files !-->
+        <!--
+        <Grid Visibility="Hidden">
+            <TextBlock x:Name="textBlock_Copy1" HorizontalAlignment="Left" Margin="288,72,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="17" Width="208" Foreground="#70F5F5F5" TextAlignment="Center" Height="22" Text="常用链接" Grid.Row="1" Grid.Column="1"/>
+            <Image x:Name="hive_logo_png" Margin="407,105,404,108" Source="hive-logo.png" Stretch="Fill" Grid.Row="1" MouseDown="Button_Click_3" Grid.Column="1"/>
+            <Image x:Name="_1_png" Margin="307,86,490,89" Source="1.png" Stretch="Fill" Grid.Row="1" MouseDown="Button_Click_2" Grid.Column="1"/>
+        </Grid>
+        #endregion-->
+    </Grid>
+
+
+</Window>
