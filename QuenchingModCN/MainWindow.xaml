@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:QuenchingModCN"
         mc:Ignorable="d"
         KeyDown="MainWindows_Keydown"
-        Title="QMClient v2.2" Height="635" Width="959.5" ResizeMode="NoResize" WindowStyle="None"  Background="Black" BorderThickness="2" BorderBrush="#FFC3C3C3" Padding="2">
+        Title="QMClient v2.4" Height="635" Width="959.5" ResizeMode="NoResize" WindowStyle="None"  Background="Black" BorderThickness="2" BorderBrush="#FFC3C3C3" Padding="2">
     <Window.Resources>
         <FontFamily x:Key="ClassicBrush">pack://application:,,,/#Trajan Pro 3</FontFamily>
     </Window.Resources>
@@ -52,7 +52,7 @@
                 </TextBlock.Foreground>
             </TextBlock>
             <TextBlock x:Name="textBlock_Copy" HorizontalAlignment="Left" Margin="284,134,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="18" Width="223" Foreground="#70F5F5F5" Text="魔 兽 重 制 版 增 强 模 组" FontFamily="{StaticResource ClassicBrush}" TextAlignment="Center" Height="47" Grid.Column="1"></TextBlock>
-            <TextBlock x:Name="maincheckt" HorizontalAlignment="Left" Margin="288,210,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="18" Width="208" Foreground="#70F5F5F5" TextAlignment="Center" Height="48" Grid.Column="1"><Run Text="目前版本为最新"/><LineBreak/><Run Text="v"/><Run Text="2."/><Run Language="zh-cn" Text="2"/><LineBreak/><Run/><LineBreak/><Run/></TextBlock>
+            <TextBlock x:Name="maincheckt" HorizontalAlignment="Left" Margin="288,210,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontSize="18" Width="208" Foreground="#70F5F5F5" TextAlignment="Center" Height="48" Grid.Column="1"><Run Text="目前版本为最新"/><LineBreak/><Run Text="v"/><Run Text="2."/><Run Language="zh-cn" Text="4"/><LineBreak/><Run/><LineBreak/><Run/></TextBlock>
 
             <Button MouseEnter="entersound" x:Name="button2" Content="启 动 游 戏" HorizontalAlignment="Left" Margin="329,272,0,0" VerticalAlignment="Top" Width="134" Height="43" Foreground="#FF2C2C2C" BorderBrush="#FFC7C7C7" FontSize="16" Click="button2_Click" Grid.Column="1" FontWeight="Bold" FontFamily="Microsoft YaHei UI Light" IsCancel="True" FontStyle="Normal">
                 <Button.Effect>
@@ -130,19 +130,17 @@
             <!--
             <Button x:Name="uibtnsm1_Copy" Content="改键" HorizontalAlignment="Left" Margin="223,53,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm1_Copy_Click" FontSize="14" Grid.Column="1" Grid.Row="1"  />
             -->
-            <Button x:Name="uibtnsm1_Copy" Content="英文配音" HorizontalAlignment="Left" Margin="223,53,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="uibtnsm1_Copy_Click_1"
+            <Button x:Name="mainbtn_mode_0" Content="切换经典版" HorizontalAlignment="Left" Margin="223,53,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="mainbtn_min_Copy3_Click"  FontSize="14" Grid.Column="1" Grid.Row="1"  />
+            <Button x:Name="mainbtn_mode_1" Content="切换重制版" Visibility="Hidden" HorizontalAlignment="Left" Margin="223,53,0,0" VerticalAlignment="Top" Width="108" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="mainbtn_min_Copy4_Click"
               FontSize="14" Grid.Column="1" Grid.Row="1"  />
 
 
             <Button x:Name="mainbtn_min_Copy5" Content="基础设置" HorizontalAlignment="Left" Margin="341,6,0,0" VerticalAlignment="Top" Width="108" Height="38" BorderBrush="#FFC7C7C7" Background="#00000000" Foreground="#FFC7C7C7" IsCancel="True" FontWeight="Normal" Click="mb_set_open" FontSize="14" Grid.Column="1" Grid.Row="1" />
             <Button x:Name="mainbtn_about_Copy" Content="进入官网" HorizontalAlignment="Left" Margin="457,53,0,0" VerticalAlignment="Top" Width="110" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="entersound" Click="Button_Click_2" Grid.Column="1" Grid.Row="1" />
             <Button x:Name="mainbtn_about_Copy1" Visibility="hidden" Content="关于我们" HorizontalAlignment="Left" Margin="457,6,0,0" VerticalAlignment="Top" Width="110" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="entersound" Click="mainbtn_about_Click" Grid.Column="1" Grid.Row="1" />
-
         </Grid>
 
-
-
-        <Grid x:Name="setgrid" Background="#A8000000" >
+        <Grid x:Name="setgrid" Visibility="Hidden"  Background="#A8000000" >
 
             <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
@@ -274,18 +272,19 @@
             <Button Visibility="Hidden" FontSize="10" x:Name="setbtn_no7"  Content="不可用" HorizontalAlignment="Left" Margin="11,1,0,0" VerticalAlignment="Top" Width="105" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="3" Grid.Column="1"  />
             <Button Visibility="Hidden" x:Name="setbtn_no6" FontSize="10" Content="不可用" HorizontalAlignment="Left" Margin="282,0,0,0" VerticalAlignment="Center" Width="104" Height="18" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="2" Grid.Column="1"  />
             <Button  Visibility="Hidden" FontSize="10"  x:Name="setbtn_no5"  Content="不可用" HorizontalAlignment="Left" Margin="144,69,0,0" VerticalAlignment="Top" Width="105" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Grid.Row="3" Grid.Column="1"  />
-            <TextBlock x:Name="setbtn_tree_text" HorizontalAlignment="Left" Margin="425,80,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtn2_e" MouseLeave="_" Grid.Row="2" Grid.RowSpan="2" Grid.Column="1"><Run Language="zh-cn" Text="树木类型"/></TextBlock>
-            <Button x:Name="setbtn_tree_b1" Content="原版" HorizontalAlignment="Left" Margin="422,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_origin" FontSize="10" Grid.Row="3" Grid.Column="1"  />
-            <Button x:Name="setbtn_tree_b2" Content="高耸" HorizontalAlignment="Left" Margin="472,1,0,0" VerticalAlignment="Top" Width="55" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtn_tree_20" FontSize="10" Grid.Row="3" Grid.Column="1"  />
-            <Button x:Name="setbtn_tree_b3" Content="低垂" HorizontalAlignment="Left" Margin="527,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_20_short" FontSize="10" Grid.Row="3" Grid.Column="1"  />
-            <Button x:Name="setbtn_tree_b4" Content="1.8 样式" HorizontalAlignment="Left" Margin="578,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_18" FontSize="10" Grid.Row="3" Grid.Column="1"  />
-            <Button x:Name="setbtn_tree_b5" Content="1.6 样式" HorizontalAlignment="Left" Margin="629,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_16" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <TextBlock x:Name="setbtn_tree_text" HorizontalAlignment="Left" Margin="425,80,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtn2_e" MouseLeave="setbtn2_l" Grid.Row="2" Grid.RowSpan="2" Grid.Column="1"><Run Language="zh-cn" Text="树木类型"/></TextBlock>
+            <Button x:Name="setbtn_tree_b1" Content="原版" HorizontalAlignment="Left" Margin="422,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_origin" FontSize="10" Grid.Row="3" Grid.Column="1"  Tag="0"/>
+            <Button x:Name="setbtn_tree_b2" Content="高耸" HorizontalAlignment="Left" Margin="474,1,0,0" VerticalAlignment="Top" Width="55" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtn_tree_origin" FontSize="10" Grid.Row="3" Grid.Column="1" Tag="1" />
+            <Button x:Name="setbtn_tree_b3" Content="低垂" HorizontalAlignment="Left" Margin="527,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_origin" FontSize="10" Grid.Row="3" Grid.Column="1" Tag="2" />
+            <Button x:Name="setbtn_tree_b4" Content="1.8" HorizontalAlignment="Left" Margin="578,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_origin" FontSize="10" Grid.Row="3" Grid.Column="1" Tag="3" />
+            <Button x:Name="setbtn_tree_b5" Content="1.6" HorizontalAlignment="Left" Margin="629,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_origin" FontSize="10" Grid.Row="3" Grid.Column="1" Tag="4" />
+            <Button x:Name="setbtn_tree_b6" Content="怀旧" HorizontalAlignment="Left" Margin="680,1,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tree_origin" FontSize="10" Grid.Row="3" Grid.Column="1" Tag="5" />
             <TextBlock x:Name="setbtn_tile_text" HorizontalAlignment="Left" Margin="425,34,0,0" VerticalAlignment="Top" Width="120" Height="38" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9"  FontSize="18" MouseEnter="setbtnx_MouseEnter" MouseLeave="setbtnx_MouseLeave" Grid.Row="3" Grid.Column="1"><Run Language="zh-cn" Text="地形类型"/></TextBlock>
-            <Button x:Name="setbtn_tile_b1" Content="原版" HorizontalAlignment="Left" Margin="422,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile_origin" FontSize="10" Grid.Row="3" Grid.Column="1"  />
-            <Button x:Name="setbtn_tile_b2" Content="怀旧" HorizontalAlignment="Left" Margin="472,69,0,0" VerticalAlignment="Top" Width="55" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtn_tile_00" FontSize="10" Grid.Row="3" Grid.Column="1"  />
-            <Button x:Name="setbtn_tile_b3" Content="1.6 地形" HorizontalAlignment="Left" Margin="527,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile_16" FontSize="10" Grid.Row="3" Grid.Column="1"  />
-            <Button x:Name="setbtn_tile_b4" Content="1.8 地形" HorizontalAlignment="Left" Margin="578,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile_18" FontSize="10" Grid.Row="3" Grid.Column="1"  />
-            <Button x:Name="setbtn_tile_b5" Content="2.0 地形" HorizontalAlignment="Left" Margin="629,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile_20" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tile_b1" Tag="0"  Content="原版" HorizontalAlignment="Left" Margin="422,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tile_b2" Tag="1" Content="怀旧" HorizontalAlignment="Left" Margin="472,69,0,0" VerticalAlignment="Top" Width="55" Height="16" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="setbtn_tile" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tile_b3" Tag="2" Content="1.6" HorizontalAlignment="Left" Margin="527,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tile_b4" Tag="3" Content="1.8" HorizontalAlignment="Left" Margin="578,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile" FontSize="10" Grid.Row="3" Grid.Column="1"  />
+            <Button x:Name="setbtn_tile_b5" Tag="4" Content="2.0" HorizontalAlignment="Left" Margin="629,69,0,0" VerticalAlignment="Top" Width="52" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="setbtn_tile" FontSize="10" Grid.Row="3" Grid.Column="1"  />
             <Button x:Name="setbtn_light_4" Content="对战" Tag="4" HorizontalAlignment="Left" Margin="170,207,0,0" VerticalAlignment="Top" Width="54" Height="16" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" FontSize="10" Grid.Row="3" Click="setbtn_light_level" Grid.Column="1"  />
 
         </Grid>
@@ -360,16 +359,15 @@
                         <DropShadowEffect Direction="90"/>
                     </TextBlock.Effect><Run Language="zh-cn" Text="复古模式"/></TextBlock>
                 <TextBlock x:Name="newt2t2" HorizontalAlignment="Left" Margin="44,155,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="12" RenderTransformOrigin="0.651,0.16" Height="44" Width="371"><Run Text="怀旧模式经过细致的考虑重新回归"/><LineBreak/><Run Text="体验最经典的魔兽画面"/></TextBlock>
-                <Button x:Name="newt2b1" Content="打开" HorizontalAlignment="Left" Margin="44,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="newt2b1_Click" FontSize="10"  />
-                <Button x:Name="newt2b2" Content="关闭" HorizontalAlignment="Left" Margin="104,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="newt2b2_Click" FontSize="10"  />
+              
                 <Image x:Name="newshowi2_Copy" HorizontalAlignment="Left" Height="129" Margin="474,120,0,0" VerticalAlignment="Top" Width="400"  Source="/wn4.png"/>
                 <TextBlock x:Name="newt2t1_Copy1" HorizontalAlignment="Left" Margin="482,127,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="16" RenderTransformOrigin="-0.88,0.433" Width="209">
                     <TextBlock.Effect>
                         <DropShadowEffect Direction="90"/>
                     </TextBlock.Effect><Run Language="zh-cn" Text="树木高度"/></TextBlock>
                 <TextBlock x:Name="newt2t2_Copy" HorizontalAlignment="Left" Margin="482,155,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="#A8FFFFFF" FontSize="12" RenderTransformOrigin="0.651,0.16" Height="44" Width="371"><Run Text="将默认的淬火树木降低一些"/><LineBreak/><Run Text="对复古模式无效"/></TextBlock>
-                <Button x:Name="newt3b1" Content="打开" HorizontalAlignment="Left" Margin="482,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="newt3b1_Click" FontSize="10"  />
-                <Button x:Name="newt3b2" Content="关闭" HorizontalAlignment="Left" Margin="542,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="newt3b2_Click" FontSize="10"  />
+                <!--<Button x:Name="newt3b1" Content="打开" HorizontalAlignment="Left" Margin="482,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#FFC9C9C9" BorderBrush="#FFC7C7C7" Click="newt3b1_Click" FontSize="10"  />
+                <Button x:Name="newt3b2" Content="关闭" HorizontalAlignment="Left" Margin="542,196,0,0" VerticalAlignment="Top" Width="60" Height="17" RenderTransformOrigin="-0.03,0.566" Background="#FFC9C9C9" Foreground="#FF383838" BorderBrush="#FFC7C7C7" Click="newt3b2_Click" FontSize="10"  />-->
 
             </Grid>
 
@@ -590,7 +588,7 @@
 
                 <Button x:Name="achbtn1_Copy2" Content="血色使命" HorizontalAlignment="Left" Margin="70,305,0,0" VerticalAlignment="Top" Width="120" Height="30" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" MouseEnter="achbtn4_MouseEnter" MouseLeave="achbtn4_MouseLeave" FontSize="14" />
                 <Button x:Name="achbtn1_Copy3" Content="黑潮演示" HorizontalAlignment="Left" Margin="70,340,0,0" VerticalAlignment="Top" Width="120" Height="30" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" MouseEnter="achbtn5_MouseEnter" MouseLeave="achbtn5_MouseLeave" FontSize="14" />
-                <Button x:Name="achbtn1_Copy4" Content="读取战役" HorizontalAlignment="Left" Margin="70,410,0,0" VerticalAlignment="Top" Width="120" Height="30" RenderTransformOrigin="-0.059,0.553" Background="#FF646464" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" Click="achbtn1_Copy4_Click" />
+                <Button x:Name="achbtn1_Copy4" Content="读取战役" HorizontalAlignment="Left" Margin="70,410,0,0" VerticalAlignment="Top" Width="120" Height="30" RenderTransformOrigin="-0.059,0.553" Background="#FF646464" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" Click="achbtn2_Copy3_Click" />
 
 
                 <Button x:Name="achcbtn1" Content="未找到文件" HorizontalAlignment="Left" Margin="248,148,0,0" VerticalAlignment="Top" Width="130" Height="36" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="14" MouseEnter="achbtn2_MouseEnter_1" MouseLeave="achbtn2_MouseLeave"  />
@@ -770,10 +768,6 @@
                 </LinearGradientBrush>
             </Rectangle.Fill>
         </Rectangle>
-
-
-
-
 
 
 

@@ -35,9 +35,6 @@ namespace QuenchingModCN
 
     public partial class MainWindow : Window
     {
-        // public int c = QConst.ID_MPQ;
-        public int oldorsd = 0;
-
         /*
         [DllImport("kernel32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.I1)]
@@ -55,8 +52,7 @@ namespace QuenchingModCN
             Console.WriteLine(succ);
         }
         */
-
-        public int zipmaxint = 800;
+        private IntPtr war3;
         public void unZipFiledist(string TargetFile, string fileDir)
         {
             //this.Dispatcher.Invoke(() => { pb.Visibility = Visibility.Visible; pbp.Value = 0; pbp.Maximum = zipmaxint; pbtext2.Text = mainstring[9]; });
@@ -478,7 +474,8 @@ namespace QuenchingModCN
                                     }
                                 }
                             }
-                            this.Dispatcher.Invoke(() => {
+                            this.Dispatcher.Invoke(() =>
+                            {
                                 pbp.Value = pbp.Value + 1; pb.Visibility = Visibility.Visible; pbp.Maximum = 1800;
                                 pbtext1.Text = mainstring[9] + dir_root + file.FileName.Replace("war3.w3mod:_hd.w3mod:_teen.w3mod:", "");
                             });
@@ -491,16 +488,19 @@ namespace QuenchingModCN
                     }
                 }
                 WriteIniInt("set", "vio", 1);
-                this.Dispatcher.Invoke(() => {
+                this.Dispatcher.Invoke(() =>
+                {
                     pb.Visibility = Visibility.Hidden;
                 });
-                this.Dispatcher.Invoke(() => {
+                this.Dispatcher.Invoke(() =>
+                {
                     setbtn_about_Copy1.Visibility = Visibility.Visible;
                 });
             }
             catch (Exception ex)
             {
-                MessageBox.Show(mbtext[47]); this.Dispatcher.Invoke(() => {
+                MessageBox.Show(mbtext[47]); this.Dispatcher.Invoke(() =>
+                {
                     pb.Visibility = Visibility.Hidden;
                 }); return;
             }
@@ -517,13 +517,13 @@ namespace QuenchingModCN
                     if (mwclose == true) { return; }
                     try
                     {
-                        if (file.FileName.Contains("war3.w3mod:_locales\\enus.w3mod:") && !file.FileName.Contains(".fdf") && !file.FileName.Contains(".txt") && !file.FileName.Contains("_hd.w3mod")) 
+                        if (file.FileName.Contains("war3.w3mod:_locales\\enus.w3mod:") && !file.FileName.Contains(".fdf") && !file.FileName.Contains(".txt") && !file.FileName.Contains("_hd.w3mod"))
                         {
                             if (!File.Exists(dir_root + file.FileName.Replace("war3.w3mod:_locales\\enus.w3mod:", "")))
                             {
                                 temps = dir_root + file.FileName.Replace("war3.w3mod:_locales\\enus.w3mod:", "");
                                 //重定向
-                               
+
                                 if (!Directory.Exists(Path.GetDirectoryName(temps))) { Directory.CreateDirectory(Path.GetDirectoryName(temps)); }
 
                                 using (var input = Storage.OpenFile(file.FileName))
@@ -542,7 +542,8 @@ namespace QuenchingModCN
                                     }
                                 }
                             }
-                            this.Dispatcher.Invoke(() => {
+                            this.Dispatcher.Invoke(() =>
+                            {
                                 pbp.Value = pbp.Value + 1; pb.Visibility = Visibility.Visible; pbp.Maximum = 4500;
                                 pbtext1.Text = mainstring[9] + dir_root + file.FileName.Replace("war3.w3mod:_locales\\enus.w3mod:", "");
                             });
@@ -559,7 +560,7 @@ namespace QuenchingModCN
                     if (mwclose == true) { return; }
                     try
                     {
-                        if (file.FileName.Contains("war3.w3mod:_hd.w3mod:_locales\\enus.w3mod:") && !file.FileName.Contains(".fdf") && !file.FileName.Contains(".txt") )
+                        if (file.FileName.Contains("war3.w3mod:_hd.w3mod:_locales\\enus.w3mod:") && !file.FileName.Contains(".fdf") && !file.FileName.Contains(".txt"))
                         {
                             if (!File.Exists(dir_root + file.FileName.Replace("war3.w3mod:_hd.w3mod:_locales\\enus.w3mod:", "")))
                             {
@@ -584,7 +585,8 @@ namespace QuenchingModCN
                                     }
                                 }
                             }
-                            this.Dispatcher.Invoke(() => {
+                            this.Dispatcher.Invoke(() =>
+                            {
                                 pbp.Value = pbp.Value + 1; pb.Visibility = Visibility.Visible; pbp.Maximum = 4500;
                                 pbtext1.Text = mainstring[9] + dir_root + file.FileName.Replace("war3.w3mod:_hd.w3mod:_locales\\enus.w3mod:", "");
                             });
@@ -597,21 +599,24 @@ namespace QuenchingModCN
                     }
                 }
                 WriteIniInt("set", "sound", 1);
-                this.Dispatcher.Invoke(() => {
+                this.Dispatcher.Invoke(() =>
+                {
                     pb.Visibility = Visibility.Hidden;
                 });
-                this.Dispatcher.Invoke(() => {
+                this.Dispatcher.Invoke(() =>
+                {
                     setbtn_about_Copy1.Visibility = Visibility.Visible;
                 });
             }
             catch (Exception ex)
             {
-                MessageBox.Show(mbtext[47]); this.Dispatcher.Invoke(() => {
+                MessageBox.Show(mbtext[47]); this.Dispatcher.Invoke(() =>
+                {
                     pb.Visibility = Visibility.Hidden;
                 }); return;
             }
         }
-        
+
         public string severurl = "http://tianxiazhengyi.net/";
         public string fseverurl = "http://tianxiazhengyi.net/";
         public int writegrid(int i)
@@ -799,8 +804,8 @@ namespace QuenchingModCN
 
         private const int WM_KEYDOWN = 0x100;
         private const int WM_KEYUP = 0x101;
-        private IntPtr war3;
-        public string[] DNCfile = new string[111];
+
+
         public string nump(string a)
         {
             if (a == "1") { return "D1"; }
@@ -988,6 +993,7 @@ namespace QuenchingModCN
         public int checkfileflag = 0;
         public string dir_root = "./";
         public Button[] campb = new Button[35];
+        public string[] DNCfile = new string[111];
         public bool[] cosunitlock = new bool[30];
         public string[] setstringt = new string[25];
         public string[] setstringc = new string[25];
@@ -1016,9 +1022,9 @@ namespace QuenchingModCN
         public int[] cos_unit_length = new int[10];
         public string[,] cos_unit_des = new string[10, 10];
         public string[,,] cos_hero_des = new string[10, 10, 10];
-        //public string[] globalstring = new string[250];
-        //public string[] globalstringhc = new string[250];
         public int[] cos_unit_now = new int[10];
+        public int oldorsd = 0;
+        public int zipmaxint = 800;
         public void init()
         {
             int i = 0;
@@ -1050,7 +1056,7 @@ namespace QuenchingModCN
 
             for (i = 0; i < 25; i++)
             {
-                cos_hero_now[i / 4, i % 4] = GetIniInt("coshero", (i+1).ToString(), 0) -    1;
+                cos_hero_now[i / 4, i % 4] = GetIniInt("coshero", (i + 1).ToString(), 0) - 1;
                 if (cos_hero_now[(i) / 4, (i) % 4] < 0) { cos_hero_now[(i) / 4, (i) % 4] = 0; }
             }
 
@@ -1270,9 +1276,6 @@ namespace QuenchingModCN
 
             string[] temp = new string[2000];
 
-
-
-
             int tempi = 0;
             j = 0;
             bool readflag = false;
@@ -1291,9 +1294,6 @@ namespace QuenchingModCN
                 sr.Close();
             }
             catch { }
-
-           
-
 
             if (readflag == true)
             {
@@ -1828,7 +1828,6 @@ namespace QuenchingModCN
             else { return "none"; }
 
         }
-
         public void entersound(object sender, RoutedEventArgs e)
         {
             MediaPlayer player = new MediaPlayer();
@@ -2220,7 +2219,8 @@ namespace QuenchingModCN
                                 else
                                 {
                                     File.Copy("./quenching/temp/patch-" + tempi + ".temp", "./quenching/temp/patch-" + tempi + ".zip", true);
-                                    File.Delete("./quenching/temp/patch-" + tempi + ".temp"); }
+                                    File.Delete("./quenching/temp/patch-" + tempi + ".temp");
+                                }
                             }
                         }
                     }
@@ -2274,10 +2274,10 @@ namespace QuenchingModCN
             try { Directory.Move(s, d); } catch { }
         }
 
-        string ver = "v2.3";
-        string cver = "v2.3";
-        string clientver = "v2.3";
-        string clientvertemp = "v2.3";
+        string ver = "v2.4";
+        string cver = "v2.4";
+        string clientver = "v2.4";
+        string clientvertemp = "v2.4";
 
         public void checkupdate()
         {
@@ -2664,58 +2664,23 @@ namespace QuenchingModCN
             DNCfile[5] = dir_root + "environment/dnc/dncdalaran/dncdalaranunit/dncdalaranunit.mdl";
             DNCfile[6] = dir_root + "environment/dnc/dncfelwood/dncfelwoodterrain/dncfelwoodterrain.mdl";
             DNCfile[7] = dir_root + "environment/dnc/dncfelwood/dncfelwoodunit/dncfelwoodunit.mdl";
-
-            DNCfile[8] = dir_root + "environment/dnc45/dnclordaeron/dnclordaeronterrain/dnclordaeronterrain.mdl";
-            DNCfile[9] = dir_root + "environment/dnc45/dncashenvale/dncashenvaleterrain/dncashenvaleterrain.mdl";
-            DNCfile[10] = dir_root + "environment/dnc45/dncdalaran/dncdalaranterrain/dncdalaranterrain.mdl";
-            DNCfile[11] = dir_root + "environment/dnc45/dncfelwood/dncfelwoodterrain/dncfelwoodterrain.mdl";
-
-            DNCfile[12] = dir_root + "environment/dnc45/dncfelwood/dncfelwoodunit/dncfelwoodunit.mdl";
-            DNCfile[13] = dir_root + "environment/dnc45/dnclordaeron/dnclordaeronunit/dnclordaeronunit.mdl";
-            DNCfile[14] = dir_root + "environment/dnc45/dncashenvale/dncashenvaleunit/dncashenvaleunit.mdl";
-            DNCfile[15] = dir_root + "environment/dnc45/dncdalaran/dncdalaranunit/dncdalaranunit.mdl";
-
-            DNCfile[16] = dir_root + "environment/dncspin/dnclordaeron/dnclordaeronterrain/dnclordaeronterrain.mdl";
-            DNCfile[17] = dir_root + "environment/dncspin/dncdalaran/dncdalaranterrain/dncdalaranterrain.mdl";
-            DNCfile[18] = dir_root + "environment/dncspin/dncfelwood/dncfelwoodterrain/dncfelwoodterrain.mdl";
-            DNCfile[19] = dir_root + "environment/dncspin/dncashenvale/dncashenvaleterrain/dncashenvaleterrain.mdl";
-
-            DNCfile[20] = dir_root + "environment/dncspin/dnclordaeron/dnclordaeronunit/dnclordaeronunit.mdl";
-            DNCfile[21] = dir_root + "environment/dncspin/dncdalaran/dncdalaranunit/dncdalaranunit.mdl";
-            DNCfile[22] = dir_root + "environment/dncspin/dncashenvale/dncashenvaleunit/dncashenvaleunit.mdl";
-            DNCfile[23] = dir_root + "environment/dncspin/dncfelwood/dncfelwoodunit/dncfelwoodunit.mdl";
-
-            DNCfile[24] = dir_root + "environment/dnc45/dncdungeon/dncdungeonterrain/dncdungeonterrain.mdl";
-            DNCfile[25] = dir_root + "environment/dnc45/dncdungeon/dncdungeonunit/dncdungeonunit.mdl";
-
-            DNCfile[26] = dir_root + "environment/dnc/dncdungeon/dncdungeonterrain/dncdungeonterrain.mdl";
-            DNCfile[27] = dir_root + "environment/dnc/dncdungeon/dncdungeonunit/dncdungeonunit.mdl";
-
-            DNCfile[28] = dir_root + "environment/dnc45/dncunderground/dncundergroundterrain/dncundergroundterrain.mdl";
-            DNCfile[29] = dir_root + "environment/dnc45/dncunderground/dncundergroundunit/dncundergroundunit.mdl";
-            DNCfile[30] = dir_root + "environment/dnc/dncunderground/dncundergroundterrain/dncundergroundterrain.mdl";
-            DNCfile[31] = dir_root + "environment/dnc/dncunderground/dncundergroundunit/dncundergroundunit.mdl";
-
-            DNCfile[32] = dir_root + "environment/dncspin/dncunderground/dncundergroundterrain/dncundergroundterrain.mdl";
-            DNCfile[33] = dir_root + "environment/dncspin/dncunderground/dncundergroundunit/dncundergroundunit.mdl";
-            DNCfile[34] = dir_root + "environment/dncspin/dncdungeon/dncdungeonterrain/dncdungeonterrain.mdl";
-            DNCfile[35] = dir_root + "environment/dncspin/dncdungeon/dncdungeonunit/dncdungeonunit.mdl";
+            DNCfile[8] = dir_root + "environment/dnc/dncdungeon/dncdungeonterrain/dncdungeonterrain.mdl";
+            DNCfile[9] = dir_root + "environment/dnc/dncdungeon/dncdungeonunit/dncdungeonunit.mdl";
+            DNCfile[10] = dir_root + "environment/dnc/dncunderground/dncundergroundterrain/dncundergroundterrain.mdl";
+            DNCfile[11] = dir_root + "environment/dnc/dncunderground/dncundergroundunit/dncundergroundunit.mdl";
         }
         public MainWindow()
         {
-           
+
             Application.Current.MainWindow.Show();
-            try
+
+
+            if (GetIniInt("mod", "2.4", 0) == 0)
             {
-                File.Delete("./_retail_/replaceabletextures/tree-que/lordaerontree/lordaeronvillagetreeblight_diffuse.tif");
-            }
-            catch
-            { }
-            if (GetIniInt("mod", "2.2", 0) == 0)
-            {
-                WriteIniInt("mod", "2.2", 1);
+                WriteIniInt("mod", "2.4", 1);
                 try { DelectDir("./quenching/temp"); } catch { }
             }
+
             //w3n读取实验
             dlbgck();
 
@@ -2729,7 +2694,7 @@ namespace QuenchingModCN
                 }
             }
             catch { }
-            
+
             //安装经典版文件
             Directory.CreateDirectory(".//_retail_//webui");
             if (!System.IO.Directory.Exists(".//_retail_//ui") && !System.IO.Directory.Exists(".//_retail_//ui-dis"))
@@ -2756,21 +2721,21 @@ namespace QuenchingModCN
             //initDNC();
             //Directory.CreateDirectory(".//_retail_//environment");
             //try { File.Delete("./Quenching/temp/environment.zip"); } catch { }
-            //streamrwDic("environment.zip", "./Quenching/temp/");
+            streamrwDic("environment.zip", "./Quenching/temp/");
             streamrwDic("unitskin-new.txt", "./Quenching/");
             streamrwDic("QuenchingOnCN.png", "./_retail_/webui/");
             streamrwDic("QuenchingOnEN.png", "./_retail_/webui/");
-            
+
             try
             { DelectDir(dir_root + "abilities/weapons/hydraliskimpact"); }
             catch { }
-            try 
+            try
             { DelectDir(dir_root + "units/demon/doomguardsummoned"); }
             catch { }
             try
             { DelectDir(dir_root + "units/demon/doomguard"); }
             catch { }
-            try { DelectDir(dir_root + "abilities/weapons/meatwagonmissile"); } 
+            try { DelectDir(dir_root + "abilities/weapons/meatwagonmissile"); }
             catch { }
             //DelectDir("./_retail_/environment/dnc/");
             //DelectDir("./_retail_/environment/dnc45/");
@@ -2784,7 +2749,7 @@ namespace QuenchingModCN
                 try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
                 readtrans = "./Quenching/trans-en.que";
                 readhctrans = "./Quenching/hc-trans-en.que";
-                
+
 
             }
             if (GetIniInt("mod", "lang", 0) == 0)
@@ -2931,7 +2896,6 @@ namespace QuenchingModCN
             try
             {
 
-                if (GetIniInt("set", "sound", 0) == 1) { btnclickT(uibtnsm1_Copy); }    
                 if (GetIniInt("mod", "off", 0) == 1)
                 {
                     btnclickT(mainbtn_check_Copy5);
@@ -2953,22 +2917,58 @@ namespace QuenchingModCN
                     btnclickF(mainbtn_min_Copy4);
                 }
 
+                // Tree系列
+                btnclickF(setbtn_tree_b1);
+                btnclickF(setbtn_tree_b2);
+                btnclickF(setbtn_tree_b3);
+                btnclickF(setbtn_tree_b4);
+                btnclickF(setbtn_tree_b5);
+                btnclickF(setbtn_tree_b6);
+                if (GetIniInt("set", "tree", 0) == 0) { btnclickT(setbtn_tree_b1); }
+                if (GetIniInt("set", "tree", 0) == 1) { btnclickT(setbtn_tree_b2); }
+                if (GetIniInt("set", "tree", 0) == 2) { btnclickT(setbtn_tree_b3); }
+                if (GetIniInt("set", "tree", 0) == 3) { btnclickT(setbtn_tree_b4); }
+                if (GetIniInt("set", "tree", 0) == 4) { btnclickT(setbtn_tree_b5); }
+                if (GetIniInt("set", "tree", 0) == 5) { btnclickT(setbtn_tree_b6); }
+
+                btnclickF(setbtn_tile_b1);
+                btnclickF(setbtn_tile_b2);
+                btnclickF(setbtn_tile_b3);
+                btnclickF(setbtn_tile_b4);
+                btnclickF(setbtn_tile_b5);
+                if (GetIniInt("set", "tile", 0) == 0) { btnclickT(setbtn_tile_b1); }
+                if (GetIniInt("set", "tile", 0) == 1) { btnclickT(setbtn_tile_b2); }
+                if (GetIniInt("set", "tile", 0) == 2) { btnclickT(setbtn_tile_b3); }
+                if (GetIniInt("set", "tile", 0) == 3) { btnclickT(setbtn_tile_b4); }
+                if (GetIniInt("set", "tile", 0) == 4) { btnclickT(setbtn_tile_b5); }
+
+                btnclickF(setbtn_light_1);
+                btnclickF(setbtn_light_2);
+                btnclickF(setbtn_light_3);
+                btnclickF(setbtn_light_4);
+
+                if (GetIniInt("light", "light", 4) == 4) { btnclickT(setbtn_light_1); }
+                if (GetIniInt("light", "light", 4) == 6) { btnclickT(setbtn_light_2); }
+                if (GetIniInt("light", "light", 4) == 8) { btnclickT(setbtn_light_3); }
+                if (GetIniInt("light", "light", 4) == 10) { btnclickT(setbtn_light_4); }
+
+
                 if (GetIniInt("mod", "ad", 0) == 1)
                 { btnclickF(setbtnc9_Copy); btnclickT(setbtnc10_Copy); }
                 if (GetIniInt("mod", "ad", 0) == 0)
                 { btnclickT(setbtnc9_Copy); btnclickF(setbtnc10_Copy); }
-                if (GetIniInt("light", "light", 5) == 5)
-                {
-                    btnclickT(uibtnsm2_Copy);
-                }
-                if (GetIniInt("light", "light", 5) == 7)
-                {
-                    btnclickF(uibtnsm2_Copy); btnclickT(uibtnsm1_Copy3);
-                }
-                if (GetIniInt("light", "light", 5) == 9)
-                {
-                    btnclickF(uibtnsm2_Copy); btnclickT(uibtnsm1_Copy4);
-                }
+                //if (GetIniInt("light", "light", 5) == 5)
+                //{
+                //    btnclickT(uibtnsm2_Copy);
+                //}
+                //if (GetIniInt("light", "light", 5) == 7)
+                //{
+                //    btnclickF(uibtnsm2_Copy); btnclickT(uibtnsm1_Copy3);
+                //}
+                //if (GetIniInt("light", "light", 5) == 9)
+                //{
+                //    btnclickF(uibtnsm2_Copy); btnclickT(uibtnsm1_Copy4);
+                //}
                 //textBlock1_Copy5.Text = GetIniInt("light", "light", 5).ToString();
                 //textBlock1_Copy4.Text = GetIniInt("light", "shadow", 5).ToString();
                 if (GetIniInt("mod", "lang", 0) == 1)
@@ -2987,8 +2987,9 @@ namespace QuenchingModCN
                 {
                     btnclickT(themey_Copy2);
                 }
-                if (GetIniInt("mod", "lockh", 0) == 1) { btnclickT(mainbtn_min_Copy4); hdlock = true; }
-                if (GetIniInt("mod", "lockc", 0) == 1) { btnclickT(mainbtn_min_Copy3); sdlock = true; }
+                
+                if (GetIniInt("mod", "lockh", 0) == 1) { btnclickT(mainbtn_min_Copy4);  hdlock = true; mainbtn_mode_1.Visibility = Visibility.Hidden; mainbtn_mode_0.Visibility = Visibility.Visible; }
+                if (GetIniInt("mod", "lockc", 0) == 1) { btnclickT(mainbtn_min_Copy3); sdlock = true; mainbtn_mode_0.Visibility = Visibility.Hidden; mainbtn_mode_1.Visibility = Visibility.Visible; }
                 if (GetIniInt("set", "vio", 0) == 1)
                 { setbtn_about_Copy1.Visibility = Visibility.Visible; }
                 //if (GetIniInt("mod", "ad", 0) == 1) { uiadjust.Visibility = Visibility.Visible; }
@@ -3009,21 +3010,21 @@ namespace QuenchingModCN
                     setbtn_no1.Visibility = Visibility.Hidden;
                     //setbtn_no10.Visibility = Visibility.Hidden;
                 }
-                if (GetIniInt("mod", "melee", 0) == 0 && GetIniInt("mod", "old", 0) == 0)
-                {
-                    //btnclickF(setbtn_o);
-                    btnclickF(setbtn_m); btnclickT(setbtn_n);
-                }
-                if (GetIniInt("set", "trees", 1) == 1)
-                {
-                    btnclickT(setbtnc1_Copy);
-                    btnclickF(setbtnc2_Copy);
-                }
-                if (GetIniInt("set", "tile", 1) == 1)
-                {
-                    btnclickT(setbtnc1_Copy1);
-                    btnclickF(setbtnc2_Copy1);
-                }
+                //if (GetIniInt("mod", "melee", 0) == 0 && GetIniInt("mod", "old", 0) == 0)
+                //{
+                //    //btnclickF(setbtn_o);
+                //    btnclickF(setbtn_m); btnclickT(setbtn_n);
+                //}
+                //if (GetIniInt("set", "trees", 1) == 1)
+                //{
+                //    btnclickT(setbtnc1_Copy);
+                //    btnclickF(setbtnc2_Copy);
+                //}
+                //if (GetIniInt("set", "tile", 1) == 1)
+                //{
+                //    btnclickT(setbtnc1_Copy1);
+                //    btnclickF(setbtnc2_Copy1);
+                //}
                 if (GetIniInt("mod", "unitchange", 1) == 1)
                 { WriteIniInt("mod", "unitchange", 1); }
                 if (GetIniInt("mod", "old", 0) == 1)
@@ -3036,29 +3037,19 @@ namespace QuenchingModCN
                     //setbtn_no10.Visibility = Visibility.Visible;
                     setbtn_no6.Visibility = Visibility.Visible;
                 }
-                if (GetIniInt("tree", "short", 0) == 1)
-                {
-                    btnclickT(newt3b1);
-                    btnclickF(newt3b2);
-                }
-                else
-                {
-                    btnclickT(newt3b2);
-                    btnclickF(newt3b1);
-                }
-                if (GetIniInt("mod", "newold", 0) == 0)
-                {
-                    btnclickF(newt2b1);
-                    btnclickT(newt2b2);
-                }
-                else
-                {
-                    btnclickT(newt2b1);
-                    btnclickF(newt2b2);
-                }
-                if (GetIniInt("light", "light", 5) == 5) { btnclickT(uibtnsm1_Copy2); btnclickF(uibtnsm1_Copy3); btnclickF(uibtnsm1_Copy4); }
-                if (GetIniInt("light", "light", 5) == 7) { btnclickF(uibtnsm1_Copy2); btnclickT(uibtnsm1_Copy3); btnclickF(uibtnsm1_Copy4); }
-                if (GetIniInt("light", "light", 5) == 9) { btnclickF(uibtnsm1_Copy2); btnclickF(uibtnsm1_Copy3); btnclickT(uibtnsm1_Copy4); }
+                //if (GetIniInt("mod", "newold", 0) == 0)
+                //{
+                //    btnclickF(newt2b1);
+                //    btnclickT(newt2b2);
+                //}
+                //else
+                //{
+                //    btnclickT(newt2b1);
+                //    btnclickF(newt2b2);
+                //}
+                //if (GetIniInt("light", "light", 5) == 5) { btnclickT(uibtnsm1_Copy2); btnclickF(uibtnsm1_Copy3); btnclickF(uibtnsm1_Copy4); }
+                //if (GetIniInt("light", "light", 5) == 7) { btnclickF(uibtnsm1_Copy2); btnclickT(uibtnsm1_Copy3); btnclickF(uibtnsm1_Copy4); }
+                //if (GetIniInt("light", "light", 5) == 9) { btnclickF(uibtnsm1_Copy2); btnclickF(uibtnsm1_Copy3); btnclickT(uibtnsm1_Copy4); }
                 if (GetIniInt("mod", "dline", 0) == 0) { btnclickT(mainbtn_check_Copy35); } else { btnclickT(mainbtn_check_Copy36); }
                 //if (GetIniInt("mod", "w3c", 0) == 1) { btnclickT(mainbtn_check_Copy1); mainbtn_check_Copy1.Content = mbtext[9]; } else { btnclickF(mainbtn_check_Copy1); mainbtn_check_Copy1.Content = mbtext[10]; }
                 if (GetIniInt("mod", "gpuset", 0) == 0) { btnclickT(mb_gpu_2); btnclickF(mb_gpu_1); } else { btnclickT(mb_gpu_1); btnclickF(mb_gpu_2); }
@@ -3170,7 +3161,6 @@ namespace QuenchingModCN
                     isHookEnable = true;
                     uikey.Visibility = Visibility.Visible;
 
-                    btnclickT(uibtnsm1_Copy);
                     btnclickF(uibtnsm2_Copy1);
                 }
                 if (GetIniInt("cosunit", "orc", 0) == 1)
@@ -3546,10 +3536,10 @@ namespace QuenchingModCN
             acht1_Copy.Text = temp[189];//基础设置
             acht1_Copy1.Text = temp[190];//基础设置
             dl_m_lang_title.Text = temp[191];
-            newt3b1.Content = temp[48];//打开
-            newt3b2.Content = temp[49];//关闭
-            newt2b2.Content = temp[49];//关闭
-            newt2b1.Content = temp[48];//打开
+            //newt3b1.Content = temp[48];//打开
+            //newt3b2.Content = temp[49];//关闭
+            //newt2b2.Content = temp[49];//关闭
+            //newt2b1.Content = temp[48];//打开
             //if (File.Exists(dir_root + "terrainart/clifftypes.slk") || File.Exists(dir_root + "terrainart-dis/clifftypes.slk"))
             //{ textBlock_Copy2.Text = mbtext[30]; }
             //else
@@ -3599,8 +3589,10 @@ namespace QuenchingModCN
                 j++;
                 //textBlock1_Copy2.Text = temp[j];
                 j++;
-                setbtn2.Text = temp[j]; j++;
-                setbtn_about_Copy.Text = temp[j]; j++;
+                //setbtn2.Text = temp[j]; 
+                j++;
+                //setbtn_about_Copy.Text = temp[j];
+                j++;
                 setbtn4.Text = temp[j]; j++;
                 //setbtn7.Text = temp[j]; 
                 j++;
@@ -3623,16 +3615,16 @@ namespace QuenchingModCN
                 setbtnc7.Content = temp[j];
                 setbtnc9.Content = temp[j];
                 setbtnc3.Content = temp[j];
-                setbtnc1_Copy.Content = temp[j];
-                setbtnc1_Copy1.Content = temp[j];
+                //setbtnc1_Copy.Content = temp[j];
+                //setbtnc1_Copy1.Content = temp[j];
                 //setbtnc1.Content = temp[j];
                 setbtnc11.Content = temp[j]; j++;
 
                 setbtnc6.Content = temp[j];
                 setbtnc8.Content = temp[j];
                 setbtnc10.Content = temp[j];
-                setbtnc2_Copy.Content = temp[j];
-                setbtnc2_Copy1.Content = temp[j];
+                //setbtnc2_Copy.Content = temp[j];
+                //setbtnc2_Copy1.Content = temp[j];
                 setbtnc10_Copy.Content = temp[j];
                 //setbtnc2.Content = temp[j];
                 setbtnc12.Content = temp[j]; j++;
@@ -3662,7 +3654,6 @@ namespace QuenchingModCN
                 uibtnsm1.Content = temp[j];
                 //uibtnsm3.Content = temp[j];
                 uibtnsm5.Content = temp[j];
-                uibtnsm1_Copy.Content = temp[j];
                 uibtnsm1_Copy2.Content = temp[j];
 
 
@@ -3825,7 +3816,7 @@ namespace QuenchingModCN
                 uibtn6.Text = temp[j]; j++;
                 uit2_Copy.Text = temp[j]; j++;
                 setbtn9_Copy.Text = temp[j]; j++;
-                uibtnsm1_Copy.Content = temp[j]; j++;
+                j++;
                 mainbtn_check_Copy9.Content = temp[j]; j++;
 
             }
@@ -4605,7 +4596,8 @@ namespace QuenchingModCN
                     try { File.Copy(dir_root + "units/units-old/unitskin.txt", dir_root + "units/unitskin.txt", true); } catch { }
                     this.Dispatcher.Invoke(() => { pbp.Value = pbp.Value + 1; pbtext1.Text = mainstring[9] + "./dnc"; });
                     this.Dispatcher.Invoke(() => { pb.Visibility = Visibility.Hidden; pbp.Value = 0; });
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         uibtn_unitc.Visibility = Visibility.Visible;
                         setbtn_no6.Visibility = Visibility.Visible;
                         setbtn_no1.Visibility = Visibility.Hidden;
@@ -4637,7 +4629,8 @@ namespace QuenchingModCN
                     //if (GetIniInt("set", "trees", 1) == 1) { try { File.Copy(dir_root + "units/des-old/destructableskin.txt", dir_root + "units/destructableskin.txt", true); } catch { } }
                     this.Dispatcher.Invoke(() => { pbp.Value = pbp.Value + 1; pbtext1.Text = mainstring[9] + "./dnc"; });
                     this.Dispatcher.Invoke(() => { pb.Visibility = Visibility.Hidden; pbp.Value = 0; });
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         uibtn_unitc.Visibility = Visibility.Hidden;
                         setbtn_no6.Visibility = Visibility.Hidden;
                         setbtn_no1.Visibility = Visibility.Visible;
@@ -4689,7 +4682,8 @@ namespace QuenchingModCN
                     try { File.Copy(dir_root + "units/units-que/unitskin.txt", dir_root + "units/unitskin.txt", true); } catch { }
                     this.Dispatcher.Invoke(() => { pbp.Value = pbp.Value + 1; pbtext1.Text = mainstring[9] + "./dnc"; });
                     this.Dispatcher.Invoke(() => { pb.Visibility = Visibility.Hidden; pbp.Value = 0; });
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         uibtn_unitc.Visibility = Visibility.Hidden;
                         setbtn_no6.Visibility = Visibility.Hidden;
                         setbtn_no1.Visibility = Visibility.Hidden;
@@ -4700,7 +4694,8 @@ namespace QuenchingModCN
                 if (fileloadflag == 2) //切换经典模式-开发者模式
                 {
                     //MessageBox.Show("execSD");
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         setbtn_no1.Visibility = Visibility.Visible;
                         setbtn_no2.Visibility = Visibility.Visible;
                         setbtn_no3.Visibility = Visibility.Visible;
@@ -4746,7 +4741,8 @@ namespace QuenchingModCN
                     WriteIniInt("mod", "hdorsd", 1);
                     //this.Dispatcher.Invoke(() => { pbp.Value = 0; pbp.Maximum = 16; pbtext2.Text = mainstring[9]; });
                     //MessageBox.Show("execHD");
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         setbtn_no1.Visibility = Visibility.Hidden;
                         setbtn_no2.Visibility = Visibility.Hidden;
                         setbtn_no3.Visibility = Visibility.Hidden;
@@ -4974,7 +4970,8 @@ namespace QuenchingModCN
                     try { File.Copy(dir_root + "shaders/ps/ui-org/hd.bls", dir_root + "shaders/ps/hd.bls", true); } catch { }
                     try { filemove(dir_root + "textures/portrait_bg_diffuse.tif", dir_root + "textures/portrait_bg_diffuse.tif-dis"); } catch { }
                     try { filemove(dir_root + "textures/portrait_bg_orm.dds", dir_root + "textures/portrait_bg_orm.dds-dis"); } catch { }
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         MessageBox.Show(mbtext[51]);
                     });
                     //if (GetIniInt("mod", "camp", 1) == 0) { filemove(dir_root + "ui/campaigninforeforged.txt", dir_root + "ui/campaigninforeforged.txt-dis"); }
@@ -4995,7 +4992,8 @@ namespace QuenchingModCN
                     try { File.Copy(dir_root + "shaders/ps/ui-que/hd.bls", dir_root + "shaders/ps/hd.bls", true); } catch { }
                     try { filemove(dir_root + "textures/portrait_bg_diffuse.tif-dis", dir_root + "textures/portrait_bg_diffuse.tif"); } catch { }
                     try { filemove(dir_root + "textures/portrait_bg_orm.dds-dis", dir_root + "textures/portrait_bg_orm.dds"); } catch { }
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         MessageBox.Show(mbtext[51]);
                     });
                     //if (GetIniInt("mod", "camp", 1) == 0) { filemove(dir_root + "ui/campaigninforeforged.txt", dir_root + "ui/campaigninforeforged.txt-dis"); }
@@ -5016,7 +5014,8 @@ namespace QuenchingModCN
                     try { File.Copy(dir_root + "shaders/ps/ui-que/hd.bls", dir_root + "shaders/ps/hd.bls", true); } catch { }
                     try { filemove(dir_root + "textures/portrait_bg_diffuse.tif-dis", dir_root + "textures/portrait_bg_diffuse.tif"); } catch { }
                     try { filemove(dir_root + "textures/portrait_bg_orm.dds-dis", dir_root + "textures/portrait_bg_orm.dds"); } catch { }
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         MessageBox.Show(mbtext[51]);
                     });
                     //if (GetIniInt("mod", "camp", 1) == 0) { filemove(dir_root + "ui/campaigninforeforged.txt", dir_root + "ui/campaigninforeforged.txt-dis"); }
@@ -5243,7 +5242,6 @@ namespace QuenchingModCN
             this.Dispatcher.Invoke(() => { pb.Visibility = Visibility.Hidden; pbp.Value = 0; });
         }
 
-
         public int dlogtrig = 0;
 
 
@@ -5253,7 +5251,6 @@ namespace QuenchingModCN
             WriteIniInt("mod", "key", 1);
             uikey.Visibility = Visibility.Visible;
 
-            btnclickT(uibtnsm1_Copy);
             btnclickF(uibtnsm2_Copy1);
         }
 
@@ -5263,7 +5260,6 @@ namespace QuenchingModCN
             WriteIniInt("mod", "key", 0);
 
             uikey.Visibility = Visibility.Hidden;
-            btnclickF(uibtnsm1_Copy);
             btnclickT(uibtnsm2_Copy1);
         }
 
@@ -5329,130 +5325,50 @@ namespace QuenchingModCN
         //    thread.Start();
         //}
 
-        private void setbtn_tile_origin(object sender, RoutedEventArgs e)
-        {
-            if (oldorsd == 1) { Console.WriteLine("cant use"); MessageBox.Show(mbtext[27]); return; }
-            btnclickT(setbtn_tree_b1);
-            btnclickF(setbtn_tree_b2);
-            btnclickF(setbtn_tree_b3);
-            btnclickF(setbtn_tree_b4);
-            WriteIniInt("set", "trees", 0);
-            try { streamname("destructableskin-que.txt", dir_root + "units/destructableskin.txt"); } catch { }
-        }
-
-        private void setbtn_tile_16(object sender, RoutedEventArgs e)
-        {
-            if (oldorsd == 1) { MessageBox.Show(mbtext[27]); return; }
-            btnclickT(setbtn_tree_b1);
-            btnclickF(setbtn_tree_b2);
-            btnclickF(setbtn_tree_b3);
-            btnclickF(setbtn_tree_b4);
-            fileloadflag = 28;
-            WriteIniInt("set", "trees", 1);
-            Thread thread = new Thread(new ThreadStart(filetemplate));
-            thread.Start();
-        }
-
-        private void setbtn_tile_18(object sender, RoutedEventArgs e)
-        {
-            if (oldorsd == 1) { MessageBox.Show(mbtext[27]); return; }
-            btnclickT(setbtn_tree_b1);
-            btnclickF(setbtn_tree_b2);
-            btnclickF(setbtn_tree_b3);
-            btnclickF(setbtn_tree_b4);
-            fileloadflag = 28;
-            WriteIniInt("set", "trees", 1);
-            Thread thread = new Thread(new ThreadStart(filetemplate));
-            thread.Start();
-        }
-
-        private void setbtn_tile_20(object sender, RoutedEventArgs e)
-        {
-            if (oldorsd == 1) { MessageBox.Show(mbtext[27]); return; }
-            btnclickT(setbtn_tree_b1);
-            btnclickF(setbtn_tree_b2);
-            btnclickF(setbtn_tree_b3);
-            btnclickF(setbtn_tree_b4);
-            fileloadflag = 28;
-            WriteIniInt("set", "trees", 1);
-            Thread thread = new Thread(new ThreadStart(filetemplate));
-            thread.Start();
-        }
-
-        private void setbtn_tile_00(object sender, RoutedEventArgs e)
-        {
-            if (oldorsd == 1) { MessageBox.Show(mbtext[27]); return; }
-            btnclickF(setbtn_tree_b1);
-            btnclickF(setbtn_tree_b2);
-            btnclickF(setbtn_tree_b3);
-            btnclickF(setbtn_tree_b4);
-            fileloadflag = 28;
-            WriteIniInt("set", "trees", 1);
-            Thread thread = new Thread(new ThreadStart(filetemplate));
-            thread.Start();
-        }
 
         private void setbtn_tree_origin(object sender, RoutedEventArgs e)
         {
             if (oldorsd == 1) { Console.WriteLine("cant use"); MessageBox.Show(mbtext[27]); return; }
-            btnclickT(setbtn_tree_b1);
-            btnclickF(setbtn_tree_b2);
-            btnclickF(setbtn_tree_b3);
-            btnclickF(setbtn_tree_b4);
-            WriteIniInt("set", "trees", 0);
-            try { streamname("destructableskin-que.txt", dir_root + "units/destructableskin.txt"); } catch { }
-        }
 
-        private void setbtn_tree_16(object sender, RoutedEventArgs e)
-        {
-            if (oldorsd == 1) { MessageBox.Show(mbtext[27]); return; }
-            btnclickT(setbtn_tree_b1);
-            btnclickF(setbtn_tree_b2);
-            btnclickF(setbtn_tree_b3);
-            btnclickF(setbtn_tree_b4);
-            fileloadflag = 28;
-            WriteIniInt("set", "trees", 1);
-            Thread thread = new Thread(new ThreadStart(filetemplate));
-            thread.Start();
-        }
+            Button btn = (Button)sender;
+            int level = Convert.ToInt32(btn.Tag.ToString());
 
-        private void setbtn_tree_18(object sender, RoutedEventArgs e)
-        {
-            if (oldorsd == 1) { MessageBox.Show(mbtext[27]); return; }
-            btnclickT(setbtn_tree_b1);
-            btnclickF(setbtn_tree_b2);
-            btnclickF(setbtn_tree_b3);
-            btnclickF(setbtn_tree_b4);
-            fileloadflag = 28;
-            WriteIniInt("set", "trees", 1);
-            Thread thread = new Thread(new ThreadStart(filetemplate));
-            thread.Start();
-        }
-
-        private void setbtn_tree_20(object sender, RoutedEventArgs e)
-        {
-            if (oldorsd == 1) { MessageBox.Show(mbtext[27]); return; }
-            btnclickT(setbtn_tree_b1);
-            btnclickF(setbtn_tree_b2);
-            btnclickF(setbtn_tree_b3);
-            btnclickF(setbtn_tree_b4);
-            fileloadflag = 28;
-            WriteIniInt("set", "trees", 1);
-            Thread thread = new Thread(new ThreadStart(filetemplate));
-            thread.Start();
-        }
-
-        private void setbtn_tree_20_short(object sender, RoutedEventArgs e)
-        {
-            if (oldorsd == 1) { MessageBox.Show(mbtext[27]); return; }
             btnclickF(setbtn_tree_b1);
             btnclickF(setbtn_tree_b2);
             btnclickF(setbtn_tree_b3);
             btnclickF(setbtn_tree_b4);
-            fileloadflag = 28;
-            WriteIniInt("set", "trees", 1);
-            Thread thread = new Thread(new ThreadStart(filetemplate));
-            thread.Start();
+            btnclickF(setbtn_tree_b5);
+            btnclickF(setbtn_tree_b6);
+            btnclickT(btn);
+
+            WriteIniInt("set", "trees", level);
+
+            try
+            {
+                File.Delete(dir_root + "units/destructableskin.txt");
+                streamname("destructableskin.txt", dir_root + "units/destructableskin.txt");
+                if (level == 1)
+                {
+                    DoodadsEditor.Doodads_to_20(dir_root + "units/destructableskin.txt");
+                }
+                if (level == 2)
+                {
+                    DoodadsEditor.Doodads_to_20_short(dir_root + "units/destructableskin.txt");
+                }
+                if (level == 3)
+                {
+                    DoodadsEditor.Doodads_to_16(dir_root + "units/destructableskin.txt");
+                }
+                if (level == 4)
+                {
+                    DoodadsEditor.Doodads_to_18(dir_root + "units/destructableskin.txt");
+                }
+                if (level == 5)
+                {
+                    DoodadsEditor.Doodads_to_00(dir_root + "units/destructableskin.txt");
+                }
+            }
+            catch { }
         }
 
         private void setbtnc3_Click(object sender, RoutedEventArgs e)
@@ -7790,15 +7706,6 @@ namespace QuenchingModCN
 
         }
 
-        private void achbtn1_Copy4_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void setbtn_about_Copy_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
         private void setbtnx_Click(object sender, RoutedEventArgs e)
         {
             Button b = (Button)sender;
@@ -8229,8 +8136,11 @@ namespace QuenchingModCN
                 if (tempw3xtitle[tempwtsflag] == null || tempw3xtitle[tempwtsflag] == "") { i = 100; break; }
                 try
                 {
-                    this.Dispatcher.Invoke(() => { campb[tempwtsflag].Content = "#" + (tempwtsflag + 1) + " " + getwts(getnumber2(tempw3xtitle[tempwtsflag]));
-                        WriteIniString("ccm", tempwtsflag.ToString(), getwts(getnumber2(tempw3xtitle[tempwtsflag]))); });
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        campb[tempwtsflag].Content = "#" + (tempwtsflag + 1) + " " + getwts(getnumber2(tempw3xtitle[tempwtsflag]));
+                        WriteIniString("ccm", tempwtsflag.ToString(), getwts(getnumber2(tempw3xtitle[tempwtsflag])));
+                    });
                     tempwtsflag++;
                     if (tempw3xtitle[tempwtsflag] == null || tempw3xtitle[tempwtsflag] == "") { i = 100; }
                 }
@@ -8424,6 +8334,8 @@ namespace QuenchingModCN
         {
             btnclickT(mainbtn_min_Copy3);
             btnclickF(mainbtn_min_Copy4);
+            mainbtn_mode_0.Visibility = Visibility.Hidden;
+            mainbtn_mode_1.Visibility = Visibility.Visible;
             WriteIniInt("mod", "lockc", 1);
             WriteIniInt("mod", "lockh", 0);
             sdlock = true; hdlock = false;
@@ -8434,6 +8346,8 @@ namespace QuenchingModCN
         {
             btnclickF(mainbtn_min_Copy3);
             btnclickT(mainbtn_min_Copy4);
+            mainbtn_mode_1.Visibility = Visibility.Hidden;
+            mainbtn_mode_0.Visibility = Visibility.Visible;
             WriteIniInt("mod", "lockh", 1);
             WriteIniInt("mod", "lockc", 0);
             hdlock = true; sdlock = false;
@@ -8715,411 +8629,8 @@ namespace QuenchingModCN
         }
 
 
-
-
-        private void setbtn3_Copy2_Click(object sender, RoutedEventArgs e)
-        {
-            int gs = GetIniInt("light", "shadow", 5);
-            if (gs < 10)
-            { gs = gs + 1; }
-            //textBlock1_Copy4.Text = gs.ToString();
-            WriteIniInt("light", "shadow", gs);
-            double gsf = Convert.ToDouble(gs);
-            //0-23 24-35
-
-            for (int i = 8; i < 16; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[59] = "static AmbIntensity " + Math.Round((gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 28; i <= 35; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[35] = "static AmbIntensity " + Math.Round(0.1 - (gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 16; i < 20; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[58] = "static AmbIntensity " + Math.Round((gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 20; i < 24; i++)
-            {
-
-                string[] lines1 = File.ReadAllLines(DNCfile[i]);
-                lines1[63] = "static AmbIntensity " + Math.Round((gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines1);
-                lines1 = null;
-
-            }
-            DelectDir(dir_root + "environment/dnc");
-            Directory.CreateDirectory(dir_root + "environment/dnc");
-            if (GetIniInt("mod", "light", 0) == 0)
-            {
-                try
-                {
-
-                    copyf(dir_root + "environment/dnc45/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-            if (GetIniInt("mod", "light", 0) == 1)
-            {
-                try
-                {
-
-                    copyf(dir_root + "environment/dncspin/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-
-        }
-
-        private void setbtn3_Copy4_Click(object sender, RoutedEventArgs e)
-        {
-            int gs = GetIniInt("light", "light", 5);
-            if (gs < 10)
-            { gs = gs + 1; }
-            //textBlock1_Copy5.Text = gs.ToString();
-            WriteIniInt("light", "light", gs);
-            double gsf = Convert.ToDouble(gs);
-            //0-23 24-35
-            for (int i = 8; i < 16; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[44] = "0: " + (gsf).ToString().Replace(",", ".") + ",";
-                lines[45] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[46] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[47] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[48] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[49] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            for (int i = 16; i < 20; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[43] = "0: " + Math.Round(gsf).ToString().Replace(",", ".") + ",";
-                lines[44] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[45] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[46] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[47] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[48] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            for (int i = 20; i < 24; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[48] = "0: " + Math.Round(gsf).ToString().Replace(",", ".") + ",";
-                lines[49] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[50] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[51] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[52] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[53] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            for (int i = 28; i < 35; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[33] = "static Intensity " + Math.Round(gsf / 1.5, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            DelectDir(dir_root + "environment/dnc");
-            Directory.CreateDirectory(dir_root + "environment/dnc");
-            if (GetIniInt("mod", "light", 0) == 0)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-            if (GetIniInt("mod", "light", 0) == 1)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-        }
-
-        private void setbtn3_Copy3_Click(object sender, RoutedEventArgs e)
-        {
-            int gs = GetIniInt("light", "shadow", 5);
-            if (gs > 0)
-            { gs = gs - 1; }
-            //textBlock1_Copy4.Text = gs.ToString();
-            WriteIniInt("light", "shadow", gs);
-            double gsf = Convert.ToDouble(gs);
-            //0-23 24-35
-            for (int i = 8; i < 16; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[59] = "static AmbIntensity " + Math.Round((gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 28; i <= 35; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[35] = "static AmbIntensity " + Math.Round(0.1 - (gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 16; i < 20; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[58] = "static AmbIntensity " + Math.Round((gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 20; i < 24; i++)
-            {
-                Console.WriteLine(i);
-                string[] lines1 = File.ReadAllLines(DNCfile[i]);
-                lines1[63] = "static AmbIntensity " + Math.Round((gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines1);
-                lines1 = null;
-
-            }
-            DelectDir(dir_root + "environment/dnc");
-            Directory.CreateDirectory(dir_root + "environment/dnc");
-            if (GetIniInt("mod", "light", 0) == 0)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-            if (GetIniInt("mod", "light", 0) == 1)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-        }
-
-        private void setbtn3_Copy5_Click(object sender, RoutedEventArgs e)
-        {
-            int gs = GetIniInt("light", "light", 5);
-            if (gs > 0)
-            { gs = gs - 1; }
-            //textBlock1_Copy5.Text = gs.ToString();
-            WriteIniInt("light", "light", gs);
-            double gsf = Convert.ToDouble(gs);
-            //0-23 24-35
-            for (int i = 0; i < 16; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[44] = "0: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[45] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[46] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[47] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[48] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[49] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            for (int i = 16; i < 20; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[43] = "0: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[44] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[45] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[46] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[47] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[48] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            for (int i = 20; i < 24; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[48] = "0: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[49] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[50] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[51] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[52] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[53] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            for (int i = 28; i < 35; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[33] = "static Intensity " + Math.Round(gsf / 1.5, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            DelectDir(dir_root + "environment/dnc");
-            Directory.CreateDirectory(dir_root + "environment/dnc");
-            if (GetIniInt("mod", "light", 0) == 0)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-            if (GetIniInt("mod", "light", 0) == 1)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-        }
-
-        public void setup_light()
-        {
-            int gs = GetIniInt("light", "shadow", 5);
-            double gsf = Convert.ToDouble(gs);
-            int gs1 = GetIniInt("light", "light", 5);
-            double gsf1 = Convert.ToDouble(gs);
-            //0-23 24-35
-            for (int i = 8; i < 16; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[59] = "static AmbIntensity " + ((gsf * 0.05)).ToString().Replace(",", ".") + ",";
-                lines[44] = "0: " + Math.Round(gsf1, 2).ToString().Replace(",", ".") + ",";
-                lines[45] = "14000: " + Math.Round(gsf1, 2).ToString().Replace(",", ".") + ",";
-                lines[46] = "16000: " + Math.Round(gsf1 * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[47] = "44000: " + Math.Round(gsf1 * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[48] = "45000: " + Math.Round(gsf1 * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[49] = "46000: " + Math.Round(gsf1, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-
-            for (int i = 16; i < 20; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[43] = "0: " + Math.Round(gsf1, 2).ToString().Replace(",", ".") + ",";
-                lines[44] = "14000: " + Math.Round(gsf1, 2).ToString().Replace(",", ".") + ",";
-                lines[45] = "16000: " + Math.Round(gsf1 * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[46] = "44000: " + Math.Round(gsf1 * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[47] = "45000: " + Math.Round(gsf1 * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[48] = "46000: " + Math.Round(gsf1, 2).ToString().Replace(",", ".") + ",";
-                lines[58] = "static AmbIntensity " + Math.Round((gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 20; i < 24; i++)
-            {
-                Console.WriteLine(i);
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[48] = "0: " + Math.Round(gsf1, 2).ToString().Replace(",", ".") + ",";
-                lines[49] = "14000: " + Math.Round(gsf1, 2).ToString().Replace(",", ".") + ",";
-                lines[50] = "16000: " + Math.Round(gsf1 * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[51] = "44000: " + Math.Round(gsf1 * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[52] = "45000: " + Math.Round(gsf1 * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[53] = "46000: " + Math.Round(gsf1, 2).ToString().Replace(",", ".") + ",";
-                lines[63] = "static AmbIntensity " + Math.Round((gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines);
-                lines = null;
-
-            }
-
-            for (int i = 28; i <= 35; i++)
-            {
-
-                string[] lines1 = File.ReadAllLines(DNCfile[i]);
-                lines1[35] = "static AmbIntensity " + Math.Round(0.1 - (gsf * 0.05), 2).ToString().Replace(",", ".") + ",";
-                lines1[33] = "static Intensity " + Math.Round(gsf1 / 1.5, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines1); lines1 = null;
-
-            }
-            DelectDir(dir_root + "environment/dnc");
-            Directory.CreateDirectory(dir_root + "environment/dnc");
-            if (GetIniInt("mod", "light", 0) == 0)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-            if (GetIniInt("mod", "light", 0) == 1)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-        }
         public int ccos_page = 0;
+
         public int[,] ccos_a = new int[4, 16] { { 874, 437, 1031, 602, 765, 550, 494, 383, 710, 1141, 819, 1194, 8, 176, 123, 70 }, { 2966, 2757, 2810, 2545, 3020, 2914, 3831, 3728, 3391, 3620, 3075, 2651, 2222, 2284, 2391, 2337 }, { 6867, 7515, 7081, 7460, 7669, 6815, 7777, 7724, 6921, 7408, 6975, 7926, 6635, 6705, 6760, 6579 }, { 5796, 4832, 5635, 4885, 5258, 5150, 5580, 5366, 5472, 5529, 5204, 4990, 4533, 4725, 4672, 4778 }, };
 
         private void achbtn1_Copy21_Click(object sender, RoutedEventArgs e)
@@ -9432,7 +8943,7 @@ namespace QuenchingModCN
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Multiselect = false;//该值确定是否可以选择多个 Files
             dialog.Title = mbtext[20];
-            dialog.Filter = "w3x Files (*.w3x)|*.w3x|w3m Files (*.w3m)|*.w3m;"; 
+            dialog.Filter = "w3x Files (*.w3x)|*.w3x|w3m Files (*.w3m)|*.w3m;";
             if (dialog.ShowDialog() == true)
             {
 
@@ -9466,10 +8977,6 @@ namespace QuenchingModCN
             //-launch -loadfile \".\\Quenching\\webui\\q1.w3x\" -mapdiff 1  
         }
 
-        private void setbtn2_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void achbtn1_Copy1_Click_1(object sender, RoutedEventArgs e)
         {
@@ -9550,104 +9057,61 @@ namespace QuenchingModCN
         {
             Button btn = (Button)sender;
 
-            btnclickT(setbtn_light_1);
+            DelectDir(dir_root + "environment/dnc");
+            Directory.CreateDirectory(dir_root + "environment/dnc");
+            streamrwDic("environment.zip", "./Quenching/temp/");
+            unZipFiledist("./Quenching/temp/environment.zip", "./_retail_/environment");
+
+            btnclickF(setbtn_light_1);
             btnclickF(setbtn_light_2);
             btnclickF(setbtn_light_3);
             btnclickF(setbtn_light_4);
+            btnclickT(btn);
 
-            int gs = 3 + (Convert.ToInt32(btn.Tag.ToString()) * 2 );
+            int level = Convert.ToInt32(btn.Tag.ToString());
+
+            int gs = 2 + (Convert.ToInt32(btn.Tag.ToString()) * 2);
             WriteIniInt("light", "light", gs);
             double gsf = Convert.ToDouble(gs);
+            double sl = -0.2;
 
-            //0-23 24-35
-            for (int i = 12; i < 16; i++)
+            if (level == 4)
             {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[43] = "0: " + (gsf).ToString().Replace(",", ".") + ",";
-                lines[44] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[45] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[46] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[47] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[48] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
+                sl = 0;
             }
+
+            // The noraml terrainset
+            for (int i = 0; i < 8; i++)
+            {
+                if (level != 4)
+                {
+                    if (GetIniInt("mod", "light", 0) == 0)
+                    {
+                        MdlFileHandler.Light_to_static(DNCfile[i], sl, gsf);
+                    }
+                    else
+                    {
+                        MdlFileHandler.Light_to_rotation(DNCfile[i], sl, gsf);
+                    }
+                }
+                else
+                {
+                    MdlFileHandler.Light_to_melee(DNCfile[i], sl, gsf);
+                }
+
+            }
+
+            // The dungon terrain should not rotation, nor change intense
+            // So it remain this way
+
             for (int i = 8; i < 12; i++)
             {
                 string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[44] = "0: " + (gsf).ToString().Replace(",", ".") + ",";
-                lines[45] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[46] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[47] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[48] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[49] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            for (int i = 16; i < 20; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[43] = "0: " + Math.Round(gsf).ToString().Replace(",", ".") + ",";
-                lines[44] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[45] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[46] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[47] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[48] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            for (int i = 20; i < 24; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[48] = "0: " + Math.Round(gsf).ToString().Replace(",", ".") + ",";
-                lines[49] = "14000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                lines[50] = "16000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[51] = "44000: " + Math.Round(gsf * 1.28, 2).ToString().Replace(",", ".") + ",";
-                lines[52] = "45000: " + Math.Round(gsf * 1.4, 2).ToString().Replace(",", ".") + ",";
-                lines[53] = "46000: " + Math.Round(gsf, 2).ToString().Replace(",", ".") + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            for (int i = 24; i < 28; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
                 lines[29] = "static Intensity " + Math.Round(gsf / 1.5, 2).ToString().Replace(",", ".") + ",";
-                lines[31] = "static AmbIntensity -0.15, ";
+                lines[31] = "static AmbIntensity " + Math.Round(sl, 2).ToString().Replace(",", ".") + ",";
                 File.WriteAllLines(DNCfile[i], lines); lines = null;
             }
-            for (int i = 28; i < 35; i++)
-            {
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[33] = "static Intensity " + Math.Round(gsf / 1.5, 2).ToString().Replace(",", ".") + ",";
-                lines[35] = "static AmbIntensity -0.15, ";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-            }
-            DelectDir(dir_root + "environment/dnc");
-            Directory.CreateDirectory(dir_root + "environment/dnc");
-            if (GetIniInt("mod", "light", 0) == 0)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dnc45/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
-            if (GetIniInt("mod", "light", 0) == 1)
-            {
-                try
-                {
-                    //DelectDir(dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncashenvale", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdalaran", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncdungeon", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncfelwood", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dnclordaeron", dir_root + "environment/dnc");
-                    copyf(dir_root + "environment/dncspin/dncunderground", dir_root + "environment/dnc");
-                }
-                catch { }
-            }
+
         }
 
         public int mod_one_num = 0;
@@ -9700,7 +9164,7 @@ namespace QuenchingModCN
                         f = new FileInfo("./quenching/temp/patch-" + mod_one_string + ".zip");
                         if (f.Length < 50000000) { try { File.Delete("./quenching/temp/patch-" + mod_one_string + ".zip"); } catch { } }
                     }
-                    if (DownloadLZFile(sr[(mod_one_num-1)*2], "./quenching/temp/patch-" + mod_one_string + ".temp", sr[(mod_one_num - 1) * 2 + 1]))
+                    if (DownloadLZFile(sr[(mod_one_num - 1) * 2], "./quenching/temp/patch-" + mod_one_string + ".temp", sr[(mod_one_num - 1) * 2 + 1]))
                     {
                         File.Copy("./quenching/temp/patch-" + mod_one_string + ".temp", "./quenching/temp/patch-" + mod_one_string + ".zip", true);
                         File.Delete("./quenching/temp/patch-" + mod_one_string + ".temp");
@@ -9800,7 +9264,7 @@ namespace QuenchingModCN
             { streamrwDic("shaders-132.zip", "./quenching/temp/"); }
             DelectDir("./_retail_/shaders");
             unZipFiledist("./Quenching/temp/shaders-132.zip", "./_retail_/shaders");
-            if (GetIniInt("mod","gpuset",0) == 1)
+            if (GetIniInt("mod", "gpuset", 0) == 1)
             {
                 try { File.Copy(dir_root + "shaders/ps/AMDshader/gaussianblur.bls", dir_root + "shaders/ps/gaussianblur.bls", true); } catch { }
                 try { File.Copy(dir_root + "shaders/ps/AMDshader/bloomextract.bls", dir_root + "shaders/ps/bloomextract.bls", true); } catch { }
@@ -9820,9 +9284,9 @@ namespace QuenchingModCN
             }
             try { dirmove(dir_root + "units/demon/doomguard", dir_root + "units/demon/doomguard-dis"); } catch { }
             try { dirmove(dir_root + "units/demon/doomguardsummoned", dir_root + "units/demon/doomguardsummoned-dis"); } catch { }
-            
+
             WriteIniInt("mod", "version", 1);
-            btnclickF(mainbtn_check_Copy7);btnclickT(mainbtn_check_Copy);
+            btnclickF(mainbtn_check_Copy7); btnclickT(mainbtn_check_Copy);
         }
         private void to133(object sender, RoutedEventArgs e)
         {
@@ -9882,7 +9346,7 @@ namespace QuenchingModCN
                 //将下方切换至目前第一个英雄的选项(人族大法师)
                 cos_hero_pos = 0;
                 cosheronow = 1;
-                cosihero.Source = new BitmapImage(new Uri(cos_hero_png[cosheroflag,0,cos_hero_now[cosheroflag, 0]], UriKind.Relative));
+                cosihero.Source = new BitmapImage(new Uri(cos_hero_png[cosheroflag, 0, cos_hero_now[cosheroflag, 0]], UriKind.Relative));
                 cosherotext.Text = cos_hero_des[cosheroflag, cosheronow - 1, cos_hero_pos];
                 btnclickT(cosbtn1_Copy2);
             }
@@ -9891,7 +9355,7 @@ namespace QuenchingModCN
                 //切换下方第一个(人族）
                 cosunitflag = 0;
                 cos_unit_pos = cos_unit_now[0];
-                cosutext.Text = cos_unit_des[cosunitflag,cos_unit_pos];
+                cosutext.Text = cos_unit_des[cosunitflag, cos_unit_pos];
                 cosiunit.Source = new BitmapImage(new Uri(cos_unit_png[0, cos_unit_now[0]], UriKind.Relative));
                 btnclickT(cosbtn1_u);
             }
@@ -10053,7 +9517,7 @@ namespace QuenchingModCN
                 { cosheroflag = 5; }
                 else
                 { cosheroflag = 4; }
-                
+
                 cosimage1.Source = new BitmapImage(new Uri(cosheroicon[4 * cosheroflag], UriKind.Relative));
                 cosimage2.Source = new BitmapImage(new Uri(cosheroicon[4 * cosheroflag + 1], UriKind.Relative));
                 cosimage3.Source = new BitmapImage(new Uri(cosheroicon[4 * cosheroflag + 2], UriKind.Relative));
@@ -10097,85 +9561,122 @@ namespace QuenchingModCN
             }
         }
 
-        private void newt2b1_Click(object sender, RoutedEventArgs e)
+        private void setbtn_tile(object sender, RoutedEventArgs e)
         {
-            //将terrainart变成-que，将-old变成terrainart
-            //解压出desold替代现在的dis
-            //好像就可以了
-            if (!Directory.Exists(dir_root + "terrainart-old")) { MessageBox.Show("需要先安装新版本"); return; }
-            if (oldorsd == 1)
-            { MessageBox.Show(mbtext[27]);return; }
-            else
-            {
-                dirmove(dir_root + "terrainart", dir_root + "terrainart-que");
-                dirmove(dir_root + "terrainart-old", dir_root + "terrainart");
-                File.Delete(dir_root + "units/destructableskin.txt");
-                streamname("destructableskin-old.txt", dir_root + "units/destructableskin.txt");
-                streamname("foliage-old.txt", dir_root + "environment/foliage/foliage.txt");
-                WriteIniInt("mod", "newold", 1);
-                btnclickT(newt2b1);
-                btnclickF(newt2b2);
-            }
-            
-        }
-
-        private void newt2b2_Click(object sender, RoutedEventArgs e)
-        {
-            //将terrainart变成-que，将-old变成terrainart
-            //解压出desold替代现在的dis
-            //好像就可以了
-
             if (oldorsd == 1)
             { MessageBox.Show(mbtext[27]); return; }
-            else
+
+            Button btn = (Button)sender;
+            int level = Convert.ToInt32(btn.Tag.ToString());
+
+            btnclickF(setbtn_tile_b1);
+            btnclickF(setbtn_tile_b2);
+            btnclickF(setbtn_tile_b3);
+            btnclickF(setbtn_tile_b4);
+            btnclickF(setbtn_tile_b5);
+            btnclickT(btn);
+
+            WriteIniInt("set", "tile", level);
+            set_tile_by_meta();
+
+            switch (level)
             {
-                dirmove(dir_root + "terrainart", dir_root + "terrainart-old");
-                dirmove(dir_root + "terrainart-que", dir_root + "terrainart"); 
-                streamname("destructableskin-que.txt", dir_root + "units/destructableskin.txt");
-                streamname("foliage-que.txt", dir_root + "environment/foliage/foliage.txt");
-                WriteIniInt("mod", "newold", 0);
-                btnclickF(newt2b1);
-                btnclickT(newt2b2);
+                case 1:
+                    dirmove(dir_root + "t00", dir_root + "terrainart");
+                    streamrwDic("clifftypes00.slk", dir_root + "terrainart/");
+                    File.Copy(dir_root + "terrainart/clifftypes00.slk", dir_root + "terrainart/clifftypes.slk");
+                    File.Delete(dir_root + "terrainart/clifftypes00.slk");
+                    break;
+                case 2:
+                    dirmove(dir_root + "t16", dir_root + "terrainart");
+                    streamrwDic("clifftypes16.slk", dir_root + "terrainart/");
+                    File.Copy(dir_root + "terrainart/clifftypes16.slk", dir_root + "terrainart/clifftypes.slk");
+                    File.Delete(dir_root + "terrainart/clifftypes16.slk");
+                    break;
+                case 3:
+                    dirmove(dir_root + "t18", dir_root + "terrainart");
+                    streamrwDic("clifftypes18.slk", dir_root + "terrainart/");
+                    File.Copy(dir_root + "terrainart/clifftypes18.slk", dir_root + "terrainart/clifftypes.slk");
+                    File.Delete(dir_root + "terrainart/clifftypes18.slk");
+                    break;
+                case 4:
+                    dirmove(dir_root + "t20", dir_root + "terrainart");
+                    streamrwDic("clifftypes20.slk", dir_root + "terrainart/");
+                    File.Copy(dir_root + "terrainart/clifftypes20.slk", dir_root + "terrainart/clifftypes.slk");
+                    File.Delete(dir_root + "terrainart/clifftypes20.slk");
+                    break;
             }
         }
 
-        private void newt3b1_Click(object sender, RoutedEventArgs e)
+        private void set_tile_by_meta()
         {
-            //将terrainart变成-que，将-old变成terrainart
-            //解压出desold替代现在的dis
-            //好像就可以了
-            if (!Directory.Exists(dir_root + "doodads/Quenching/lordaerontree-short")) { MessageBox.Show("需要先下载新版本"); return; }
-            if (oldorsd == 1)
-            { MessageBox.Show(mbtext[27]); return; }
-            else
+            string t = File.ReadAllText(dir_root + "terrainart/meta.que");
+            switch (t)
             {
-                dirmove(dir_root + "doodads/Quenching/lordaerontree", dir_root + "doodads/Quenching/lordaerontree-long");
-                dirmove(dir_root + "doodads/Quenching/lordaerontree-short", dir_root + "doodads/Quenching/lordaerontree");
-                WriteIniInt("tree", "short", 1);
-                btnclickT(newt3b1);
-                btnclickF(newt3b2);
+                case "00": dirmove(dir_root + "terrainart", dir_root + "t00"); break;
+                case "16": dirmove(dir_root + "terrainart", dir_root + "t16"); break;
+                case "18": dirmove(dir_root + "terrainart", dir_root + "t18"); break;
+                case "20": dirmove(dir_root + "terrainart", dir_root + "t20"); break;
             }
-
         }
 
-        private void newt3b2_Click(object sender, RoutedEventArgs e)
-        {
-            //将terrainart变成-que，将-old变成terrainart
-            //解压出desold替代现在的dis
-            //好像就可以了
+        //private void newt2b2_Click(object sender, RoutedEventArgs e)
+        //{
+        //    //将terrainart变成-que，将-old变成terrainart
+        //    //解压出desold替代现在的dis
+        //    //好像就可以了
 
-            if (oldorsd == 1)
-            { MessageBox.Show(mbtext[27]); return; }
-            else
-            {
-                dirmove(dir_root + "doodads/Quenching/lordaerontree", dir_root + "doodads/Quenching/lordaerontree-short");
-                dirmove(dir_root + "doodads/Quenching/lordaerontree-long", dir_root + "doodads/Quenching/lordaerontree");
-                WriteIniInt("tree", "short", 0);
-                btnclickF(newt3b1);
-                btnclickT(newt3b2);
-            }
+        //    if (oldorsd == 1)
+        //    { MessageBox.Show(mbtext[27]); return; }
+        //    else
+        //    {
+        //        dirmove(dir_root + "terrainart", dir_root + "terrainart-old");
+        //        dirmove(dir_root + "terrainart-que", dir_root + "terrainart"); 
+        //        streamname("destructableskin-que.txt", dir_root + "units/destructableskin.txt");
+        //        streamname("foliage-que.txt", dir_root + "environment/foliage/foliage.txt");
+        //        WriteIniInt("mod", "newold", 0);
+        //        btnclickF(newt2b1);
+        //        btnclickT(newt2b2);
+        //    }
+        //}
 
-        }
+        //private void newt3b1_Click(object sender, RoutedEventArgs e)
+        //{
+        //    //将terrainart变成-que，将-old变成terrainart
+        //    //解压出desold替代现在的dis
+        //    //好像就可以了
+        //    if (!Directory.Exists(dir_root + "doodads/Quenching/lordaerontree-short")) { MessageBox.Show("需要先下载新版本"); return; }
+        //    if (oldorsd == 1)
+        //    { MessageBox.Show(mbtext[27]); return; }
+        //    else
+        //    {
+        //        dirmove(dir_root + "doodads/Quenching/lordaerontree", dir_root + "doodads/Quenching/lordaerontree-long");
+        //        dirmove(dir_root + "doodads/Quenching/lordaerontree-short", dir_root + "doodads/Quenching/lordaerontree");
+        //        WriteIniInt("tree", "short", 1);
+        //        btnclickT(newt3b1);
+        //        btnclickF(newt3b2);
+        //    }
+
+        //}
+
+        //private void newt3b2_Click(object sender, RoutedEventArgs e)
+        //{
+        //    //将terrainart变成-que，将-old变成terrainart
+        //    //解压出desold替代现在的dis
+        //    //好像就可以了
+
+        //    if (oldorsd == 1)
+        //    { MessageBox.Show(mbtext[27]); return; }
+        //    else
+        //    {
+        //        dirmove(dir_root + "doodads/Quenching/lordaerontree", dir_root + "doodads/Quenching/lordaerontree-short");
+        //        dirmove(dir_root + "doodads/Quenching/lordaerontree-long", dir_root + "doodads/Quenching/lordaerontree");
+        //        WriteIniInt("tree", "short", 0);
+        //        btnclickF(newt3b1);
+        //        btnclickT(newt3b2);
+        //    }
+
+        //}
 
         private void uibtnsm1_Copy5_Click(object sender, RoutedEventArgs e)
         {
@@ -10212,7 +9713,7 @@ namespace QuenchingModCN
         {
             if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start("www.tianxiazhengyi.net/QMDownload.html"); }
             else { System.Diagnostics.Process.Start("www.tianxiazhengyi.net/QMDownloadEN.html"); }
-            
+
         }
 
         public void download_rpg()
@@ -10281,91 +9782,35 @@ namespace QuenchingModCN
 
 
 
-    private void uibtnsm1_Copy_Click_1(object sender, RoutedEventArgs e)
-        {
-            if (GetIniInt("set", "sound", 0) == 0)
-            {
-                WriteIniInt("set", "sound", 1);
-                btnclickT(uibtnsm1_Copy);
-                Thread thread = new Thread(new ThreadStart(English_Voice));
-                thread.Start();
-            }
-            else
-            {
-                WriteIniInt("set", "sound", 0);
-                string[] files = Directory.GetFiles(dir_root, "*.*", SearchOption.AllDirectories);
-                foreach (string file in files)
-                {
-                    if (file.Contains(".flac"))
-                    {
-                        File.Delete(file);
-                    }
-                   
-                }
-               
-                btnclickF(uibtnsm1_Copy);
-            }
-                
+        //private void uibtnsm1_Copy_Click_1(object sender, RoutedEventArgs e)
+        //    {
+        //        if (GetIniInt("set", "sound", 0) == 0)
+        //        {
+        //            WriteIniInt("set", "sound", 1);
+        //            btnclickT(uibtnsm1_Copy);
+        //            Thread thread = new Thread(new ThreadStart(English_Voice));
+        //            thread.Start();
+        //        }
+        //        else
+        //        {
+        //            WriteIniInt("set", "sound", 0);
+        //            string[] files = Directory.GetFiles(dir_root, "*.*", SearchOption.AllDirectories);
+        //            foreach (string file in files)
+        //            {
+        //                if (file.Contains(".flac"))
+        //                {
+        //                    File.Delete(file);
+        //                }
 
+        //            }
+
+        //            btnclickF(uibtnsm1_Copy);
+        //        }
+
+
+        //}
+
+
+        //}
     }
-
-
-    }
-
 }
-
-
-/*
-            for (int i = 0; i < 16; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[59] = "static AmbIntensity " + (0.1 - (gsf * 0.05)).ToString() + ",";
-                lines[44] = "0: " + (gsf1 / 1.5).ToString() + ",";
-                lines[45] = "14000: " + (gsf1 / 1.5).ToString() + ",";
-                lines[46] = "16000: " + (gsf1).ToString() + ",";
-                lines[47] = "44000: " + (gsf1).ToString() + ",";
-                lines[48] = "45000: " + (gsf1 * 1.5).ToString() + ",";
-                lines[49] = "46000: " + (gsf1 / 1.5).ToString() + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 24; i <= 35; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[31] = "static AmbIntensity " + (0.1 - (gsf * 0.05)).ToString() + ",";
-                lines[29] = "static Intensity " + (gsf1 / 1.5).ToString() + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 16; i < 20; i++)
-            {
-
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[43] = "0: " + (gsf1 / 1.5).ToString() + ",";
-                lines[44] = "14000: " + (gsf1 / 1.5).ToString() + ",";
-                lines[45] = "16000: " + (gsf1).ToString() + ",";
-                lines[46] = "44000: " + (gsf1).ToString() + ",";
-                lines[47] = "45000: " + (gsf1 * 1.4).ToString() + ",";
-                lines[48] = "46000: " + (gsf1 / 1.5).ToString() + ",";
-                lines[58] = "static AmbIntensity " + (0.1 - (gsf * 0.05)).ToString() + ",";
-                File.WriteAllLines(DNCfile[i], lines); lines = null;
-
-            }
-            for (int i = 20; i < 24; i++)
-            {
-                Console.WriteLine(i);
-                string[] lines = File.ReadAllLines(DNCfile[i]);
-                lines[48] = "0: " + (gsf1 / 1.5).ToString() + ",";
-                lines[49] = "14000: " + (gsf1 / 1.5).ToString() + ",";
-                lines[50] = "16000: " + (gsf1).ToString() + ",";
-                lines[51] = "44000: " + (gsf1).ToString() + ",";
-                lines[52] = "45000: " + (gsf1 * 1.4).ToString() + ",";
-                lines[53] = "46000: " + (gsf1 / 1.5).ToString() + ",";
-                lines[63] = "static AmbIntensity " + (0.1 - (gsf * 0.05)).ToString() + ",";
-                File.WriteAllLines(DNCfile[i], lines);
-                lines = null;
-
-            }            <Button x:Name="achbtn1_Copy21" Content="获取战役" HorizontalAlignment="Right" Margin="0,144,445,0" VerticalAlignment="Top" Width="120" Height="25" RenderTransformOrigin="-0.059,0.553" Background="{x:Null}" Foreground="#A8FFFFFF" BorderBrush="#FFC7C7C7" FontSize="10" MouseEnter="uibtn1_MouseEnter" MouseLeave="uibtn1_MouseLeave" Grid.Column="1" Click="achbtn1_Copy21_Click_1"/>
-*/
