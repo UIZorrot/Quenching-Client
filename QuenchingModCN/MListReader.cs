@@ -108,8 +108,10 @@ public class DoodadsEditor
         handler.ReadFile(filePath);
 
         handler.Write("ATtr", "texFile", "ReplaceableTextures/tree/t20/AshenvaleTree/AshenTree");
+        handler.Write("ATtr", "file", "Doodads/que/d20/AshenTree/AshenTree");
         handler.Write("BTtw", "texFile", "ReplaceableTextures/tree/t20/BarrensTree/BarrensTree");
         handler.Write("CTtr", "texFile", "ReplaceableTextures/tree/t20/AshenvaleTree/FelwoodTree");
+        handler.Write("CTtr", "file", "Doodads/que/d20/AshenTree/AshenTree");
         handler.Write("FTtw", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronFallTree");
         handler.Write("FTtw", "file", "Doodads/que/d20/LordaeronTree/LordaeronTree");
         handler.Write("LTlt", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree");
@@ -133,7 +135,7 @@ public class DoodadsEditor
         handler.Write("JTtw", "texFile", "ReplaceableTextures/tree/t20/lordaerontree/lordaeronsummertree");
         handler.Write("JTtw", "file", "Doodads/que/d20/LordaeronTree/LordaeronTree");
         handler.Write("BTtc", "texFile", "ReplaceableTextures/tree/t20/BarrensTree/BarrensTree");
-        handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t20/AshenvaleTree/FelwoodTree");
+        handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t20/AshenvaleTree/felwoodcanopytree");
         handler.Write("LFpt", "file", "Doodads/que/d20/LordaeronTree/LordaeronTree");
         handler.Write("LFpt", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronFallTree");
         handler.Write("Yts1", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree");
@@ -152,8 +154,10 @@ public class DoodadsEditor
         handler.ReadFile(filePath);
 
         handler.Write("ATtr", "texFile", "ReplaceableTextures/tree/t20/AshenvaleTree/AshenTree");
+        handler.Write("ATtr", "file", "Doodads/que/d20/AshenTree/AshenTree");
         handler.Write("BTtw", "texFile", "ReplaceableTextures/tree/t20/BarrensTree/BarrensTree");
         handler.Write("CTtr", "texFile", "ReplaceableTextures/tree/t20/AshenvaleTree/FelwoodTree");
+        handler.Write("CTtr", "file", "Doodads/que/d20/AshenTree/AshenTree");
         handler.Write("FTtw", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronFallTree");
         handler.Write("FTtw", "file", "Doodads/que/d20/lordaerontree-short/LordaeronTree");
         handler.Write("LTlt", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree");
@@ -177,7 +181,7 @@ public class DoodadsEditor
         handler.Write("JTtw", "texFile", "ReplaceableTextures/tree/t20/lordaerontree/lordaeronsummertree");
         handler.Write("JTtw", "file", "Doodads/que/d20/lordaerontree-short/LordaeronTree");
         handler.Write("BTtc", "texFile", "ReplaceableTextures/tree/t20/BarrensTree/BarrensTree");
-        handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t20/AshenvaleTree/FelwoodTree");
+        handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t20/AshenvaleTree/felwoodcanopytree");
         handler.Write("LFpt", "file", "Doodads/que/d20/lordaerontree-short/LordaeronTree");
         handler.Write("LFpt", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronFallTree");
         handler.Write("Yts1", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree");
@@ -210,7 +214,7 @@ public class DoodadsEditor
         handler.Write("JTct", "texFile", "ReplaceableTextures/tree/t00/lordaerontree/DalaranRuinsTree");
         handler.Write("JTtw", "texFile", "ReplaceableTextures/tree/t00/lordaerontree/DalaranRuinsTree");
         //handler.Write("BTtc", "texFile", "ReplaceableTextures/tree/t00/BarrensTree/BarrensTree");
-        handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t00/AshenvaleTree/FelwoodTree");
+        //handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t00/AshenvaleTree/FelwoodTree");
         handler.Write("LFpt", "texFile", "ReplaceableTextures/tree/t00/LordaeronTree/LordaeronFallTree");
         //handler.Write("Yts1", "texFile", "ReplaceableTextures/tree/t00/LordaeronTree/LordaeronSummerTree");
         //handler.Write("Yts1", "texFile:hd", "ReplaceableTextures/tree/t00/SilvermoonTree/SilverMoonTree");
@@ -252,7 +256,7 @@ public class DoodadsEditor
         handler.Write("JTtw", "texFile", "ReplaceableTextures/tree/t16/lordaerontree/lordaeronsummertree");
         handler.Write("JTtw", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
         handler.Write("BTtc", "texFile", "ReplaceableTextures/tree/t16/BarrensTree/BarrensTree");
-        handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t16/AshenvaleTree/FelwoodTree");
+        handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t16/AshenvaleTree/FelwoodCanopyTree");
         handler.Write("LFpt", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
         handler.Write("LFpt", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronFallTree");
         handler.Write("Yts1", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronSummerTree");
@@ -296,7 +300,7 @@ public class DoodadsEditor
         handler.Write("JTtw", "texFile", "ReplaceableTextures/tree/t18/lordaerontree/lordaeronsummertree");
         handler.Write("JTtw", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
         handler.Write("BTtc", "texFile", "ReplaceableTextures/tree/t18/BarrensTree/BarrensTree");
-        handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t18/AshenvaleTree/FelwoodTree");
+        handler.Write("CTtc", "texFile", "ReplaceableTextures/tree/t18/AshenvaleTree/FelwoodCanopyTree");
         handler.Write("LFpt", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
         handler.Write("LFpt", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronFallTree");
         handler.Write("Yts1", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronSummerTree");
