@@ -1,0 +1,294 @@
+[main-title-mode]Édition Reforgée
+[main-title-1]Mod d'Amélioration de Warcraft
+[main-title-2]Quenching
+[main-version]Version Actuelle
+[main-version-value]Version Actuelle
+[main-btn-start]Lancer le Jeu
+[main-btn-dis]Fonctions Courantes
+[main-btn-del]Supprimer le MOD
+[main-btn-help]Guide
+[main-btn-setup]Installer le MOD
+[main-btn-set]Paramètres de Base
+[main-btn-about]À Propos
+[main-bigbtn-update]Mise à Jour
+[main-bigbtn-set]Général
+[main-bigbtn-main]Quenching
+[main-bigbtn-cos]Peinture
+[main-bigbtn-camp]Campagne
+[main-thx-title]Remerciements
+[main-thx-btn-about]À Propos
+[main-thx-btn-support]Support
+[main-thx-btn-thx]Merci
+[main-thx-about-title]À Propos de Quenching
+[main-thx-about-dis]Mod de Warcraft Reforgé créé par [天下正义]\nGrâce au soutien de la communauté et des fans de Warcraft\nGrand soutien pour HTML et shaders\n\nProjet open-source sous licence cc4.0\nGratuit et réutilisable avec attribution\n\nFaute de temps libre pour cause de contraintes, votre soutien compte
+[main-thx-about-pay1]Don WeChat
+[main-thx-about-pay2]Don Alipay
+[main-thx-support-title]- Support -
+[main-thx-support-dis]Équipe Classique Blizzard\nA contribué au code principal\nEssentiel au MOD\n\nBlizzard NetEase\nUsage en tournois\n\nBack2Warcraft\nDiffusion des tournois internationaux\nRemerciements pour le soutien généreux\n\nYumiko\nPremière diffusion avec le MOD\n\nQiaolin\nDiffusion et promotion d’événements
+[main-thx-thx]- Merci -
+[main-thx-thx-dis]Nombreux contributeurs, liste sur le site\n\nNouvelle page en ligne en mai\nVérifiez si votre nom y figure\n\nPour tout oubli ou modification, contactez-nous
+[main-thx-cc40]Utilisation commerciale possible avec attribution visible de [Quenching] et [天下正义]
+[set-title]Paramètres Généraux
+[set-tree]Paramètres Décoration
+[set-tree-old]Rétro
+[set-tree-tall]Grand
+[set-tree-short]Bas
+[set-tile]Terrain
+[set-water]Eau
+[set-water-rel]Normal
+[set-water-tran]Clair
+[set-unit]Changements Unités
+[set-vio]Anti-Censure
+[set-btn-vio]Installer
+[set-foli]Végétation
+[set-shader]Shaders Avancés
+[set-ld]Source Lumière
+[set-ld-st]Fixe
+[set-ld-ro]Rotatif
+[set-installed]Installé
+[set-turnon]Activer
+[set-turnoff]Désactiver
+[set-turnoffclassic]Désactivez en mode classique dans le menu
+[set-gameui]UI du Jeu
+[set-ui-classic]Classique
+[set-ui-que]Quenching
+[set-ui-blz]Carnaval
+[set-glow]Réduire Lueur
+[set-half]Portrait Demi-corps
+[set-light-melee]Mêlée
+[cos-title]Peinture Unités
+[cos-title-cat]Catégorie
+[cos-title-hero]Héros
+[cos-title-unit]Unité
+[cos-title-custom]Personnalisé
+[cos-title-choose]Choisir
+[cos-title-race]Race
+[cos-title-btn-choose]Sélectionner
+[cos-title-cos]Peinture
+[cos-title-org]Original
+[cos-title-hum]Humain
+[cos-title-orc]Orc
+[cos-title-ud]Mort-Vivant
+[cos-title-ne]Elfe de la Nuit
+[main-back]Retour
+[camp-install]Installer Campagne
+[main-lang]Français
+[main-set-locksd]Verrouiller Classique
+[main-set-lockhd]Verrouiller Reforgé
+[main-set-turnonmod]Activer MOD
+[main-set-turnoffmod]Désactiver MOD
+[main-btn-theme]Changer Thème
+[main-btn-theme-org]Original
+[main-btn-theme-que]Forge
+[main-btn-theme-war2]Marée Noire
+[main-btn-theme-city]Banlieue
+[main-btn-theme-custom]Personnalisé
+[main-btn-theme-customskin]Peau Personnalisée
+[main-btn-theme-title]Changer Thème
+[main-btn-theme-dis]Changer le fond de jeu\nFormat mp4 requis pour les fichiers personnalisés
+[set-light]Lumière
+[set-fog]Brouillard Initial
+[main-btn-website]Site Officiel
+[main-setup-title]- Installation -
+[main-setup-title-mode]Version
+[main-setup-title-gpu]Carte Graphique
+[main-setup-title-sw]Interrupteur
+[main-version]Version Actuelle
+[new-title]Nouveautés
+[new-1]Ressources Intégrées
+[new-1-dis]Ajout et optimisation des ressources passées
+[new-2]Mise à Jour Client
+[new-2-dis]Nouveau fond de jeu\nAppliqué aussi au client
+[new-3]Configuration Libre
+[new-3-dis]Réorganisation de l’onglet des paramètres\nPlus de liberté dans la personnalisation
+[new-3-btn]Télécharger
+[new-4]Éclairage Mêlée
+[new-4-dis]Éclairage spécial pour les matchs en mêlée
+[new-4-btn]Détails
+[camp-title-diff]Sélection Difficile
+[camp-title-diff-1]Facile
+[camp-title-diff-2]Moyen
+[camp-title-diff-3]Difficile
+[camp-title-level]Choisir Niveau
+[camp-title]Campagne Personnalisée
+[camp-title-list]Liste des Campagnes
+[camp-btn-read]Charger Campagne
+[camp-btn-del]Supprimer Campagne
+[camp-btn-unlock]Déverrouiller Campagne
+[camp-btn-map]Ouvrir Carte
+[lang-title]- Langues -
+[pro-hint]Ne fermez pas pendant la mise à jour
+[pro-hint-perfix]Déplacement Fichiers
+[main-update-title-1]Source de Téléchargement
+[main-update-title-2]Paramètres
+[main-update-officialsite]Lien Cloud
+[changeable-cos-hero-name]Original
+[changeable-cos-orc-unit-1]Gloire de la Horde
+[changeable-cos-orc-unit-1-dis]Apparence renforcée pour cinq guerriers orcs\npour aider la Horde
+[changeable-cos-hum-unit-1]Élite de l’Alliance
+[changeable-cos-hum-unit-1-dis]Nouveaux modèles pour cinq soldats de l’Alliance\nPrêts pour Azeroth
+[changeable-cos-disable]Verrouillé
+[changeable-cos-disable-dis]Peinture non disponible pour cette escouade\nVeuillez en choisir une autre
+[changeable-set-unit]Changements Unités
+[changeable-set-unit-dis]Ajustements aux modèles\nDésactive la peinture
+[changeable-set-tree]Transformation Environnement
+[changeable-set-tree-dis]Textures et modèles plus détaillés\nSélectionnez des versions
+[changeable-set-vio]Graphiques Internationaux
+[changeable-set-vio-dis]Débloquer les effets pour l'expérience Reforged complète
+[changeable-set-water]Surface Eau
+[changeable-set-water-dis]Choix entre eau déformée ou lumineuse
+[changeable-set-foli]Végétation
+[changeable-set-foli-dis]Végétation luxuriante peut ralentir\nChoisissez en fonction de votre matériel
+[changeable-set-shader]Shaders Avancés
+[changeable-set-shader-dis]Ajustements pour un rendu optimal
+[changeable-set-light]Lumière Globale
+[changeable-set-light-dis]Améliore le contraste des scènes
+[changeable-set-ld]Direction Lumière
+[changeable-set-ld-dis]Affecte ombre et transitions jour/nuit\nFixe ou rotation possible
+[changeable-set-tile]Terrain
+[changeable-set-tile-dis]Texturing et éclairage améliorés\nPour des visuels nouveaux
+[changeable-set-ui-1]UI Classique
+[changeable-set-ui-1-dis]Icônes et mini-cartes agrandies\nCompatible avec tous les RPG
+[changeable-set-ui-3]UI Quenching
+[changeable-set-ui-3-dis]Champ de vision élargi\nUI épuré\nChangements minimaux
+[changeable-set-ui-2]UI Carnaval
+[changeable-set-ui-2-dis]Moins d'obstruction visuelle\nStyle de portrait spécial\nChangements importants
+[changeable-set-glow]Lueur Héros
+[changeable-set-glow-dis]Petite lueur simplifiée autour des héros\nAdapté pour les RPG
+[changeable-set-half]Portrait Demi-corps
+[changeable-set-half-dis]Style Carnaval\nNon compatible avec UI Classique
+[changeable-cos-hum]Humain
+[changeable-cos-orc]Orc
+[changeable-cos-ud]Mort-Vivant
+[changeable-cos-ne]Elfe de la Nuit
+[changeable-cos-na]Neutre
+[changeable-cos-none]Non Créé
+[changeable-cos-hum-mage-1]Jaina
+[changeable-cos-hum-mage-2]Antonidas
+[changeable-cos-hum-pa-2]Arthas
+[changeable-cos-hum-pa-4]Main d’Argent
+[changeable-cos-orc-bm-2]Hurlenfer
+[changeable-cos-orc-fs-2]Prophète Aveugle
+[changeable-cos-ud-dl-1]Tichondrius
+[changeable-cos-na-pl-3]Mannoroth
+[changeable-cos-na-pl-1]Magtheridon
+[changeable-cos-ne-kog-1]Cenarius
+[changeable-cos-orc-bm-4]Maître-Lame Chaotique
+[changeable-cos-hum-mage-3]Archimage Elfe
+[changeable-cos-ud-dk-2]Champion Noir
+[changeable-cos-ud-dl-3]Varimathras
+[changeable-cos-ne-pom-2]Tyrande (Marche)
+[changeable-cos-na-ga-1]Ogre Primordial
+[changeable-cos-na-dr-2]Ranger
+[changeable-cos-hum-pa-1]Uther
+[changeable-cos-hum-mk-1]Muradin
+[changeable-cos-hum-bm-1]Kael
+[changeable-cos-orc-bm-1]Samuro
+[changeable-cos-orc-bm-5]Kargath
+[changeable-cos-orc-fs-1]Thrall
+[changeable-cos-orc-tc-1]Cairne Sabot-de-Sang
+[changeable-cos-orc-sh-1]Rokhan
+[changeable-cos-hum-pa-3]Prince Déchu
+[changeable-cos-ud-lich-1]Kel'Thuzad
+[changeable-cos-ud-dl-2]Detheroc
+[changeable-cos-ud-cl-1]Anub'arak
+[changeable-cos-ne-kog-2]Malfurion
+[changeable-cos-ne-pom-1]Tyrande
+[changeable-cos-ne-dh-1]Illidan
+[changeable-cos-ne-wd-1]Maiev
+[changeable-cos-na-sw-1]Dame Vashj
+[changeable-cos-na-tk-1]Ingénieur Gazlowe
+[changeable-cos-na-pl-2]Azgalor
+[changeable-cos-na-bm-1]Rexxar
+[changeable-cos-na-pa-1]Chen Brune d'Orage
+[changeable-cos-na-dr-1]Sylvanas
+[changeable-main-hint-checkupdate]Vérification des Mises à Jour
+[changeable-main-hint-good]Connecté
+[changeable-main-hint-bad]Non Connecté
+[changeable-main-hint-checkfile]Vérification des Fichiers
+[changeable-main-hint-fileneedupdate]Mise à Jour Nécessaire
+[changeable-main-hint-latest]Dernière Version
+[changeable-main-hint-download]Téléchargement
+[changeable-main-hint-networkerror]Erreur Réseau
+[changeable-main-pro-copyfile]Copie des Fichiers
+[changeable-main-pro-unzip]Décompression
+[changeable-main-pro-off]Inactif
+[changeable-main-pro-fix]Correction des Paramètres
+[changeable-main-pro-noturnoff]Ne fermez pas lors de la mise à jour
+[changeable-main-pro-apply]Application des Paramètres
+[changeable-main-hint-noinstall]MOD non installé
+[changeable-main-hint-needupdate]Nouvelle version disponible sur le site officiel
+[changeable-main-hint-success]Installation Réussie
+[changeable-main-hint-hint]Indice
+[changeable-main-hint-notwar3]Dossier Warcraft III Reforgé non valide. Vérifiez la version et l’emplacement.
+[changeable-main-btn-del]Supprimer MOD
+[changeable-main-btn-turnoff]Désactiver MOD
+[changeable-main-btn-page1]Page 1
+[changeable-main-btn-w3c]Compatible avec W3C
+[changeable-main-btn-now3c]Non Compatible avec W3C
+[changeable-main-btn-clientlatest]Client à Jour
+[changeable-thx-1]- Équipe Classique Blizzard -\nA contribué à la majorité du code\nEssentiel au MOD\n\n- Blizzard NetEase -\nUtilisé et diffusé en tournois\n\n- Back2Warcraft -\nDiffusion internationale avec MOD\nSoutien généreux remercié\n\n- Yumiko -\nDiffusion avec MOD\nPremier supporter\n\n- Qiaolin -\nDiffusion d’événements avec MOD\nAide à la promotion\n
+[changeable-thx-2]- Frost Duke -\nAnti-censure et tests client\n\n- CodeXL -\nÉditeur de shaders\n\n- Reteras\Magos -\nOutils de modèle simplifié\n\n- Blender -\nPour modifier davantage les modèles\n\n- Tasyen -\nTutoriels pour modifications fdf\n\n- WardenIO -\nCode pour modules HD
+[changeable-thx-3]- Ladik -\nDécryptage des fichiers Casc\n\n- Nvtt -\nTraitement d'images DDS\n\n- Wanderbraun -\nRecommandé en Russie\n\n- Rey Gaming -\nVidéos en espagnol sur YouTube\n\n- Warglaive -\nVidéos MOD en espagnol\n\n- Daniel Sadowski -\nMusique
+[changeable-thx-4]- Forum Officiel -\nSaido, taichi, pat, dingo\nMise à jour continue\n\n- Gestion Communautaire -\n呜喵王, 大叔, 白羽, hahatgj, 逆鳞, 大哥\nGestion continue\n\n- Promotion Chinoise -\n星星哥/格瓦斯劳斯基/依瑞斯/斯美拉琪海露\n战术TNT/WRY魔兽联盟/平川电竞/冰糖解说\n\n- Kam -\nKOL du monde
+[changeable-thx-5]- wTc -\nPromotion Reddit\n\n- Hiveworkshop -\nRessources et collaboration\n\n- Partenaires de Campagne -\nCSW Team/InsaneMonster/Tomoraider\n\n- Partenaires Campagne Chinoise -\n记忆/鬼画桃符\n蓝蓝子/淬火粉丝/织星人\n\n- Bureau de Renseignement Warcraft -\nReportages et compétitions
+[changeable-thx-6]- Vulfat -\nSkins héros et escouades\n\n- Andreiki -\nTraduction russe\n\n- Code Campagne -\n幻想的仪式/杰克川\n\n- Test -\n安林喵/是甜食哇/无可救药的废萌\n暗夜鱼人艾琳/Scream放点盐/成都第二菜包子\n\n- Wfz -\nGuides des campagnes MOD
+[changeable-thx-7]- Coding.net -\nService cloud\n\n- Fenix Gaming -\nLivestream en espagnol\n\n- Ralle -\nSupport Hive\n\n- Promotion russe -\nArrow's Path/PavellGameChannel\n\n- Autres Modèles -\nMystic/Xyrohn21/Malmgreva\n\n*Contactez-nous pour tout oubli*
+[changeable-cos-hint-noclassic]Skin non compatible en mode classique
+[changeable-cos-hint-nounit]Fonction skin désactivée avec unités désactivées
+[changeable-main-hint-turnon]Activer
+[changeable-main-hint-turnoff]Désactiver
+[changeable-main-hint-qmdelask]Êtes-vous sûr de vouloir supprimer Quenching?
+[changeable-main-hint-qmset]Supprimer les fichiers de configuration ?
+[changeable-main-hint-qmdel]Quenching supprimé avec succès
+[changeable-main-hint-choosecamp]Veuillez sélectionner un fichier
+[changeable-main-hint-nogoodcamp]Fichier Quenching de campagne non valide
+[changeable-main-hint-qminstalled]Installation Réussie
+[changeable-main-hint-qminstalledfailed]Échec de l'installation, fichier endommagé ou espace disque insuffisant
+[changeable-main-hint-cn]Chinois
+[changeable-main-hint-en]ENG
+[changeable-cos-fail]Échec du remplacement du skin, redémarrez le client
+[changeable-main-hint-noclassic]Option non disponible en mode classique
+[changeable-main-hint-modeclassic]Édition Classique
+[changeable-main-hint-modeqm]Édition Complète
+[changeable-main-hint-updateask]Nouvelle version disponible, mettre à jour ?
+[changeable-main-hint-chooseinstallzip]Choisissez un fichier Quenching d'installation/mise à jour
+[changeable-main-hint-unavailable]Indisponible
+[changeable-main-hint-vioinstall]Installation anti-censure irréversible, confirmer ?
+[changeable-main-hint-turnoffwar3]Fermez Warcraft III et réessayez
+[changeable-main-hint-delandinstall]Quenching déjà installé, supprimer puis réinstaller
+[changeable-cos-sd]Peinture Classique
+[changeable-main-hint-restart]Redémarrage requis pour appliquer
+[changeable-cos-hum-pa-6]Paladin I
+[changeable-cos-hum-pa-7]Paladin II
+[changeable-cos-hum-pa-8]Gardien
+[changeable-cos-hum-pa-9]Amiral
+[changeable-cos-hum-pa-5]Porte-Cendres
+[changeable-cos-orc-bm-3]Hurlenfer Chaotique
+[changeable-cos-orc-bm-5]Akama
+[changeable-cos-ud-unit-1]Gardien de la Couronne
+[changeable-cos-ud-unit-1-dis]Cinq wraiths puissants du Norfendre\nPour dominer le champ de bataille
+[changeable-cos-na-fl-1]Ancien
+[changeable-cos-hum-mk-2]Clan Sombrefer
+[changeable-cos-orc-bm-6]Kargath
+[changeable-cos-orc-fs-3]Gul'dan
+[changeable-cos-ne-unit-1]Corps de Sentinelles
+[changeable-cos-ne-unit-1-dis]Cinq elfes de la nuit élites\nAu nom d'Elune
+[changeable-cos-ud-lich-2]Banshee
+[changeable-cos-na-dr-3]Ranger
+[changeable-cos-hum-unit-2]Elfe de Sang
+[changeable-cos-hum-unit-2-dis]Elfes nobles et élégants\nCapables de frapper l'ennemi
+[changeable-cos-orc-unit-2]Orc Chaotique
+[changeable-cos-orc-unit-2-dis]Amélioré par le sang démoniaque\nPlus sauvages que jamais
+[changeable-cos-ud-unit-2]Culte des Damnés
+[changeable-cos-ud-unit-2-dis]Maudit et putréfié\nChair et os réanimés
+[changeable-cos-orc-sh-2]Vol'jin
+[changeable-main-hint-dash]----------------------------
+[changeable-cos-ud-dk-1]Roi Liche
+[changeable-cos-ud-dk-2]Chevalier Noir
+[changeable-cos-ne-wd-2]Étoile de Nuit
+[changeable-cos-ud-dl-4]Balnazzar
+[changeable-cos-ud-dl-5]Dalvengyr
+[changeable-cos-ud-dl-6]Mal'Ganis
+[changeable-set-fog]Brouillard Initial
+[changeable-set-fog-dis]Ajoute un ciel et un effet atmosphérique\nLes zones d'ombre seront colorées
