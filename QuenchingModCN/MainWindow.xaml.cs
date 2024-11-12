@@ -30,7 +30,7 @@ using StormLibWarp;
 namespace QuenchingModCN
 {
     /// <summary>
-    /// MainWindow.xaml 的交互逻辑 DownloadFile("http://gitee.com/Quenchingvio/Quenchingvio/raw/master/environment/foliage/blight/bones/foliage_blight_bone_00.mdx",".//");
+    /// MainWindow.xaml 的交互逻辑 DownloadFile("https://gitee.com/Quenchingvio/Quenchingvio/raw/master/environment/foliage/blight/bones/foliage_blight_bone_00.mdx",".//");
     /// </summary>
 
     public partial class MainWindow : Window
@@ -331,7 +331,8 @@ namespace QuenchingModCN
                         Console.WriteLine(path + "\\" + fileName);
                         //if (File.Exists(path + "\\" + fileName)) { File.Delete(path + "\\" + fileName); }
                         FileStream streamWriter = File.Create(path + "\\" + fileName);
-                        this.Dispatcher.Invoke(() => { pbp.Value = pbp.Value + 1; pbtext1.Text = mainstring[9] + fileName; });
+
+                        this.Dispatcher.Invoke(() => { pbp.Value = pbp.Value + 1; pbtext1.Text = findcontext("pro-hint-perfix") + fileName; });
                         int size = 2048;
                         byte[] data = new byte[2048];
                         while (true)
@@ -363,6 +364,30 @@ namespace QuenchingModCN
             }
 
         }
+
+        public string findcontext(string tag) {
+            if (this.DataContext is MainViewModel viewModel)
+            {
+                string buttonContent = viewModel[tag];
+                return buttonContent;
+            }
+            return "";
+        }
+        public void fixsource(string value)
+        {
+            if (this.DataContext is MainViewModel viewModel)
+            {
+                viewModel.ReloadContentFromFile(value);
+            }
+        }
+        
+        public void fixcontext(string tag, string value) {
+            if (this.DataContext is MainViewModel viewModel)
+            {
+                viewModel[tag] = value;
+            }
+        }
+
         public class CASCFile : INotifyPropertyChanged
         {
             private string _FileName { get; set; }
@@ -617,8 +642,10 @@ namespace QuenchingModCN
             }
         }
 
-        public string severurl = "http://tianxiazhengyi.net/";
-        public string fseverurl = "http://tianxiazhengyi.net/";
+        public string Website_Download_CN = "https://tianxiazhengyi.net/QM/QMDownload";
+        public string Website_Download_EN = "https://tianxiazhengyi.net/QM/QMDownload";
+        public string severurl = "https://tianxiazhengyi.net/";
+        public string fseverurl = "https://tianxiazhengyi.net/";
         public int writegrid(int i)
         {
 
@@ -1231,43 +1258,43 @@ namespace QuenchingModCN
             campb[34] = level_1_Copy33;
 
 
-            sevstring[0] = "http://quenching.hiveworkshop.com/quenchingmod-1.zip";
-            sevstring[1] = "http://quenching.hiveworkshop.com/quenchingmod-2.zip";
-            sevstring[2] = "http://quenching.hiveworkshop.com/quenchingmod-3.zip";
-            sevstring[3] = "http://quenching.hiveworkshop.com/quenchingmod-4.zip";
-            sevstring[4] = "http://quenching.hiveworkshop.com/quenchingmod-5.zip";
-            sevstring[5] = "http://quenching.hiveworkshop.com/quenchingmod-6.zip";
-            sevstring[6] = "http://quenching.hiveworkshop.com/quenchingmod-7.zip";
-            sevstring[7] = "http://quenching.hiveworkshop.com/quenchingmod-8.zip";
-            sevstring[8] = "http://quenching.hiveworkshop.com/quenchingmod-9.zip";
-            sevstring[9] = "http://quenching.hiveworkshop.com/quenchingmod-10.zip";
-            sevstring[10] = "http://quenching.hiveworkshop.com/quenchingmod-11.zip";
-            sevstring[11] = "http://quenching.hiveworkshop.com/quenchingmod-12.zip";
-            sevstring[12] = "http://quenching.hiveworkshop.com/quenchingmod-13.zip";
-            sevstring[13] = "http://quenching.hiveworkshop.com/quenchingmod-14.zip";
-            sevstring[14] = "http://quenching.hiveworkshop.com/quenchingmod-15.zip";
-            sevstring[15] = "http://quenching.hiveworkshop.com/quenchingmod-16.zip";
-            sevstring[16] = "http://quenching.hiveworkshop.com/quenchingmod-17.zip";
-            sevstring[17] = "http://quenching.hiveworkshop.com/quenchingmod-18.zip";
-            sevstring[18] = "http://quenching.hiveworkshop.com/quenchingmod-19.zip";
-            sevstring[19] = "http://quenching.hiveworkshop.com/quenchingmod-20.zip";
-            sevstring[20] = "http://quenching.hiveworkshop.com/quenchingmod-21.zip";
-            sevstring[21] = "http://quenching.hiveworkshop.com/quenchingmod-22.zip";
-            sevstring[22] = "http://quenching.hiveworkshop.com/quenchingmod-23.zip";
-            sevstring[23] = "http://quenching.hiveworkshop.com/quenchingmod-24.zip";
-            sevstring[24] = "http://quenching.hiveworkshop.com/quenchingmod-25.zip";
-            sevpstring[0] = "http://quenching.hiveworkshop.com/QMPv1.32-1.zip";
-            sevpstring[1] = "http://quenching.hiveworkshop.com/QMPv1.32-2.zip";
-            sevpstring[2] = "http://quenching.hiveworkshop.com/QMPv1.4.zip";
-            sevpstring[3] = "http://quenching.hiveworkshop.com/QMPv1.5.zip";
-            sevpstring[4] = "http://quenching.hiveworkshop.com/QMPv1.6.zip";
-            sevpstring[5] = "http://quenching.hiveworkshop.com/QMPv1.70-1.zip";
-            sevpstring[6] = "http://quenching.hiveworkshop.com/QMPv1.70-2.zip";
-            sevpstring[7] = "http://quenching.hiveworkshop.com/QMPv1.70-3.zip";
-            sevpstring[8] = "http://quenching.hiveworkshop.com/QMPv1.8.zip";
-            sevpstring[8] = "http://quenching.hiveworkshop.com/QMPv1.9.zip";
-            sevpstring[9] = "http://quenching.hiveworkshop.com/QMPv2.0.zip";
-            sevpstring[10] = "http://quenching.hiveworkshop.com/QMPv2.1.zip";
+            sevstring[0] = "https://quenching.hiveworkshop.com/quenchingmod-1.zip";
+            sevstring[1] = "https://quenching.hiveworkshop.com/quenchingmod-2.zip";
+            sevstring[2] = "https://quenching.hiveworkshop.com/quenchingmod-3.zip";
+            sevstring[3] = "https://quenching.hiveworkshop.com/quenchingmod-4.zip";
+            sevstring[4] = "https://quenching.hiveworkshop.com/quenchingmod-5.zip";
+            sevstring[5] = "https://quenching.hiveworkshop.com/quenchingmod-6.zip";
+            sevstring[6] = "https://quenching.hiveworkshop.com/quenchingmod-7.zip";
+            sevstring[7] = "https://quenching.hiveworkshop.com/quenchingmod-8.zip";
+            sevstring[8] = "https://quenching.hiveworkshop.com/quenchingmod-9.zip";
+            sevstring[9] = "https://quenching.hiveworkshop.com/quenchingmod-10.zip";
+            sevstring[10] = "https://quenching.hiveworkshop.com/quenchingmod-11.zip";
+            sevstring[11] = "https://quenching.hiveworkshop.com/quenchingmod-12.zip";
+            sevstring[12] = "https://quenching.hiveworkshop.com/quenchingmod-13.zip";
+            sevstring[13] = "https://quenching.hiveworkshop.com/quenchingmod-14.zip";
+            sevstring[14] = "https://quenching.hiveworkshop.com/quenchingmod-15.zip";
+            sevstring[15] = "https://quenching.hiveworkshop.com/quenchingmod-16.zip";
+            sevstring[16] = "https://quenching.hiveworkshop.com/quenchingmod-17.zip";
+            sevstring[17] = "https://quenching.hiveworkshop.com/quenchingmod-18.zip";
+            sevstring[18] = "https://quenching.hiveworkshop.com/quenchingmod-19.zip";
+            sevstring[19] = "https://quenching.hiveworkshop.com/quenchingmod-20.zip";
+            sevstring[20] = "https://quenching.hiveworkshop.com/quenchingmod-21.zip";
+            sevstring[21] = "https://quenching.hiveworkshop.com/quenchingmod-22.zip";
+            sevstring[22] = "https://quenching.hiveworkshop.com/quenchingmod-23.zip";
+            sevstring[23] = "https://quenching.hiveworkshop.com/quenchingmod-24.zip";
+            sevstring[24] = "https://quenching.hiveworkshop.com/quenchingmod-25.zip";
+            sevpstring[0] = "https://quenching.hiveworkshop.com/QMPv1.32-1.zip";
+            sevpstring[1] = "https://quenching.hiveworkshop.com/QMPv1.32-2.zip";
+            sevpstring[2] = "https://quenching.hiveworkshop.com/QMPv1.4.zip";
+            sevpstring[3] = "https://quenching.hiveworkshop.com/QMPv1.5.zip";
+            sevpstring[4] = "https://quenching.hiveworkshop.com/QMPv1.6.zip";
+            sevpstring[5] = "https://quenching.hiveworkshop.com/QMPv1.70-1.zip";
+            sevpstring[6] = "https://quenching.hiveworkshop.com/QMPv1.70-2.zip";
+            sevpstring[7] = "https://quenching.hiveworkshop.com/QMPv1.70-3.zip";
+            sevpstring[8] = "https://quenching.hiveworkshop.com/QMPv1.8.zip";
+            sevpstring[8] = "https://quenching.hiveworkshop.com/QMPv1.9.zip";
+            sevpstring[9] = "https://quenching.hiveworkshop.com/QMPv2.0.zip";
+            sevpstring[10] = "https://quenching.hiveworkshop.com/QMPv2.1.zip";
         }
         public void initstring()
         {
@@ -1297,116 +1324,52 @@ namespace QuenchingModCN
 
             if (readflag == true)
             {
-                dlogstring[0] = temp[j]; j++; //- 提示 -
-                dlogstring[1] = temp[j]; j++; //怀旧模式使用经典版的单位模型\n会覆盖所有其他涂装\n适合更加适应经典版画面的玩家
-
-                cosunitstring[2] = temp[j]; j++;
-                cosunitstring[3] = temp[j]; j++;
-                cosunitstring[4] = temp[j]; j++;
-                cosunitstring[5] = temp[j]; j++;
-                cosunitstring[6] = temp[j]; j++;
-                cosunitstring[7] = temp[j]; j++;
-                cosunitstring[8] = temp[j]; j++;
-                cosunitstring[9] = temp[j]; j++;
-                cosunitstring[0] = temp[j]; j++;
-                cosunitstring[1] = temp[j]; j++;
-
-                cosunits1 = cosunitstring[2];
-                cosunits2 = cosunitstring[3];
-
-                setstringt[0] = temp[j]; j++;
-                setstringc[0] = temp[j]; j++;
-                setstringt[1] = temp[j]; j++;
-                setstringc[1] = temp[j]; j++;
-                setstringt[2] = temp[j]; j++;
-                setstringc[2] = temp[j]; j++;
-                setstringt[3] = temp[j]; j++;
-                setstringc[3] = temp[j]; j++;
-                setstringt[4] = temp[j]; j++;
-                setstringc[4] = temp[j]; j++;
-                setstringt[5] = temp[j]; j++;
-                setstringc[5] = temp[j]; j++;
-                setstringt[6] = temp[j]; j++;
-                setstringc[6] = temp[j]; j++;
-                setstringt[7] = temp[j]; j++;
-                setstringc[7] = temp[j]; j++;
-                setstringt[8] = temp[j]; j++;
-                setstringc[8] = temp[j]; j++;
-                setstringt[19] = temp[j]; j++;
-                setstringc[19] = temp[j]; j++;
-                setstringt[9] = temp[j]; j++;
-                setstringc[9] = temp[j]; j++;
-                setstringt[10] = temp[j]; j++;
-                setstringc[10] = temp[j]; j++;
-                setstringt[11] = temp[j]; j++;
-                setstringc[11] = temp[j]; j++;
-                setstringt[12] = temp[j]; j++;
-                setstringc[12] = temp[j]; j++;
-                setstringt[13] = temp[j]; j++;
-                setstringc[13] = temp[j]; j++;
-                setstringt[14] = temp[j]; j++;
-                setstringc[14] = temp[j]; j++;
-                setstringt[15] = temp[j]; j++;
-                setstringc[15] = temp[j]; j++;
-                setstringt[16] = temp[j]; j++;
-                setstringc[16] = temp[j]; j++;
-                setstringt[17] = temp[j]; j++;
-                setstringc[17] = temp[j]; j++;
-                setstringt[18] = temp[j]; j++;
-                setstringc[18] = temp[j]; j++;
-
-                achstring1[0] = temp[j]; j++;
-                achstring2[0] = temp[j]; j++;
-                achstring3[0] = temp[j]; j++;
-                achstring4[0] = "a1.png";
-                achstring1[1] = temp[j]; j++;
-                achstring2[1] = temp[j]; j++;
-                achstring3[1] = temp[j]; j++;
-                achstring4[1] = "a2.png";
-                achstring1[2] = temp[j]; j++;
-                achstring2[2] = temp[j]; j++;
-                achstring3[2] = temp[j]; j++;
-                achstring4[2] = "a3.png";
-                achstring1[3] = temp[j]; j++;
-                achstring2[3] = temp[j]; j++;
-                achstring3[3] = temp[j]; j++;
-                achstring4[3] = "a4.png";
-                achstring1[4] = temp[j]; j++;
-                achstring2[4] = temp[j]; j++;
-                achstring3[4] = temp[j]; j++;
-                achstring4[4] = "a5.png";
-                achstring1[5] = temp[j]; j++;
-                achstring2[5] = temp[j]; j++;
-                achstring3[5] = temp[j]; j++;
-                achstring4[5] = "a6.png";
-                achstring1[6] = temp[j]; j++;
-                achstring2[6] = temp[j]; j++;
-                achstring3[6] = temp[j]; j++;
-                achstring4[6] = "a7.png";
-                achstring1[7] = temp[j]; j++;
-                achstring2[7] = temp[j]; j++;
-                achstring3[7] = temp[j]; j++;
-                achstring4[7] = "a8.png";
-                achstring1[8] = temp[j]; j++;
-                achstring2[8] = temp[j]; j++;
-                achstring3[8] = temp[j]; j++;
-                achstring4[8] = "a9.png";
-                achstring1[9] = temp[j]; j++;
-                achstring2[9] = temp[j]; j++;
-                achstring3[9] = temp[j]; j++;
-                achstring4[9] = "a10.png";
-                achstring1[10] = temp[j]; j++;
-                achstring2[10] = temp[j]; j++;
-                achstring3[10] = temp[j]; j++;
 
 
+                setstringt[0] = findcontext("changeable-set-unit");
+                setstringc[0] = findcontext("changeable-set-unit-dis");
 
-                cosherostring[0] = temp[j]; j++;
-                cosherostring[1] = temp[j]; j++;
-                cosherostring[2] = temp[j]; j++;
-                cosherostring[3] = temp[j]; j++;
-                cosherostring[4] = temp[j]; j++;
-                cosherostring[5] = temp[j]; j++;
+                setstringt[1] = findcontext("changeable-set-tree");
+                setstringc[1] = findcontext("changeable-set-tree-dis");
+
+                setstringt[2] = findcontext("changeable-set-vio");
+                setstringc[2] = findcontext("changeable-set-vio-dis");
+
+                setstringt[3] = findcontext("changeable-set-water");
+                setstringc[3] = findcontext("changeable-set-water-dis");
+
+                setstringt[4] = findcontext("changeable-set-foli");
+                setstringc[4] = findcontext("changeable-set-foli-dis");
+
+                setstringt[5] = findcontext("changeable-set-shader");
+                setstringc[5] = findcontext("changeable-set-shader-dis");
+
+                setstringt[6] = findcontext("changeable-set-light");
+                setstringc[6] = findcontext("changeable-set-light-dis");
+
+                setstringt[7] = findcontext("changeable-set-ld");
+                setstringc[7] = findcontext("changeable-set-ld-dis");
+
+                setstringt[8] = findcontext("changeable-set-tile");
+                setstringc[8] = findcontext("changeable-set-tile-dis");
+
+                setstringt[19] = findcontext("changeable-set-fog");
+                setstringc[19] = findcontext("changeable-set-fog-dis");
+
+                setstringt[9] = findcontext("changeable-set-ui-1");
+                setstringc[9] = findcontext("changeable-set-ui-1-dis");
+
+                setstringt[10] = findcontext("changeable-set-ui-2");
+                setstringc[10] = findcontext("changeable-set-ui-2-dis");
+
+                setstringt[11] = findcontext("changeable-set-ui-3");
+                setstringc[11] = findcontext("changeable-set-ui-3-dis");
+
+                setstringt[12] = findcontext("changeable-set-glow");
+                setstringc[12] = findcontext("changeable-set-glow-dis");
+
+                setstringt[13] = findcontext("changeable-set-half");
+                setstringc[13] = findcontext("changeable-set-half-dis");
 
                 cosheroicon[0] = "p031.png";
                 cosheroicon[1] = "p06.png";
@@ -1514,171 +1477,122 @@ namespace QuenchingModCN
                 cosheropic[75] = "cosnew55.png";
                 cosheropic[76] = "cosnew56.png";
 
-                cosherodes[0] = temp[j]; j++;
-                cosherodes[1] = temp[j]; j++;
+                mainstring[0] = findcontext("changeable-main-pro-copyfile");
+                mainstring[1] = findcontext("changeable-main-pro-copyfile");
+                mainstring[2] = findcontext("changeable-main-hint-latest");
+                mainstring[3] = findcontext("changeable-main-pro-copyfile");
+                mainstring[4] = findcontext("changeable-main-pro-copyfile");
+                mainstring[5] = findcontext("changeable-main-pro-copyfile");
+                mainstring[6] = findcontext("changeable-main-pro-unzip");
+                mainstring[7] = findcontext("changeable-main-pro-copyfile");
+                mainstring[8] = findcontext("changeable-main-pro-copyfile");
+                mainstring[9] = findcontext("changeable-main-pro-copyfile");
 
+                mbtext[0] = findcontext("changeable-main-hint-hint");
 
-                cosherodes[29] = temp[j]; j++;
-                cosherodes[30] = temp[j]; j++;
-                cosherodes[31] = temp[j]; j++;
-                cosherodes[32] = temp[j]; j++;
-                cosherodes[33] = temp[j]; j++;
-                cosherodes[34] = temp[j]; j++;
-                cosherodes[35] = temp[j]; j++;
-                cosherodes[36] = temp[j]; j++;
-                cosherodes[37] = temp[j]; j++;
-                cosherodes[38] = temp[j]; j++;
-                cosherodes[39] = temp[j]; j++;
-                cosherodes[40] = temp[j]; j++;
-                cosherodes[41] = temp[j]; j++;
-                cosherodes[42] = temp[j]; j++;
-                cosherodes[43] = temp[j]; j++;
-                cosherodes[44] = temp[j]; j++;
+                //mbtext[1] = findcontext("changeable-main-pro-noturnoff");
 
-                cosherodes[2] = temp[j]; j++;
-                cosherodes[23] = temp[j]; j++;
-                cosherodes[24] = temp[j]; j++;
-                cosherodes[3] = temp[j]; j++;
-                cosherodes[4] = temp[j]; j++;
-                cosherodes[5] = temp[j]; j++;
-                cosherodes[25] = temp[j]; j++;
-                cosherodes[6] = temp[j]; j++;
-                cosherodes[26] = temp[j]; j++;
-                cosherodes[7] = temp[j]; j++;
-                cosherodes[8] = temp[j]; j++;
-                cosherodes[9] = temp[j]; j++;
-                cosherodes[10] = temp[j]; j++;
-                cosherodes[11] = temp[j]; j++;
-                cosherodes[27] = temp[j]; j++;
-                cosherodes[12] = temp[j]; j++;
-                cosherodes[13] = temp[j]; j++;
-                cosherodes[14] = temp[j]; j++;
-                cosherodes[15] = temp[j]; j++;
-                cosherodes[16] = temp[j]; j++;
-                cosherodes[17] = temp[j]; j++;
-                cosherodes[18] = temp[j]; j++;
-                cosherodes[19] = temp[j]; j++;
-                cosherodes[28] = temp[j]; j++;
-                cosherodes[20] = temp[j]; j++;
-                cosherodes[21] = temp[j]; j++;
-                cosherodes[22] = temp[j]; j++;
+                mbtext[2] = findcontext("cchangeable-main-hint-notwar3");
 
-                mainstring[0] = temp[j]; j++;
-                mainstring[1] = temp[j]; j++;
-                mainstring[2] = temp[j]; j++;
-                mainstring[3] = temp[j]; j++;
-                mainstring[4] = temp[j]; j++;
-                mainstring[5] = temp[j]; j++;
-                mainstring[6] = temp[j]; j++;
-                mainstring[7] = temp[j]; j++;
-                mainstring[8] = temp[j]; j++;
-                mainstring[9] = temp[j]; j++;
-                mainstring[10] = temp[j]; j++;
-                mainstring[11] = temp[j]; j++;
-                mainstring[12] = temp[j]; j++;
-                mainstring[13] = temp[j]; j++;
-                mainstring[14] = temp[j]; j++;
-                mainstring[15] = temp[j]; j++;
-                mainstring[16] = temp[j]; j++;
-                mainstring[17] = temp[j]; j++;
-                mainstring[18] = temp[j]; j++;
-                mainstring[19] = temp[j]; j++;
-                mainstring[20] = temp[j]; j++;
-                mainstring[21] = temp[j]; j++;
-                mainstring[22] = temp[j]; j++;
-                mainstring[23] = temp[j]; j++;
-                mainstring[24] = temp[j]; j++;
-                mainstring[25] = temp[j]; j++;
-                mainstring[26] = temp[j]; j++;
+                mbtext[9] = findcontext("changeable-main-btn-w3c");
+                mbtext[10] = findcontext("changeable-main-btn-now3c");
+                mbtext[14] = findcontext("changeable-cos-hint-nounit");
 
+                //mbtext[15] = findcontext("changeable-main-hint-checkfile");
+                //mbtext[16] = findcontext("changeable-main-hint-bad");
 
-                mbtext[0] = temp[j]; j++;
-                mbtext[1] = temp[j]; j++;
-                mbtext[2] = temp[j]; j++;
-                mbtext[3] = temp[j]; j++;
-                mbtext[4] = temp[j]; j++;
-                mbtext[5] = temp[j]; j++;
-                mbtext[6] = temp[j]; j++;
-                mbtext[7] = temp[j]; j++;
-                mbtext[8] = temp[j]; j++;
-                mbtext[9] = temp[j]; j++;
-                mbtext[10] = temp[j]; j++;
-                mbtext[11] = temp[j]; j++;
-                mbtext[12] = temp[j]; j++;
+                mbtext[17] = findcontext("changeable-main-hint-qmdelask");
+                mbtext[18] = findcontext("changeable-main-hint-qmset");
+                mbtext[19] = findcontext("changeable-main-hint-qmdel");
 
-                supporttext[0] = temp[j]; j++;
-                supporttext[1] = temp[j]; j++;
-                supporttext[2] = temp[j]; j++;
-                supporttext[3] = temp[j]; j++;
-                supporttext[4] = temp[j]; j++;
-                supporttext[5] = temp[j]; j++;
-                supporttext[6] = temp[j]; j++;
+                mbtext[20] = findcontext("changeable-main-hint-choosecamp");
+                mbtext[35] = findcontext("changeable-main-hint-choosecamp");
 
-                mbtext[13] = temp[j]; j++;
-                mbtext[14] = temp[j]; j++;
-                //删除
-                mbtext[15] = temp[j]; j++;
-                mbtext[16] = temp[j]; j++;
-                mbtext[17] = temp[j]; j++;
-                mbtext[18] = temp[j]; j++;
-                mbtext[19] = temp[j]; j++;
-                //读取战役
-                mbtext[20] = temp[j]; j++;
-                mbtext[21] = temp[j]; j++;
-                mbtext[22] = temp[j]; j++;
-                //读取语言
-                mbtext[23] = temp[j]; j++;
-                mbtext[24] = temp[j]; j++;
-                //下载地址
-                mbtext[25] = temp[j]; j++;
-                //皮肤失败
-                mbtext[26] = temp[j]; j++;
-                //经典版不可用
-                mbtext[27] = temp[j]; j++;
-                //官网
-                mbtext[28] = temp[j]; j++;
-                //版本
-                mbtext[29] = temp[j]; j++;
-                mbtext[30] = temp[j]; j++;
-                //升级?
-                mbtext[31] = temp[j]; j++;
-                //怀旧
-                mbtext[32] = temp[j]; j++;
-                //自动更新
-                mbtext[33] = temp[j]; j++;
-                mbtext[34] = temp[j]; j++;
-                //选择安装客户端补丁
-                mbtext[35] = temp[j]; j++;
-                //不可用
-                mbtext[36] = temp[j]; j++;
-                //先装本体
-                mbtext[37] = temp[j]; j++;
-                //教程视频
-                mbtext[38] = temp[j]; j++;
-                //下载地址
-                mbtext[39] = temp[j]; j++;
-                //反和谐之后
-                mbtext[40] = temp[j]; j++;
-                //怀旧
-                mbtext[41] = temp[j]; j++;
-                mbtext[42] = temp[j]; j++;
-                //普通
-                mbtext[43] = temp[j]; j++;
-                mbtext[44] = temp[j]; j++;
-                //对战
-                mbtext[45] = temp[j]; j++;
-                mbtext[46] = temp[j]; j++;
-                //别开魔兽
-                mbtext[47] = temp[j]; j++;
-                //已经安装
-                mbtext[48] = temp[j]; j++;
-                //涂装切换经典
-                mbtext[49] = temp[j]; j++;
-                mbtext[50] = temp[j]; j++;
-                //重新启动生效
-                mbtext[51] = temp[j]; j++;
-                //版本太旧
-                mbtext[52] = temp[j]; j++;
+                mbtext[21] = findcontext("changeable-main-hint-qminstalledfailed");
+                mbtext[22] = findcontext("changeable-main-hint-qminstalled");
+                
+                mbtext[26] = findcontext("changeable-cos-fail");
+                mbtext[27] = findcontext("changeable-main-hint-noclassic");
+
+                mbtext[31] = findcontext("changeable-main-hint-updateask");
+                mbtext[40] = findcontext("changeable-main-hint-vioinstall");
+
+                mbtext[47] = findcontext("changeable-main-hint-turnoffwar3");
+
+                mbtext[51] = findcontext("changeable-main-hint-restart");
+
+                supporttext[0] = findcontext("changeable-thx-1");
+                supporttext[1] = findcontext("changeable-thx-2");
+                supporttext[2] = findcontext("changeable-thx-3");
+                supporttext[3] = findcontext("changeable-thx-4");
+                supporttext[4] = findcontext("changeable-thx-5");
+                supporttext[5] = findcontext("changeable-thx-6");
+                supporttext[6] = findcontext("changeable-thx-7");
+
+                //mbtext[13] = temp[j]; j++;
+                //mbtext[14] = temp[j]; j++;
+                ////删除
+                //mbtext[15] = temp[j]; j++;
+                //mbtext[16] = temp[j]; j++;
+                //mbtext[17] = temp[j]; j++;
+                //mbtext[18] = temp[j]; j++;
+                //mbtext[19] = temp[j]; j++;
+                ////读取战役
+                //mbtext[20] = temp[j]; j++;
+                //mbtext[21] = temp[j]; j++;
+                //mbtext[22] = temp[j]; j++;
+                ////读取语言
+                //mbtext[23] = temp[j]; j++;
+                //mbtext[24] = temp[j]; j++;
+                ////下载地址
+                //mbtext[25] = temp[j]; j++;
+                ////皮肤失败
+                //mbtext[26] = temp[j]; j++;
+                ////经典版不可用
+                //mbtext[27] = temp[j]; j++;
+                ////官网
+                //mbtext[28] = temp[j]; j++;
+                ////版本
+                //mbtext[29] = temp[j]; j++;
+                //mbtext[30] = temp[j]; j++;
+                ////升级?
+                //mbtext[31] = temp[j]; j++;
+                ////怀旧
+                //mbtext[32] = temp[j]; j++;
+                ////自动更新
+                //mbtext[33] = temp[j]; j++;
+                //mbtext[34] = temp[j]; j++;
+                ////选择安装客户端补丁
+                //mbtext[35] = temp[j]; j++;
+                ////不可用
+                //mbtext[36] = temp[j]; j++;
+                ////先装本体
+                //mbtext[37] = temp[j]; j++;
+                ////教程视频
+                //mbtext[38] = temp[j]; j++;
+                ////下载地址
+                //mbtext[39] = temp[j]; j++;
+                ////反和谐之后
+                //mbtext[40] = temp[j]; j++;
+                ////怀旧
+                //mbtext[41] = temp[j]; j++;
+                //mbtext[42] = temp[j]; j++;
+                ////普通
+                //mbtext[43] = temp[j]; j++;
+                //mbtext[44] = temp[j]; j++;
+                ////对战
+                //mbtext[45] = temp[j]; j++;
+                //mbtext[46] = temp[j]; j++;
+                ////别开魔兽
+                //mbtext[47] = temp[j]; j++;
+                ////已经安装
+                //mbtext[48] = temp[j]; j++;
+                ////涂装切换经典
+                //mbtext[49] = temp[j]; j++;
+                //mbtext[50] = temp[j]; j++;
+                ////重新启动生效
+                //mbtext[51] = temp[j]; j++;
+                ////版本太旧
 
                 cosherodes[45] = temp[j]; j++;
                 cosherodes[46] = temp[j]; j++;
@@ -1707,105 +1621,99 @@ namespace QuenchingModCN
                 cosunitstring[18] = temp[j]; j++;
                 cosunitstring[19] = temp[j]; j++;
 
-                //这里开始
+                cos_unit_des[0, 0] = findcontext("changeable-cos-hero-name");
+                cos_unit_des[0, 1] = findcontext("changeable-cos-hum-unit-1");
+                cos_unit_des[0, 2] = findcontext("changeable-cos-hum-unit-2");
+                cos_unit_des[1, 0] = findcontext("changeable-cos-hero-name");
+                cos_unit_des[1, 1] = findcontext("changeable-cos-orc-unit-1");
+                cos_unit_des[1, 2] = findcontext("changeable-cos-orc-unit-2");
+                cos_unit_des[2, 0] = findcontext("changeable-cos-hero-name");
+                cos_unit_des[2, 1] = findcontext("changeable-cos-ud-unit-1");
+                cos_unit_des[2, 2] = findcontext("changeable-cos-ud-unit-2");
+                cos_unit_des[3, 0] = findcontext("changeable-cos-hero-name");
+                cos_unit_des[3, 1] = findcontext("changeable-cos-ne-unit-1");
 
-                setstringt[19] = temp[252]; j++;
-                setstringc[19] = temp[253]; j++;
-                setstringt[9] = temp[30]; j++;
-                setstringc[9] = temp[31]; j++;
+                cos_hero_des[0, 0, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[0, 0, 1] = findcontext("changeable-cos-hum-mage-1"); // 吉安娜
+                cos_hero_des[0, 0, 2] = findcontext("changeable-cos-hum-mage-2"); // 安东尼达斯
+                cos_hero_des[0, 0, 3] = findcontext("changeable-cos-hum-mage-3"); // 精灵大法师
+                cos_hero_des[0, 3, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[0, 3, 1] = findcontext("changeable-cos-hum-bm-1"); // 凯尔
+                cos_hero_des[0, 2, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[0, 2, 1] = findcontext("changeable-cos-hum-mk-1"); // 穆拉丁
+                cos_hero_des[0, 2, 2] = findcontext("changeable-cos-hum-mk-2"); // 黑铁氏族
+                cos_hero_des[0, 1, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[0, 1, 1] = findcontext("changeable-cos-hum-pa-1"); // 乌瑟尔
+                cos_hero_des[0, 1, 2] = findcontext("changeable-cos-hum-pa-2"); // 阿尔塞斯
+                cos_hero_des[0, 1, 3] = findcontext("changeable-cos-hum-pa-3"); // 堕落王子
+                cos_hero_des[0, 1, 4] = findcontext("changeable-cos-hum-pa-4"); // 灰烬使者
+                cos_hero_des[0, 1, 5] = findcontext("changeable-cos-hum-pa-5"); // 守护者
+                cos_hero_des[0, 1, 6] = findcontext("changeable-cos-hum-pa-6"); // 海军上将
+                cos_hero_des[0, 1, 7] = findcontext("changeable-cos-hum-pa-7"); // 海军上将
+                cos_hero_des[0, 1, 8] = findcontext("changeable-cos-hum-pa-8"); // 海军上将
+                cos_hero_des[0, 1, 9] = findcontext("changeable-cos-hum-pa-9"); // 海军上将
+                cos_hero_des[1, 0, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[1, 0, 1] = findcontext("changeable-cos-orc-bm-1"); // 萨穆罗
+                cos_hero_des[1, 0, 2] = findcontext("changeable-cos-orc-bm-2"); // 地狱咆哮
+                cos_hero_des[1, 0, 3] = findcontext("changeable-cos-orc-bm-3"); // 混乱地狱咆哮
+                cos_hero_des[1, 0, 4] = findcontext("changeable-cos-orc-bm-4"); // 阿卡玛
+                cos_hero_des[1, 0, 5] = findcontext("changeable-cos-orc-bm-5"); // 卡加斯
+                cos_hero_des[1, 1, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[1, 1, 1] = findcontext("changeable-cos-orc-fs-1"); // 萨尔
+                cos_hero_des[1, 1, 2] = findcontext("changeable-cos-orc-fs-2"); // 盲眼先知
+                cos_hero_des[1, 1, 3] = findcontext("changeable-cos-orc-fs-3"); // 古尔丹
+                cos_hero_des[1, 2, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[1, 2, 1] = findcontext("changeable-cos-orc-tc-1"); // 凯恩·血蹄
+                cos_hero_des[1, 3, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[1, 3, 1] = findcontext("changeable-cos-orc-sh-1"); // 洛克汗
+                cos_hero_des[1, 3, 2] = findcontext("changeable-cos-orc-sh-2"); // 森金
+                cos_hero_des[2, 0, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[2, 0, 1] = findcontext("changeable-cos-ud-dk-1"); // 巫妖王
+                cos_hero_des[2, 0, 2] = findcontext("changeable-cos-ud-dk-2"); // 黑暗骑士
+                cos_hero_des[2, 1, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[2, 1, 1] = findcontext("changeable-cos-ud-lich-1"); // 克尔苏加德
+                cos_hero_des[2, 1, 2] = findcontext("changeable-cos-ud-lich-2"); // 女妖
+                cos_hero_des[2, 2, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[2, 2, 1] = findcontext("changeable-cos-ud-dl-1"); // 提克尼奥斯
+                cos_hero_des[2, 2, 2] = findcontext("changeable-cos-ud-dl-2"); // 
+                cos_hero_des[2, 2, 3] = findcontext("changeable-cos-ud-dl-3"); // 
+                cos_hero_des[2, 2, 4] = findcontext("changeable-cos-ud-dl-4"); // 巴纳扎尔
+                cos_hero_des[2, 2, 5] = findcontext("changeable-cos-ud-dl-5"); // 达文格尔
+                cos_hero_des[2, 2, 6] = findcontext("changeable-cos-ud-dl-6"); // 麦尔盖尼斯
+                cos_hero_des[2, 3, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[2, 3, 1] = findcontext("changeable-cos-ud-cl-1"); // 阿努巴拉克
+                cos_hero_des[3, 0, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[3, 0, 1] = findcontext("changeable-cos-ne-pom-1"); // 泰兰德
+                cos_hero_des[3, 0, 2] = findcontext("changeable-cos-ne-pom-2"); // 步行泰兰德
+                cos_hero_des[3, 1, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[3, 1, 1] = findcontext("changeable-cos-ne-kog-1"); // 塞纳留斯
+                cos_hero_des[3, 1, 2] = findcontext("changeable-cos-ne-kog-2"); // 玛法里奥
+                cos_hero_des[3, 2, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[3, 2, 1] = findcontext("changeable-cos-ne-dh-1"); // 伊利丹
+                cos_hero_des[3, 3, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[3, 3, 1] = findcontext("changeable-cos-ne-wd-1"); // 玛维
+                cos_hero_des[3, 3, 2] = findcontext("changeable-cos-ne-wd-2"); // 暗夜孤星
+                cos_hero_des[4, 0, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[4, 0, 1] = findcontext("changeable-cos-na-bm-1"); // 雷克萨
+                cos_hero_des[4, 1, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[4, 1, 1] = findcontext("changeable-cos-na-dr-1"); // 希尔瓦娜斯
+                cos_hero_des[4, 1, 2] = findcontext("changeable-cos-na-dr-3"); // 游骑兵
+                cos_hero_des[4, 1, 3] = findcontext("changeable-cos-na-dr-2"); // 游侠
+                cos_hero_des[4, 2, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[4, 2, 1] = findcontext("changeable-cos-na-sw-1"); // 瓦斯琪
+                cos_hero_des[4, 3, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[4, 3, 1] = findcontext("changeable-cos-na-ga-1"); // 原生食人魔
+                cos_hero_des[5, 0, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[5, 0, 1] = findcontext("changeable-cos-na-pa-1"); // 陈·烈酒风暴
+                cos_hero_des[5, 1, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[5, 1, 1] = findcontext("changeable-cos-na-fl-1"); // 上古之神
+                cos_hero_des[5, 2, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[5, 2, 1] = findcontext("changeable-cos-na-tk-1"); // 工程师加兹劳
+                cos_hero_des[5, 3, 0] = findcontext("changeable-cos-hero-name");
+                cos_hero_des[5, 3, 1] = findcontext("changeable-cos-na-pl-1"); // 玛瑟里顿
+                cos_hero_des[5, 3, 2] = findcontext("changeable-cos-na-pl-2"); // 阿兹加洛
+                cos_hero_des[5, 3, 3] = findcontext("changeable-cos-na-pl-3"); // 玛诺洛斯
 
-                cos_unit_des[0, 0] = temp[2];
-                cos_unit_des[0, 1] = temp[8]; ;
-                cos_unit_des[0, 2] = temp[239];
-                cos_unit_des[1, 0] = temp[2];
-                cos_unit_des[1, 1] = temp[4];
-                cos_unit_des[1, 2] = temp[241];
-                cos_unit_des[2, 0] = temp[2];
-                cos_unit_des[2, 1] = temp[229]; ;
-                cos_unit_des[2, 2] = temp[243];
-                cos_unit_des[3, 0] = temp[2];
-                cos_unit_des[3, 1] = temp[235];
-
-                cos_hero_des[0, 0, 0] = temp[2];
-                cos_hero_des[0, 0, 1] = temp[92];
-                cos_hero_des[0, 0, 2] = temp[103];
-                cos_hero_des[0, 0, 3] = temp[93];
-                cos_hero_des[0, 3, 0] = temp[2];
-                cos_hero_des[0, 3, 1] = temp[113];
-                cos_hero_des[0, 2, 0] = temp[2];
-                cos_hero_des[0, 2, 1] = temp[112];
-                cos_hero_des[0, 2, 2] = temp[232]; //CSW
-                cos_hero_des[0, 1, 0] = temp[2];
-                cos_hero_des[0, 1, 1] = temp[109];
-                cos_hero_des[0, 1, 2] = temp[110]; //"阿尔萨斯";
-                cos_hero_des[0, 1, 3] = temp[120]; //"持剑阿尔萨斯";
-                cos_hero_des[0, 1, 4] = temp[111]; //"爵士";
-                cos_hero_des[0, 1, 5] = temp[226]; //"灰烬使者";
-                cos_hero_des[0, 1, 6] = temp[223]; //"守护者";
-                cos_hero_des[0, 1, 7] = temp[224]; //"兽人克星";
-                cos_hero_des[0, 1, 8] = temp[111]; //"骑士长";
-                cos_hero_des[0, 1, 9] = temp[225]; //"海军上将";
-                cos_hero_des[1, 0, 0] = temp[2];
-                cos_hero_des[1, 0, 1] = temp[114]; //"萨穆罗";
-                cos_hero_des[1, 0, 2] = temp[115]; //"地狱咆哮";
-                cos_hero_des[1, 0, 3] = temp[227]; //"着魔地狱咆哮";
-                cos_hero_des[1, 0, 4] = temp[228]; //"阿卡玛";
-                cos_hero_des[1, 0, 5] = temp[233]; //"拳刃";bagysta
-                cos_hero_des[1, 1, 0] = temp[2];
-                cos_hero_des[1, 1, 1] = temp[116]; //"萨尔";
-                cos_hero_des[1, 1, 2] = temp[117]; //"盲眼先知";
-                cos_hero_des[1, 1, 3] = temp[234]; //"古尔丹";
-                cos_hero_des[1, 2, 0] = temp[2];
-                cos_hero_des[1, 2, 1] = temp[118]; //"血蹄";
-                cos_hero_des[1, 3, 0] = temp[2];
-                cos_hero_des[1, 3, 1] = temp[119]; //"洛克汗";
-                cos_hero_des[1, 3, 2] = temp[245]; //"森金";
-                cos_hero_des[2, 0, 0] = temp[2];
-                cos_hero_des[2, 0, 1] = temp[247]; //"巫妖王"; Malmgreva
-                cos_hero_des[2, 0, 2] = temp[104]; //"恐怖骑士" Vulfar
-                cos_hero_des[2, 1, 0] = temp[2];
-                cos_hero_des[2, 1, 1] = temp[121]; //"克尔苏加德";//
-                cos_hero_des[2, 1, 2] = temp[237]; //"女妖";//
-                cos_hero_des[2, 2, 0] = temp[2];
-                cos_hero_des[2, 2, 1] = temp[123]; //"提克迪奥斯 ";
-                cos_hero_des[2, 2, 2] = temp[122]; //"迪瑟洛克";
-                cos_hero_des[2, 2, 3] = temp[105]; //"瓦里玛萨斯";
-                cos_hero_des[2, 2, 4] = temp[249]; //"巴纳扎尔";
-                cos_hero_des[2, 2, 5] = temp[250]; //"达文格尔";
-                cos_hero_des[2, 2, 6] = temp[251]; //"麦尔盖尼斯";
-                cos_hero_des[2, 3, 0] = temp[2];
-                cos_hero_des[2, 3, 1] = temp[124]; //"阿努巴拉克";
-                cos_hero_des[3, 0, 0] = temp[2];
-                cos_hero_des[3, 0, 1] = temp[126]; //"泰兰德";
-                cos_hero_des[3, 0, 2] = temp[106]; //"步行泰兰德";
-                cos_hero_des[3, 1, 0] = temp[2];
-                cos_hero_des[3, 1, 1] = temp[101]; // "塞纳留斯";
-                cos_hero_des[3, 1, 2] = temp[125]; //"玛法里奥";
-                cos_hero_des[3, 2, 0] = temp[2];
-                cos_hero_des[3, 2, 1] = temp[127]; //"伊利丹";
-                cos_hero_des[3, 3, 0] = temp[2];
-                cos_hero_des[3, 3, 1] = temp[128]; //"玛维";
-                cos_hero_des[3, 3, 2] = temp[248]; //"暗夜孤星";
-                cos_hero_des[4, 0, 0] = temp[2];
-                cos_hero_des[4, 0, 1] = temp[133]; //"兽王";
-                cos_hero_des[4, 1, 0] = temp[2];
-                cos_hero_des[4, 1, 1] = temp[135]; //"希尔瓦娜斯";
-                cos_hero_des[4, 1, 2] = temp[108]; //"精灵将军";
-                cos_hero_des[4, 1, 3] = temp[238]; //"光明游侠";
-                cos_hero_des[4, 2, 0] = temp[2];
-                cos_hero_des[4, 2, 1] = temp[129]; //"瓦斯琪";
-                cos_hero_des[4, 3, 0] = temp[2];
-                cos_hero_des[4, 3, 1] = temp[107]; //"原型食人魔";
-                cos_hero_des[5, 0, 0] = temp[2];
-                cos_hero_des[5, 0, 1] = temp[134]; //"烈酒风暴";
-                cos_hero_des[5, 1, 0] = temp[2];
-                cos_hero_des[5, 1, 1] = temp[231]; //"上古之神";
-                cos_hero_des[5, 2, 0] = temp[2];
-                cos_hero_des[5, 2, 1] = temp[130]; //"工程师";
-                cos_hero_des[5, 3, 0] = temp[2];
-                cos_hero_des[5, 3, 1] = temp[100]; //"玛瑟里顿";
-                cos_hero_des[5, 3, 2] = temp[131]; // "阿兹加洛";
-                cos_hero_des[5, 3, 3] = temp[132]; //"玛诺洛斯";
                 //cosherodes[57] = temp[j]; j++;
             }
             else
@@ -2184,8 +2092,7 @@ namespace QuenchingModCN
                                 {
                                     //放弃
                                     try { File.Delete("./quenching/temp/patch-" + tempi + ".temp"); } catch { }
-                                    MessageBox.Show(mainstring[2]);
-                                    this.Dispatcher.Invoke(() => { maincheckt.Text = mainstring[2] + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
+                                    this.Dispatcher.Invoke(() => { maincheckt.Text = findcontext("changeable-main-hint-fileneedupdate") + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
 
                                     return;
                                 }
@@ -2211,8 +2118,8 @@ namespace QuenchingModCN
                                 if (!DownloadFilewpb(sevstring[i], "./quenching/temp/patch-" + tempi + ".temp"))
                                 {
                                     try { File.Delete("./quenching/temp/patch-" + tempi + ".temp"); } catch { }
-                                    MessageBox.Show(mainstring[2]);
-                                    this.Dispatcher.Invoke(() => { maincheckt.Text = mainstring[2] + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
+                 
+                                    this.Dispatcher.Invoke(() => { maincheckt.Text = findcontext("changeable-main-hint-fileneedupdate") + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
                                     //sr.Close();
                                     return;
                                 }
@@ -2260,7 +2167,7 @@ namespace QuenchingModCN
         }
         /*private void maincheckfile()
         {
-            if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start("http://tianxiazhengyi.net/"); }
+            if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start("https://tianxiazhengyi.net/"); }
             else { System.Diagnostics.Process.Start("https://quenching.hiveworkshop.com/"); }
         }*/
         public int initnum;
@@ -2288,92 +2195,90 @@ namespace QuenchingModCN
                 {
                     if (System.Windows.MessageBox.Show(mbtext[31], "", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes) == MessageBoxResult.Yes)
                     {
-                        try { System.Diagnostics.Process.Start(mbtext[28]); }
-                        catch
-                        {
-                            if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start("https://www.bilibili.com/video/BV1D8411G7Ui/"); }
-                            else { System.Diagnostics.Process.Start("http://tianxiazhengyi.net/QMdownloadEN.html"); }
-                        }
+
+                        if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start(Website_Download_CN); }
+                        else { System.Diagnostics.Process.Start(Website_Download_EN); }
+                  
                         //Environment.Exit(0);
                     }
                 }
             }
             //客户端更新标识
-            try
-            {
-                //基础更新标识
-                //文件更新标识
-                if (DownloadFile(fseverurl + "versionkeep.que", "./quenching/versionkeep.que"))
-                {
+            //try
+            //{
+            //    //基础更新标识
+            //    //文件更新标识
+            //    if (DownloadFile(fseverurl + "versionkeep.que", "./quenching/versionkeep.que"))
+            //    {
 
-                    if (File.Exists(dir_root + "patch/keep.que"))
-                    {
-                        string[] vk = File.ReadAllLines("./quenching/versionkeep.que");
-                        string[] lk = File.ReadAllLines(dir_root + "patch/keep.que");
-                        for (int i = 0; i < vk.Length; i++)
-                        {
+            //        if (File.Exists(dir_root + "patch/keep.que"))
+            //        {
+            //            string[] vk = File.ReadAllLines("./quenching/versionkeep.que");
+            //            string[] lk = File.ReadAllLines(dir_root + "patch/keep.que");
+            //            for (int i = 0; i < vk.Length; i++)
+            //            {
 
-                            try
-                            {
-                                if (vk[i] != lk[i])
-                                {
-                                    if (System.Windows.Forms.MessageBox.Show(mbtext[33], "", System.Windows.Forms.MessageBoxButtons.OKCancel) == System.Windows.Forms.DialogResult.OK)
-                                    {
-                                        //Console.WriteLine("aaa");
-                                        downloadversion = 1;
-                                        //lockhd
-                                        hdbool = 1;
-                                        fileloadflag = 3;
-                                        Thread thread1 = new Thread(new ThreadStart(filetemplate));
-                                        thread1.Start();
-                                        hdlock = true;
-                                        if (GetIniInt("mod", "lockh", 0) == 1) { this.Dispatcher.Invoke(() => { btnclickT(mainbtn_min_Copy4); }); hdlock = true; }
-                                        if (GetIniInt("mod", "lockc", 0) == 1) { this.Dispatcher.Invoke(() => { btnclickT(mainbtn_min_Copy3); }); sdlock = true; }
-                                        //
-                                        Thread thread = new Thread(new ThreadStart(maincheckfile));
-                                        thread.Start(); return;
-                                    }
-                                }
-                            }
-                            catch
-                            {
-                                if (System.Windows.Forms.MessageBox.Show(mbtext[33], "", System.Windows.Forms.MessageBoxButtons.OKCancel) == System.Windows.Forms.DialogResult.OK)
-                                {
-                                    downloadversion = 1;
-                                    //lockhd
-                                    hdbool = 1;
-                                    fileloadflag = 3;
-                                    Thread thread1 = new Thread(new ThreadStart(filetemplate));
-                                    thread1.Start();
-                                    hdlock = true;
-                                    if (GetIniInt("mod", "lockh", 0) == 1) { this.Dispatcher.Invoke(() => { btnclickT(mainbtn_min_Copy4); }); hdlock = true; }
-                                    if (GetIniInt("mod", "lockc", 0) == 1) { this.Dispatcher.Invoke(() => { btnclickT(mainbtn_min_Copy3); }); sdlock = true; }
-                                    //
-                                    Thread thread = new Thread(new ThreadStart(maincheckfile));
-                                    thread.Start(); return;
-                                }
-                            }
+            //                try
+            //                {
+            //                    if (vk[i] != lk[i])
+            //                    {
+            //                        if (System.Windows.Forms.MessageBox.Show(mbtext[33], "", System.Windows.Forms.MessageBoxButtons.OKCancel) == System.Windows.Forms.DialogResult.OK)
+            //                        {
+            //                            //Console.WriteLine("aaa");
+            //                            downloadversion = 1;
+            //                            //lockhd
+            //                            hdbool = 1;
+            //                            fileloadflag = 3;
+            //                            Thread thread1 = new Thread(new ThreadStart(filetemplate));
+            //                            thread1.Start();
+            //                            hdlock = true;
+            //                            if (GetIniInt("mod", "lockh", 0) == 1) { this.Dispatcher.Invoke(() => { btnclickT(mainbtn_min_Copy4); }); hdlock = true; }
+            //                            if (GetIniInt("mod", "lockc", 0) == 1) { this.Dispatcher.Invoke(() => { btnclickT(mainbtn_min_Copy3); }); sdlock = true; }
+            //                            //
+            //                            Thread thread = new Thread(new ThreadStart(maincheckfile));
+            //                            thread.Start(); return;
+            //                        }
+            //                    }
+            //                }
+            //                catch
+            //                {
+            //                    if (System.Windows.Forms.MessageBox.Show(mbtext[33], "", System.Windows.Forms.MessageBoxButtons.OKCancel) == System.Windows.Forms.DialogResult.OK)
+            //                    {
+            //                        downloadversion = 1;
+            //                        //lockhd
+            //                        hdbool = 1;
+            //                        fileloadflag = 3;
+            //                        Thread thread1 = new Thread(new ThreadStart(filetemplate));
+            //                        thread1.Start();
+            //                        hdlock = true;
+            //                        if (GetIniInt("mod", "lockh", 0) == 1) { this.Dispatcher.Invoke(() => { btnclickT(mainbtn_min_Copy4); }); hdlock = true; }
+            //                        if (GetIniInt("mod", "lockc", 0) == 1) { this.Dispatcher.Invoke(() => { btnclickT(mainbtn_min_Copy3); }); sdlock = true; }
+            //                        //
+            //                        Thread thread = new Thread(new ThreadStart(maincheckfile));
+            //                        thread.Start(); return;
+            //                    }
+            //                }
 
-                        }
-                        MessageBox.Show(mainstring[5]);
-                        return;
-                    }
-                    else
-                    {
-                        if (System.Windows.Forms.MessageBox.Show(mbtext[33], "", System.Windows.Forms.MessageBoxButtons.OKCancel) == System.Windows.Forms.DialogResult.OK)
-                        {
-                            downloadversion = 1;
-                            Thread thread = new Thread(new ThreadStart(maincheckfile));
-                            thread.Start(); return;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-                this.Dispatcher.Invoke(() =>
-                { maincheckt.Text = mainstring[2] + System.Environment.NewLine + ver; });
-            }
+            //            }
+            //            MessageBox.Show(mainstring[5]);
+            //            return;
+            //        }
+            //        else
+            //        {
+            //            if (System.Windows.Forms.MessageBox.Show(mbtext[33], "", System.Windows.Forms.MessageBoxButtons.OKCancel) == System.Windows.Forms.DialogResult.OK)
+            //            {
+            //                downloadversion = 1;
+            //                Thread thread = new Thread(new ThreadStart(maincheckfile));
+            //                thread.Start(); return;
+            //            }
+            //        }
+            //    }
+            //}
+            //catch
+            //{
+            //    this.Dispatcher.Invoke(() =>
+            //    { maincheckt.Text = findcontext("changeable-main-hint-fileneedupdate") + System.Environment.NewLine + ver; });
+            //}
 
             //检测retail里面有没有装，然后给出文字提示
 
@@ -2674,7 +2579,6 @@ namespace QuenchingModCN
 
             Application.Current.MainWindow.Show();
 
-
             if (GetIniInt("mod", "2.4", 0) == 0)
             {
                 WriteIniInt("mod", "2.4", 1);
@@ -2726,17 +2630,17 @@ namespace QuenchingModCN
             streamrwDic("QuenchingOnCN.png", "./_retail_/webui/");
             streamrwDic("QuenchingOnEN.png", "./_retail_/webui/");
 
-            try
-            { DelectDir(dir_root + "abilities/weapons/hydraliskimpact"); }
-            catch { }
-            try
-            { DelectDir(dir_root + "units/demon/doomguardsummoned"); }
-            catch { }
-            try
-            { DelectDir(dir_root + "units/demon/doomguard"); }
-            catch { }
-            try { DelectDir(dir_root + "abilities/weapons/meatwagonmissile"); }
-            catch { }
+            //try
+            //{ DelectDir(dir_root + "abilities/weapons/hydraliskimpact"); }
+            //catch { }
+            //try
+            //{ DelectDir(dir_root + "units/demon/doomguardsummoned"); }
+            //catch { }
+            //try
+            //{ DelectDir(dir_root + "units/demon/doomguard"); }
+            //catch { }
+            //try { DelectDir(dir_root + "abilities/weapons/meatwagonmissile"); }
+            //catch { }
             //DelectDir("./_retail_/environment/dnc/");
             //DelectDir("./_retail_/environment/dnc45/");
             //DelectDir("./_retail_/environment/dncspin/");
@@ -2744,51 +2648,19 @@ namespace QuenchingModCN
             //setup_light();
 
             //更换游戏内标识 - 优先网络拉取文字 - 可能不需要了 - 语言设置
-            if (GetIniInt("mod", "lang", 0) == 1)
-            {
-                try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
-                readtrans = "./Quenching/trans-en.que";
-                readhctrans = "./Quenching/hc-trans-en.que";
-
-
-            }
-            if (GetIniInt("mod", "lang", 0) == 0)
-            {
-
-                try { File.Copy(dir_root + "webui/QuenchingOnCN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
-                readtrans = "./Quenching/trans.que";
-                readhctrans = "./Quenching/hc-trans.que";
-                streamname("Readme.docx", "./常见问题说明.docx");
-            }
-            if (GetIniInt("mod", "lang", 0) == 2)
-            {
-
-                try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
-                readtrans = "./Quenching/trans-pt.que";
-                readhctrans = "./Quenching/hc-trans-pt.que";
-
-            }
-            if (GetIniInt("mod", "lang", 0) == 3)
-            {
-
-                try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
-                readtrans = "./Quenching/trans-ru.que";
-                readhctrans = "./Quenching/hc-trans-ru.que";
-
-            }
-            if (GetIniInt("mod", "lang", 0) == 4)
-            {
-
-                try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
-                readtrans = "./Quenching/trans-fr.que";
-                readhctrans = "./Quenching/hc-trans-fr.que";
-
-            }
+            
             Directory.CreateDirectory(".//_retail_//webui//webms");
             if (!File.Exists("./_retail_/webui/webms/mainmenu2.webm"))
             {
                 streamrwDic("mainmenu2.webm", dir_root + "webui/webms/");
+            }
+            if (!File.Exists("./_retail_/webui/webms/mainmenu3.webm"))
+            {
                 streamrwDic("mainmenu3.webm", dir_root + "webui/webms/");
+            }
+            if (!File.Exists("./_retail_/webui/webms/mainmenu4.webm"))
+            {
+                streamrwDic("mainmenu4.webm", dir_root + "webui/webms/");
             }
             initstring();
             //furi 目前就指向官网 baseuri 灵活
@@ -2832,13 +2704,63 @@ namespace QuenchingModCN
 
             if (File.Exists("./_retail_/x86_64/Warcraft III.exe") || File.Exists("./x86_64/Warcraft III.exe") || File.Exists("Warcraft III Launcher.exe")) { }
             else { MessageBox.Show(mbtext[2], mbtext[0]); Close(); return; }
-            if (File.Exists(dir_root + "replaceabletextures/lordaerontree/lordaeronfalltree_diffuse.dds"))
-            { MessageBox.Show(mbtext[52]); }
             //try { File.Copy("./Quenching/units/human/footman/ls_props_rackarmor_orm.dds", dir_root + "/units/human/footman/ls_props_rackarmor_orm.dds"); } catch (Exception e) { MessageBox.Show(); }
+
             InitializeComponent();
+            this.DataContext = new MainViewModel();
+            if (GetIniInt("mod", "lang", 0) == 1)
+            {
+                try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
+                readtrans = "./Quenching/trans-en.que";
+                readhctrans = "./Quenching/hc-trans-en.que";
+                fixsource("./Quenching/hc-trans-en.que");
+            }
+            if (GetIniInt("mod", "lang", 0) == 0)
+            {
+
+                try { File.Copy(dir_root + "webui/QuenchingOnCN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
+                readtrans = "./Quenching/trans.que";
+                readhctrans = "./Quenching/hc-trans.que";
+                fixsource("./Quenching/hc-trans.que");
+            }
+            if (GetIniInt("mod", "lang", 0) == 2)
+            {
+
+                try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
+                readtrans = "./Quenching/trans-pt.que";
+                readhctrans = "./Quenching/hc-trans-pt.que";
+                fixsource("./Quenching/hc-trans-pt.que");
+            }
+            if (GetIniInt("mod", "lang", 0) == 3)
+            {
+
+                try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
+                readtrans = "./Quenching/trans-ru.que";
+                readhctrans = "./Quenching/hc-trans-ru.que";
+                fixsource("./Quenching/hc-trans-ru.que");
+            }
+            if (GetIniInt("mod", "lang", 0) == 4)
+            {
+
+                try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
+                readtrans = "./Quenching/trans-fr.que";
+                readhctrans = "./Quenching/hc-trans-fr.que";
+                fixsource("./Quenching/hc-trans-fr.que");
+            }
+            if (GetIniInt("mod", "lang", 0) == 5)
+            {
+
+                try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
+                readtrans = "./Quenching/trans-sp.que";
+                readhctrans = "./Quenching/hc-trans-sp.que";
+                fixsource("./Quenching/hc-trans-sp.que");
+            }
+
             init();
+
             initstring();
-            InitUIstring();
+            //InitUIstring();
+            
             if (GetIniInt("mod", "lang", 0) == 1)
             {
                 btnclickF(mainbtn_min_Copy1);
@@ -2865,8 +2787,14 @@ namespace QuenchingModCN
                 btnclickT(mainbtn_min_Copy8);
                 mainbtn_min_lang.Content = "Français";
             }
+            if (GetIniInt("mod", "lang", 0) == 5)
+            {
+                btnclickF(mainbtn_min_Copy1);
+                btnclickT(mainbtn_min_Copy9);
+                mainbtn_min_lang.Content = "Español";
+            }
             if (File.Exists(dir_root + "units/undead/skeleton/undead_skeletonwarrior_main_diffuse.dds"))
-            { btnclickT(setbtnc3); setbtnc3.Content = "已安装"; }
+            { btnclickT(setbtnc3); setbtnc3.Content = findcontext("set-installed"); }
             //换ui 
             try
             {
@@ -2924,23 +2852,23 @@ namespace QuenchingModCN
                 btnclickF(setbtn_tree_b4);
                 btnclickF(setbtn_tree_b5);
                 btnclickF(setbtn_tree_b6);
-                if (GetIniInt("set", "tree", 0) == 0) { btnclickT(setbtn_tree_b1); }
-                if (GetIniInt("set", "tree", 0) == 1) { btnclickT(setbtn_tree_b2); }
-                if (GetIniInt("set", "tree", 0) == 2) { btnclickT(setbtn_tree_b3); }
-                if (GetIniInt("set", "tree", 0) == 3) { btnclickT(setbtn_tree_b4); }
-                if (GetIniInt("set", "tree", 0) == 4) { btnclickT(setbtn_tree_b5); }
-                if (GetIniInt("set", "tree", 0) == 5) { btnclickT(setbtn_tree_b6); }
+                if (GetIniInt("set", "tree", 1) == 0) { btnclickT(setbtn_tree_b1); }
+                if (GetIniInt("set", "tree", 1) == 1) { btnclickT(setbtn_tree_b2); }
+                if (GetIniInt("set", "tree", 1) == 2) { btnclickT(setbtn_tree_b3); }
+                if (GetIniInt("set", "tree", 1) == 3) { btnclickT(setbtn_tree_b4); }
+                if (GetIniInt("set", "tree", 1) == 4) { btnclickT(setbtn_tree_b5); }
+                if (GetIniInt("set", "tree", 1) == 5) { btnclickT(setbtn_tree_b6); }
 
                 btnclickF(setbtn_tile_b1);
                 btnclickF(setbtn_tile_b2);
                 btnclickF(setbtn_tile_b3);
                 btnclickF(setbtn_tile_b4);
                 btnclickF(setbtn_tile_b5);
-                if (GetIniInt("set", "tile", 0) == 0) { btnclickT(setbtn_tile_b1); }
-                if (GetIniInt("set", "tile", 0) == 1) { btnclickT(setbtn_tile_b2); }
-                if (GetIniInt("set", "tile", 0) == 2) { btnclickT(setbtn_tile_b3); }
-                if (GetIniInt("set", "tile", 0) == 3) { btnclickT(setbtn_tile_b4); }
-                if (GetIniInt("set", "tile", 0) == 4) { btnclickT(setbtn_tile_b5); }
+                if (GetIniInt("set", "tile", 4) == 0) { btnclickT(setbtn_tile_b1); }
+                if (GetIniInt("set", "tile", 4) == 1) { btnclickT(setbtn_tile_b2); }
+                if (GetIniInt("set", "tile", 4) == 2) { btnclickT(setbtn_tile_b3); }
+                if (GetIniInt("set", "tile", 4) == 3) { btnclickT(setbtn_tile_b4); }
+                if (GetIniInt("set", "tile", 4) == 4) { btnclickT(setbtn_tile_b5); }
 
                 btnclickF(setbtn_light_1);
                 btnclickF(setbtn_light_2);
@@ -2971,25 +2899,38 @@ namespace QuenchingModCN
                 //}
                 //textBlock1_Copy5.Text = GetIniInt("light", "light", 5).ToString();
                 //textBlock1_Copy4.Text = GetIniInt("light", "shadow", 5).ToString();
-                if (GetIniInt("mod", "lang", 0) == 1)
+                if (GetIniInt("mod", "them", 0) == 1)
                 {
-                    btnclickT(themey);
+                    btnclickT(themey_1);
+                    mediaElement.Source = new Uri("./quenching/mainmenu0.avi", UriKind.Relative);
                 }
-                if (GetIniInt("mod", "lang", 0) == 2)
+                if (GetIniInt("mod", "them", 0) == 2)
                 {
-                    btnclickT(themey_Copy);
+                    btnclickT(themey_2);
+                    mediaElement.Source = new Uri("./quenching/mainmenu2.mp4", UriKind.Relative);
                 }
-                if (GetIniInt("mod", "lang", 0) == 3)
+                if (GetIniInt("mod", "them", 0) == 3)
                 {
-                    btnclickT(themey_Copy1);
+                    btnclickT(themey_3);
+                    mediaElement.Source = new Uri("./quenching/mainmenu3.mp4", UriKind.Relative);
                 }
-                if (GetIniInt("mod", "lang", 0) == 4)
+                if (GetIniInt("mod", "them", 0) == 4)
                 {
-                    btnclickT(themey_Copy2);
+                    btnclickT(themey_4);
+                    mediaElement.Source = new Uri("./quenching/mainmenu4.mp4", UriKind.Relative);
                 }
-                
-                if (GetIniInt("mod", "lockh", 0) == 1) { btnclickT(mainbtn_min_Copy4);  hdlock = true; mainbtn_mode_1.Visibility = Visibility.Hidden; mainbtn_mode_0.Visibility = Visibility.Visible; }
-                if (GetIniInt("mod", "lockc", 0) == 1) { btnclickT(mainbtn_min_Copy3); sdlock = true; mainbtn_mode_0.Visibility = Visibility.Hidden; mainbtn_mode_1.Visibility = Visibility.Visible; }
+                if (GetIniInt("mod", "them", 0) == 5)
+                {
+                    btnclickT(themey_X);
+                    mediaElement.Source = new Uri("./quenching/mainmenu0.avi", UriKind.Relative);
+                }
+
+                if (GetIniInt("mod", "lockh", 0) == 1) { btnclickT(mainbtn_min_Copy4);  hdlock = true; 
+                    // mainbtn_mode_1.Visibility = Visibility.Hidden; mainbtn_mode_0.Visibility = Visibility.Visible; 
+                }
+                if (GetIniInt("mod", "lockc", 0) == 1) { btnclickT(mainbtn_min_Copy3); sdlock = true; 
+                    // mainbtn_mode_0.Visibility = Visibility.Hidden; mainbtn_mode_1.Visibility = Visibility.Visible; 
+                }
                 if (GetIniInt("set", "vio", 0) == 1)
                 { setbtn_about_Copy1.Visibility = Visibility.Visible; }
                 //if (GetIniInt("mod", "ad", 0) == 1) { uiadjust.Visibility = Visibility.Visible; }
@@ -3179,24 +3120,7 @@ namespace QuenchingModCN
             tmr.Tick += new EventHandler(Count_Download_Mod_Part);
             tmr.Start();
             //看看有没有最新版本，但是静默查看
-            if (DownloadFile(fseverurl + "version.que", "./quenching/version.que"))
-            {
-                cver = getonelineque("./quenching/version.que");
-                this.Dispatcher.Invoke(() =>
-                {
-                    maincheckt.Text = mainstring[1] + System.Environment.NewLine + cver;
-                });
-                if (cver != ver)
-                {
-                    this.Dispatcher.Invoke(() =>
-                    { maincheckt.Text = mainstring[24] + System.Environment.NewLine + cver; });
-                }
-            }
-            else
-            {
-                this.Dispatcher.Invoke(() =>
-                { maincheckt.Text = mainstring[2] + System.Environment.NewLine + ver; });
-            }
+            is_new_version();
             initc = true;
             //btnclickT(setbtnc11);
             //btnclickF(setbtnc12);
@@ -3204,6 +3128,26 @@ namespace QuenchingModCN
             //WriteIniInt("mod", "light", 0);
             //GPU
 
+        }
+        public void is_new_version() {
+            if (DownloadFile(fseverurl + "version.que", "./quenching/version.que"))
+            {
+                cver = getonelineque("./quenching/version.que");
+                this.Dispatcher.Invoke(() =>
+                {
+                    maincheckt.Text = findcontext("changeable-main-hint-latest") + System.Environment.NewLine + cver;
+                });
+                if (cver != ver)
+                {
+                    this.Dispatcher.Invoke(() =>
+                    { maincheckt.Text = findcontext("changeable-main-hint-needupdate") + System.Environment.NewLine + cver; });
+                }
+            }
+            else
+            {
+                this.Dispatcher.Invoke(() =>
+                { maincheckt.Text = findcontext("changeable-main-hint-networkerror") + System.Environment.NewLine + ver; });
+            }
         }
         void Count_Download_Mod_Part(object sender, EventArgs e)
         {
@@ -3299,6 +3243,7 @@ namespace QuenchingModCN
                 File.Delete("./Quenching/hc-trans-ru.que");
                 File.Delete("./Quenching/hc-trans-pt.que");
                 File.Delete("./Quenching/hc-trans-fr.que");
+                File.Delete("./Quenching/hc-trans-sp.que");
             }
             catch { }
             try
@@ -3313,16 +3258,19 @@ namespace QuenchingModCN
                 streamrwTQ("hc-trans-ru.que");
                 streamrwTQ("trans-fr.que");
                 streamrwTQ("hc-trans-fr.que");
+                streamrwTQ("hc-trans-sp.que");
                 streamrwTQ("EULA.docx");
                 streamrwTQ("EULAEN.docx");
                 streamrwTQ("half.que");
                 streamrw("reg.reg");
+                Console.WriteLine("---- Copy Video -----");
                 if (!File.Exists("./Quenching/ck1.mp3")) { streamrw("quenching/ck1.mp3"); }
                 if (!File.Exists("./Quenching/ck2.mp3")) { streamrw("quenching/ck2.mp3"); }
                 if (!File.Exists("./Quenching/ck3.mp3")) { streamrw("quenching/ck3.mp3"); }
-                //if (!File.Exists("./Quenching/quenchingBG.avi")) { streamrw("quenching/quenchingBG.avi"); }
-                if (!File.Exists("./Quenching/mainmenu3.mp4")) { streamname("mainmenu3.webm", "quenching/mainmenu3.mp4"); }
-
+                if (!File.Exists("./Quenching/mainmenu3.mp4")) { streamname("mainmenu3.webm", "Quenching/mainmenu3.mp4"); }
+                if (!File.Exists("./Quenching/mainmenu0.avi")) { streamname("mainmenu0.avi", "Quenching/mainmenu0.avi"); }
+                if (!File.Exists("./Quenching/mainmenu2.mp4")) { streamname("mainmenu2.webm", "Quenching/mainmenu2.mp4"); }
+                if (!File.Exists("./Quenching/mainmenu4.mp4")) { streamname("mainmenu4.webm", "Quenching/mainmenu4.mp4"); }
             }
             catch { }
         }
@@ -3432,7 +3380,7 @@ namespace QuenchingModCN
                 thread.Start();
                 WriteIniInt("mod", "hdorsd", 0);
                 oldorsd = 0;
-                this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = mbtext[30]; cost1_Copy1.Text = mbtext[50]; });
+                this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = findcontext("changeable-main-hint-modehd"); cost1_Copy1.Text = findcontext("cos-title"); });
                 Directory.CreateDirectory(dir_root + "units/units-que/");
                 try { File.Copy(dir_root + "units/units-que/unitskin.txt", dir_root + "units/unitskin.txt", true); } catch { }
                 try
@@ -3456,7 +3404,7 @@ namespace QuenchingModCN
                 oldorsd = 1;
                 WriteIniInt("mod", "hdorsd", 1);
                 Directory.CreateDirectory(dir_root + "units/units-old/");
-                this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = mbtext[29]; cost1_Copy1.Text = mbtext[49]; });
+                this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = findcontext("changeable-main-hint-modeclassic"); cost1_Copy1.Text = findcontext("changeable-cos-sd"); });
                 try { File.Copy(dir_root + "units/units-old/unitskin.txt", dir_root + "units/unitskin.txt", true); } catch { }
                 try { File.Delete(dir_root + "units/destructableskin.txt"); } catch { }
             }
@@ -3467,14 +3415,14 @@ namespace QuenchingModCN
             {
                 if (GetIniInt("mod", "old", 0) == 1)
                 {
-                    this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = mbtext[32]; cost1_Copy1.Text = mbtext[49]; });
+                    this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = findcontext("changeable-main-hint-modeclassic"); cost1_Copy1.Text = findcontext("changeable-cos-sd"); });
                 }
                 if (GetIniInt("mod", "melee", 0) == 1)
                 {
-                    this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = mbtext[45]; cost1_Copy1.Text = mbtext[50]; });
+                    this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = findcontext("changeable-main-hint-modehd"); cost1_Copy1.Text = findcontext("cos-title"); });
                 }
                 else if (hdbool == 1)
-                { this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = mbtext[30]; cost1_Copy1.Text = mbtext[50]; }); }
+                { this.Dispatcher.Invoke(() => { textBlock_Copy2.Text = findcontext("changeable-main-hint-modehd"); cost1_Copy1.Text = findcontext("cos-title"); }); }
 
             }
             catch { }
@@ -3483,344 +3431,7 @@ namespace QuenchingModCN
         }
         public string readtrans = "./Quenching/trans.que";
         public string readhctrans = "./Quenching/hc-trans.que";
-        public void InitUIstring()
-        {
-            string[] temp = new string[2000];
-            int tempi = 0;
-            int j = 0;
-            bool readflag = false;
-            try
-            {
-
-                StreamReader sr = new StreamReader(readhctrans);
-                string line;
-                // 从文件读取并显示行，直到文件的末尾 
-                while ((line = sr.ReadLine()) != null)
-                {
-                    line = line.Replace("\\n", "\n");
-                    temp[tempi] = line;
-                    tempi++;
-                    readflag = true;
-                }
-                sr.Close();
-            }
-            catch { }
-
-            mainbtn_min_Copy5.Content = temp[162];//基础设置
-            mainbtn_about_Copy.Content = temp[163];//基础设置
-            dl_m_mod_title.Text = temp[164];//基础设置
-            mainbtn_check_Copy8.Content = temp[165];//基础设置
-            mainbtn_check_Copy35.Content = temp[166];//基础设置
-            mainbtn_check_Copy36.Content = temp[167];//基础设置
-            dl_m_mod_title_Copy.Text = temp[168];//基础设置
-            dl_m_mod_title_Copy3.Text = temp[169];//基础设置
-            dl_m_mod_title_Copy1.Text = temp[170];//基础设置
-            dl_m_mod_title_Copy2.Text = temp[171];//基础设置
-            dlogot1.Text = temp[172];//基础设置
-            dlogot1_Copy.Text = temp[173];//基础设置
-            dlogot1_Copy1.Text = temp[174];//基础设置
-            dlogot1_Copy2.Text = temp[175];//基础设置
-            dlogot1_Copy3.Text = temp[176];//基础设置
-            newBlock1.Text = temp[177];//基础设置
-            newt2t1.Text = temp[178];//基础设置
-            newt2t2.Text = temp[179];//基础设置
-            newt2t1_Copy1.Text = temp[180];//基础设置
-            newt2t2_Copy.Text = temp[181];//基础设置
-            uit2_new.Text = temp[182];//基础设置
-            uishowt2.Text = temp[183];//基础设置
-            uibtnsm1_Copy5.Content = temp[184];//基础设置
-            newt2t1_Copy.Text = temp[185];//基础设置
-            uishowt2_Copy.Text = temp[186];//基础设置
-            uibtnsm1_Copy1.Content = temp[187];//基础设置
-            cost2_Copy.Text = temp[188];//基础设置
-            acht1_Copy.Text = temp[189];//基础设置
-            acht1_Copy1.Text = temp[190];//基础设置
-            dl_m_lang_title.Text = temp[191];
-            //newt3b1.Content = temp[48];//打开
-            //newt3b2.Content = temp[49];//关闭
-            //newt2b2.Content = temp[49];//关闭
-            //newt2b1.Content = temp[48];//打开
-            //if (File.Exists(dir_root + "terrainart/clifftypes.slk") || File.Exists(dir_root + "terrainart-dis/clifftypes.slk"))
-            //{ textBlock_Copy2.Text = mbtext[30]; }
-            //else
-            //{ textBlock_Copy2.Text = mbtext[29]; }
-            if (readflag)
-            {
-                textBlock_Copy.Text = temp[j]; j++;
-                textBlock.Text = temp[j]; j++;
-                maincheckt.Text = temp[j] + System.Environment.NewLine + cver; j++;
-                button2.Content = temp[j]; j++;
-                textBlock_Copy3.Text = temp[j]; j++;
-                mainbtn_update.Content = temp[j]; j++;
-                mainbtn_reset.Content = temp[j]; j++;
-                //mainbtn_check_Copy.Content = temp[j]; 
-                j++;
-                j++;
-                mainbtn_about.Content = temp[j]; j++;
-                j++;
-                j++;
-                mainbtn_check_Copy4.Content = temp[j]; j++;
-                mainbtn_check_Copy2.Content = temp[j]; j++;
-                //textBlock_Copy1.Text = temp[j]; 
-                j++;
-                btnset.Content = temp[j]; j++;
-                btnui.Content = temp[j]; j++;
-                btnmain.Content = temp[j]; j++;
-                btncos.Content = temp[j]; j++;
-                btnach.Content = temp[j]; j++;
-                thxt.Text = temp[j]; j++;
-                button_Copy.Content = temp[j]; j++;
-                button.Content = temp[j]; j++;
-                button_Copy1.Content = temp[j]; j++;
-                thxt1.Text = temp[j]; j++;
-                thxt1_Copy.Text = temp[j]; j++;
-                button_Copy3.Content = temp[j]; j++;
-                button_Copy4.Content = temp[j]; j++;
-                thxt3.Text = temp[j]; j++;
-                thxtt1.Text = temp[j]; j++;
-                thxlistt1.Text = temp[j]; j++;
-                thxt5_Copy3.Text = temp[j]; j++;
-                textBox1.Text = temp[j]; j++;
-
-                textBlock1.Text = temp[j]; j++;
-                //textBlock1_Copy.Text = temp[j];
-                j++;
-                //textBlock1_Copy1.Text = temp[j];
-                j++;
-                //textBlock1_Copy2.Text = temp[j];
-                j++;
-                //setbtn2.Text = temp[j]; 
-                j++;
-                //setbtn_about_Copy.Text = temp[j];
-                j++;
-                setbtn4.Text = temp[j]; j++;
-                //setbtn7.Text = temp[j]; 
-                j++;
-                //setbtn8.Text = temp[j]; 
-                j++;
-                //setbtn_about.Text = temp[j]; 
-                j++;
-                setbtn3.Text = temp[j]; j++;
-                setbtn5.Text = temp[j]; j++;
-                setbtn6.Text = temp[j]; j++;
-                setbtn9.Text = temp[j]; j++;
-
-                setbtn_about_Copy1.Content = temp[j];
-
-                //setbtn_about_Copy19.Content = temp[j];
-                //setbtn_about_Copy16.Content = temp[j];
-                j++;
-
-                setbtnc5.Content = temp[j];
-                setbtnc7.Content = temp[j];
-                setbtnc9.Content = temp[j];
-                setbtnc3.Content = temp[j];
-                //setbtnc1_Copy.Content = temp[j];
-                //setbtnc1_Copy1.Content = temp[j];
-                //setbtnc1.Content = temp[j];
-                setbtnc11.Content = temp[j]; j++;
-
-                setbtnc6.Content = temp[j];
-                setbtnc8.Content = temp[j];
-                setbtnc10.Content = temp[j];
-                //setbtnc2_Copy.Content = temp[j];
-                //setbtnc2_Copy1.Content = temp[j];
-                setbtnc10_Copy.Content = temp[j];
-                //setbtnc2.Content = temp[j];
-                setbtnc12.Content = temp[j]; j++;
-
-                //textBlock1_Copy4.Text = temp[j]; 
-                j++;
-
-                //uit1.Text = temp[j];
-                j++;
-                uit2.Text = temp[j]; j++;
-                uibtn1.Content = temp[j]; j++;
-                uibtn2.Content = temp[j]; j++;
-                uibtn3.Content = temp[j]; j++;
-                //uit2_Copy.Text = temp[j];
-                j++;
-                uibtn4.Text = temp[j]; j++;
-                //uibtn5.Content = temp[j];
-                j++;
-                //uibtn6.Content = temp[j]; 
-                j++;
-                //uit2_Copy3.Text = temp[j];
-                j++;
-                j++;
-                j++;
-                j++;
-
-                uibtnsm1.Content = temp[j];
-                //uibtnsm3.Content = temp[j];
-                uibtnsm5.Content = temp[j];
-                uibtnsm1_Copy2.Content = temp[j];
-
-
-                setbtnc9_Copy.Content = temp[j];
-                j++;
-
-                uibtnsm2.Content = temp[j];
-                //uibtnsm4.Content = temp[j];
-                uibtnsm6.Content = temp[j];
-                uibtnsm2_Copy1.Content = temp[j];
-                j++;
-
-                uit2_Copy5.Text = temp[j]; j++;
-                uit2_Copy6.Text = temp[j]; j++;
-                uibtn2_Copy1.Content = temp[j]; j++;
-                uibtn2_Copy5.Content = temp[j]; j++;
-                uibtn2_Copy.Content = temp[j]; j++;
-                uibtn2_Copy3.Content = temp[j]; j++;
-                uibtn2_Copy4.Content = temp[j]; j++;
-
-                j++;
-                j++;
-                j++;
-                j++;
-                j++;
-                j++;
-                j++;
-                j++;
-                j++;
-
-                cost.Text = temp[j]; j++;
-                cost1.Text = temp[j]; j++;
-                cosbtn1.Content = temp[j]; j++;
-                cosbtn1_Copy.Content = temp[j]; j++;
-                cost1_Copy.Text = temp[j]; j++;
-                cosherotext.Text = temp[j]; j++;
-                cost1_Copy1.Text = temp[j]; j++;
-                cosc1.Content = temp[j]; j++;
-                cosc2.Content = temp[j]; j++;
-                cosc3.Content = temp[j]; j++;
-                cosc4.Content = temp[j]; j++;
-                cuoldbtn.Content = temp[j]; j++;
-                textBlock3.Text = temp[j]; j++;
-                textBlock3_Copy.Text = temp[j]; j++;
-                oldbtn1.Content = temp[j]; j++;
-
-                cosunitt.Text = temp[j]; j++;
-                cosbtn1_Copy7.Content = temp[j]; j++;
-                cosbtn1_Copy8.Content = temp[j]; j++;
-                cosbtn1_Copy9.Content = temp[j]; j++;
-                cosbtn1_Copy10.Content = temp[j]; j++;
-                cosunitt1.Text = temp[j]; j++;
-                cosunitt2.Text = temp[j]; j++;
-                cosunitbtn1.Content = temp[j]; j++;
-                cosunitbtn2.Content = temp[j]; j++;
-                cosunitbtn3.Content = temp[j]; j++;
-                cosunitbtn4.Content = temp[j]; j++;
-
-                acht.Text = temp[j]; j++;
-                acht1.Text = temp[j]; j++;
-                //achbtn1.Content = temp[j]; 
-                j++;
-                //setbtn11_about_Copy.Content = temp[j];
-                j++;
-                //acht1_Copy.Text = temp[j];
-                j++;
-                //achbtn2.Content = temp[j];
-                j++;
-                achbtn1_Copy1.Content = temp[j]; j++;
-                //achbtn2_Copy.Content = temp[j];
-                j++;
-                //achbtn2_Copy1.Content = temp[j];
-                //achbtn2_Copy2.Content = temp[j];
-                j++;
-                acht1_Copy1.Text = temp[190];
-
-                StringBuilder temps = new StringBuilder(100);
-                GetIniString("fog", "4", "temp[j]", temps, 100);
-                if (!(temps.ToString() == "" || temps.ToString() == null))
-                {
-                    temps = new StringBuilder(100);
-                    GetIniString("ccmt", "0", "", temps, 100);
-                    acht1_Copy1.Text = temps.ToString();
-                    for (int i = 0; i < 35; i++)
-                    {
-                        temps = new StringBuilder(100);
-                        GetIniString("ccm", i.ToString(), "", temps, 100);
-                        campb[i].Content = "#" + (i + 1) + " " + temps.ToString();
-
-                    }
-                }
-
-                j++;
-
-                //achmaint1.Text = temp[j];
-                j++;
-                //achmaint2.Text = temp[j];
-                j++;
-                achshowt1.Text = temp[j]; j++;
-                achshowt2.Text = temp[j]; j++;
-                j++;
-                j++;
-                j++;
-                j++;
-                j++;
-
-                updatet.Text = temp[j]; j++;
-                updatet1.Text = temp[j]; j++;
-                button3.Content = temp[j]; j++;
-                //战役语言
-                mainbtn_reset_Copy.Content = temp[j]; j++;
-                mainbtn_min_Copy1.Content = temp[j]; j++;
-                mainbtn_min_Copy2.Content = temp[j]; j++;
-                //模式
-                setbtn_n.Content = temp[j]; j++;
-                setbtn_m.Content = temp[j]; j++;
-                //setbtn_o.Content = temp[j]; 
-                j++;
-                //安装mod
-                mainbtn_check_Copy1.Content = temp[j]; j++;
-                //mainbtn_check_Copy.Content = temp[j]; 
-                j++;
-                //锁定模式
-                mainbtn_min_Copy3.Content = temp[j]; j++;
-                mainbtn_min_Copy4.Content = temp[j]; j++;
-                textBlock_Copy2.Text = mbtext[30];
-                //安装视频
-                mainbtn_check_Copy3.Content = temp[j]; j++;
-
-                setbtn_no1.Content = mbtext[36];
-                setbtn_no2.Content = mbtext[36];
-                setbtn_no3.Content = mbtext[36];
-                setbtn_no4.Content = mbtext[36];
-                setbtn_no5.Content = mbtext[36];
-                setbtn_no6.Content = mbtext[36];
-                setbtn_no7.Content = mbtext[36];
-                setbtn_no8.Content = mbtext[36];
-                setbtn_no9.Content = mbtext[36];
-                //setbtn_no10.Content = mbtext[36];
-                uibtn_unitc.Content = mbtext[36];
-                cosunitbtn3.Content = temp[j]; j++;
-
-                mainbtn_check_Copy6.Content = temp[j]; j++;
-                mainbtn_check_Copy5.Content = temp[j]; j++;
-                button2_Copy.Content = temp[j]; j++;
-                themey.Content = temp[j]; j++;
-                themey_Copy.Content = temp[j]; j++;
-                themey_Copy1.Content = temp[j]; j++;
-                themey_Copy2.Content = temp[j]; j++;
-                themey_Copy3.Content = temp[j]; j++;
-                themet1.Text = temp[j]; j++;
-                themet2.Text = temp[j]; j++;
-                //textBlock1_Copy3.Text = temp[j];
-                j++;
-                //setbtn3_Copy.Content = temp[j];
-                j++;
-                //setbtn3_Copy1.Content = temp[j];
-                j++;
-                button2_Copy1.Content = temp[j]; ccos.Text = "-" + temp[j] + "-"; achmaint1.Text = cosherostring[ccos_page]; j++;
-                uibtn6.Text = temp[j]; j++;
-                uit2_Copy.Text = temp[j]; j++;
-                setbtn9_Copy.Text = temp[j]; j++;
-                j++;
-                mainbtn_check_Copy9.Content = temp[j]; j++;
-
-            }
-        }
+       
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
             base.OnMouseLeftButtonDown(e);
@@ -3962,11 +3573,11 @@ namespace QuenchingModCN
                 //string szTmp;
                 //if (GetIniInt("mod", "lang", 0) == 0)
                 //{
-                //    szTmp = "http://www.tianxiazhengyi.net/downloadc.html";
+                //    szTmp = "https://www.tianxiazhengyi.net/downloadc.html";
                 //}
                 //else
                 //{
-                //    szTmp = "http://www.tianxiazhengyi.net/downloadc.html";
+                //    szTmp = "https://www.tianxiazhengyi.net/downloadc.html";
                 //}
 
                 //Uri uri = new Uri(szTmp);
@@ -4136,8 +3747,8 @@ namespace QuenchingModCN
             player.Play();
             setshowcasegrid.Visibility = Visibility.Visible;
             setbgi.Source = new BitmapImage(new Uri("set6.png", UriKind.Relative));
-            setbgt11.Text = setstringt[8];
-            setbgt12.Text = setstringc[8];
+            setbgt11.Text = setstringt[19];
+            setbgt12.Text = setstringc[19];
         }
 
         private void setbtn10_MouseEnter(object sender, MouseEventArgs e)
@@ -4248,8 +3859,8 @@ namespace QuenchingModCN
             player.Play();
             setshowcasegrid.Visibility = Visibility.Visible;
             setbgi.Source = new BitmapImage(new Uri("set3.png", UriKind.Relative));
-            setbgt11.Text = setstringt[9];
-            setbgt12.Text = setstringc[9];
+            setbgt11.Text = setstringt[8];
+            setbgt12.Text = setstringc[8];
         }
 
         private void mainbtn_min_Click(object sender, RoutedEventArgs e)
@@ -5346,6 +4957,9 @@ namespace QuenchingModCN
             try
             {
                 File.Delete(dir_root + "units/destructableskin.txt");
+            }
+            catch { }
+            try { 
                 streamname("destructableskin.txt", dir_root + "units/destructableskin.txt");
                 if (level == 1)
                 {
@@ -7301,8 +6915,8 @@ namespace QuenchingModCN
             player.Play();
             setshowcasegrid.Visibility = Visibility.Visible;
             setbgi.Source = new BitmapImage(new Uri("ui6.png", UriKind.Relative));
-            setbgt11.Text = setstringt[14];
-            setbgt12.Text = setstringc[14];
+            setbgt11.Text = setstringt[13];
+            setbgt12.Text = setstringc[13];
         }
 
         private void uibtnsm5_Click(object sender, RoutedEventArgs e)
@@ -7376,9 +6990,9 @@ namespace QuenchingModCN
             }
             else
             {
-                if (File.Exists("./QMF2.2.zip"))
+                if (File.Exists("./QMF2.4.zip"))
                 {
-                    quezipfile = "./QMF2.2.zip";
+                    quezipfile = "./QMF2.4.zip";
                     try
                     {
                         Console.WriteLine("has");
@@ -7496,7 +7110,7 @@ namespace QuenchingModCN
         {
             //update.Visibility = Visibility.Visible;
             try { System.Diagnostics.Process.Start(mbtext[28]); }
-            catch { System.Diagnostics.Process.Start("http://tianxiazhengyi.net/"); }
+            catch { System.Diagnostics.Process.Start("https://tianxiazhengyi.net/"); }
         }
 
         private void mainbtn_un_Click(object sender, RoutedEventArgs e)
@@ -7641,7 +7255,7 @@ namespace QuenchingModCN
                     WriteIniInt("mod", "w3c", 1);
                     b.Content = mbtext[9];
                     string[] lines = File.ReadAllLines(dir_root + "webui/index.html");
-                    lines[26] = "<script src=\"http://w3champions.wc3.tools/prod/integration/w3champions.js\"></script>";
+                    lines[26] = "<script src=\"https://w3champions.wc3.tools/prod/integration/w3champions.js\"></script>";
                     File.WriteAllLines(dir_root + "webui/index.html", lines);
                     // File.Copy(dir_root + "webui/index.html", "./Quenching/webui/index.html", true);
                 }
@@ -7897,8 +7511,18 @@ namespace QuenchingModCN
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            try { System.Diagnostics.Process.Start("http://tianxiazhengyi.net/"); }
-            catch { System.Diagnostics.Process.Start("http://tianxiazhengyi.net/"); }
+            try { System.Diagnostics.Process.Start("https://tianxiazhengyi.net/"); }
+            catch { System.Diagnostics.Process.Start("https://tianxiazhengyi.net/"); }
+        }
+
+        private void Button_Click_Help(object sender, RoutedEventArgs e)
+        {
+            string helpurl = "https://ui-zorrot.gitbook.io/mod";
+            if (GetIniInt("mod", "lang", 0) == 0) { helpurl = "https://ui-zorrot.gitbook.io/mod"; }
+            if (GetIniInt("mod", "lang", 0) != 0) { helpurl = "https://ui-zorrot.gitbook.io/quenching-mod-guide-book"; }
+
+            try { System.Diagnostics.Process.Start(helpurl); }
+            catch { System.Diagnostics.Process.Start("https://tianxiazhengyi.net"); }
         }
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
@@ -8251,11 +7875,13 @@ namespace QuenchingModCN
             btnclickF(mainbtn_min_Copy6);
             btnclickF(mainbtn_min_Copy7);
             btnclickF(mainbtn_min_Copy8);
+            btnclickF(mainbtn_min_Copy9);
             try { File.Copy(dir_root + "webui/QuenchingOnCN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
             WriteIniInt("mod", "lang", 0);
             initstring();
-            InitUIstring();
+            fixsource("./Quenching/hc-trans.que");
             mainbtn_min_lang.Content = "中文";
+            is_new_version();
         }
 
         private void mainbtn_min_Copy2_Click(object sender, RoutedEventArgs e)
@@ -8267,11 +7893,13 @@ namespace QuenchingModCN
             btnclickF(mainbtn_min_Copy6);
             btnclickF(mainbtn_min_Copy7);
             btnclickF(mainbtn_min_Copy8);
+            btnclickF(mainbtn_min_Copy9);
             try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
             initstring();
-            InitUIstring();
+            fixsource("./Quenching/hc-trans-en.que");
             WriteIniInt("mod", "lang", 1);
             mainbtn_min_lang.Content = "English";
+            is_new_version();
         }
 
         private void achbtn1_Copy1_Click(object sender, RoutedEventArgs e)
@@ -8378,11 +8006,13 @@ namespace QuenchingModCN
             btnclickT(mainbtn_min_Copy6);
             btnclickF(mainbtn_min_Copy7);
             btnclickF(mainbtn_min_Copy8);
+            btnclickF(mainbtn_min_Copy9);
             try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
             initstring();
-            InitUIstring();
+            fixsource("./Quenching/hc-trans-pt.que");
             WriteIniInt("mod", "lang", 2);
             mainbtn_min_lang.Content = "Português";
+            is_new_version();
         }
         public int cospage = 0;
         public int[] cosnextpage = { 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 };
@@ -8473,11 +8103,13 @@ namespace QuenchingModCN
             btnclickF(mainbtn_min_Copy6);
             btnclickF(mainbtn_min_Copy7);
             btnclickT(mainbtn_min_Copy8);
+            btnclickF(mainbtn_min_Copy9);
             try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
             initstring();
-            InitUIstring();
+            fixsource("./Quenching/hc-trans-fr.que");
             WriteIniInt("mod", "lang", 4);
             mainbtn_min_lang.Content = "Français";
+            is_new_version();
         }
 
 
@@ -8517,11 +8149,31 @@ namespace QuenchingModCN
             btnclickF(mainbtn_min_Copy6);
             btnclickT(mainbtn_min_Copy7);
             btnclickF(mainbtn_min_Copy8);
+            btnclickF(mainbtn_min_Copy9);
             try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
             initstring();
-            InitUIstring();
+            fixsource("./Quenching/hc-trans-ru.que");
             WriteIniInt("mod", "lang", 3);
             mainbtn_min_lang.Content = "Pусский";
+            is_new_version();
+        }
+
+        private void mainbtn_lang_sp(object sender, RoutedEventArgs e)
+        {
+            readtrans = "./Quenching/trans-en.que";
+            readhctrans = "./Quenching/hc-trans-en.que";
+            btnclickF(mainbtn_min_Copy1);
+            btnclickF(mainbtn_min_Copy2);
+            btnclickF(mainbtn_min_Copy6);
+            btnclickF(mainbtn_min_Copy7);
+            btnclickF(mainbtn_min_Copy8);
+            btnclickT(mainbtn_min_Copy9);
+            try { File.Copy(dir_root + "webui/QuenchingOnEN.png", dir_root + "webui/QuenchingOn.png", true); } catch { }
+            initstring();
+            fixsource("./Quenching/hc-trans-sp.que");
+            WriteIniInt("mod", "lang", 5);
+            mainbtn_min_lang.Content = "Español";
+            is_new_version();
         }
 
         private void mainbtn_check_Copy5_Click(object sender, RoutedEventArgs e)
@@ -8578,7 +8230,7 @@ namespace QuenchingModCN
             theme.Visibility = Visibility.Hidden;
         }
 
-        private void themey_Copy2_Click(object sender, RoutedEventArgs e)
+        private void themey_Custom_Click(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog();
             dialog.Multiselect = false;//该值确定是否可以选择多个 Files
@@ -8587,45 +8239,56 @@ namespace QuenchingModCN
             if (dialog.ShowDialog() == true)
             {
                 File.Copy(dialog.FileName, dir_root + "webui/webms/mainmenu.webm", true);
+                File.Copy(dialog.FileName, "./quenching/mainmenuX.mp4", true);
 
                 WriteIniInt("mod", "them", 4);
-                btnclickF(themey_Copy1);
-                btnclickF(themey_Copy);
-                btnclickF(themey);
-                btnclickT(themey_Copy2);
+
+                btnclickF(themey_1);
+                btnclickF(themey_2);
+                btnclickF(themey_3);
+                btnclickF(themey_4);
+                btnclickT(themey_X);
+
+                mediaElement.Source = new Uri("./quenching/mainmenuX.mp4", UriKind.Relative);
             }
         }
 
         private void themey_Click(object sender, RoutedEventArgs e)
         {
             File.Delete(dir_root + "webui/webms/mainmenu.webm");
+            Button btn = (Button)sender;
+              
+            int i = Convert.ToInt32(btn.Tag.ToString());
+            WriteIniInt("mod", "them", i);
+           
+            btnclickF(themey_1);
+            btnclickF(themey_2);
+            btnclickF(themey_3);
+            btnclickF(themey_4);
+            btnclickF(themey_X);
 
-            WriteIniInt("mod", "them", 1);
-            btnclickF(themey_Copy1);
-            btnclickF(themey_Copy);
-            btnclickT(themey);
-            btnclickF(themey_Copy2);
-        }
+            switch (i) {
+                case 1:
+                    btnclickT(themey_1);
+                    mediaElement.Source = new Uri("./quenching/mainmenu0.avi", UriKind.Relative);
+                    break;
+                case 2:
+                    btnclickT(themey_2);
+                    File.Copy(dir_root + "webui/webms/mainmenu2.webm", dir_root + "webui/webms/mainmenu.webm", true);
+                    mediaElement.Source = new Uri("./quenching/mainmenu2.mp4", UriKind.Relative);
+                    break;
+                case 3:
+                    btnclickT(themey_3);
+                    File.Copy(dir_root + "webui/webms/mainmenu3.webm", dir_root + "webui/webms/mainmenu.webm", true);
+                    mediaElement.Source = new Uri("./quenching/mainmenu3.mp4", UriKind.Relative);
+                    break;
+                case 4:
+                    btnclickT(themey_4);
+                    File.Copy(dir_root + "webui/webms/mainmenu4.webm", dir_root + "webui/webms/mainmenu.webm", true);
+                    mediaElement.Source = new Uri("./quenching/mainmenu4.mp4", UriKind.Relative);
+                    break;
 
-        private void themey_Copy_Click(object sender, RoutedEventArgs e)
-        {
-            File.Copy(dir_root + "webui/webms/mainmenu2.webm", dir_root + "webui/webms/mainmenu.webm", true);
-
-            WriteIniInt("mod", "them", 2);
-            btnclickF(themey_Copy1);
-            btnclickT(themey_Copy);
-            btnclickF(themey);
-            btnclickF(themey_Copy2);
-        }
-
-        private void themey_Copy1_Click(object sender, RoutedEventArgs e)
-        {
-            File.Copy(dir_root + "webui/webms/mainmenu3.webm", dir_root + "webui/webms/mainmenu.webm", true);
-            WriteIniInt("mod", "them", 3);
-            btnclickT(themey_Copy1);
-            btnclickF(themey_Copy);
-            btnclickF(themey);
-            btnclickF(themey_Copy2);
+            }
         }
 
 
@@ -8783,7 +8446,7 @@ namespace QuenchingModCN
                 ccos_btn1_Copy14.Source = new BitmapImage(new Uri("btnheropaladin.png", UriKind.Relative));
                 ccos_btn1_Copy15.Source = new BitmapImage(new Uri("btnheromountainking.png", UriKind.Relative));
                 ccos_btn1_Copy16.Source = new BitmapImage(new Uri("btnherobloodelfprince.png", UriKind.Relative));
-                achmaint1.Text = cosherostring[ccos_page];
+                achmaint1.Text = findcontext("[cos-title-hum]");
             }
             if (ccos_page == 1)
             {
@@ -8803,7 +8466,7 @@ namespace QuenchingModCN
                 ccos_btn1_Copy14.Source = new BitmapImage(new Uri("btnherofarseer.png", UriKind.Relative));
                 ccos_btn1_Copy15.Source = new BitmapImage(new Uri("btntaurenchieftain.png", UriKind.Relative));
                 ccos_btn1_Copy16.Source = new BitmapImage(new Uri("btnshadowhunter.png", UriKind.Relative));
-                achmaint1.Text = cosherostring[ccos_page];
+                achmaint1.Text = findcontext("[cos-title-orc]");
             }
             if (ccos_page == 2)
             {
@@ -8823,7 +8486,7 @@ namespace QuenchingModCN
                 ccos_btn1_Copy14.Source = new BitmapImage(new Uri("btnherodreadlord.png", UriKind.Relative));
                 ccos_btn1_Copy15.Source = new BitmapImage(new Uri("btnherolich.png", UriKind.Relative));
                 ccos_btn1_Copy16.Source = new BitmapImage(new Uri("btnherocryptlord.png", UriKind.Relative));
-                achmaint1.Text = cosherostring[ccos_page];
+                achmaint1.Text = findcontext("[cos-title-ud]");
             }
             if (ccos_page == 3)
             {
@@ -8843,7 +8506,7 @@ namespace QuenchingModCN
                 ccos_btn1_Copy14.Source = new BitmapImage(new Uri("btnheromoonpriestess.png", UriKind.Relative));
                 ccos_btn1_Copy15.Source = new BitmapImage(new Uri("btnkeeperofthegrove.png", UriKind.Relative));
                 ccos_btn1_Copy16.Source = new BitmapImage(new Uri("btnherowarden.png", UriKind.Relative));
-                achmaint1.Text = cosherostring[ccos_page];
+                achmaint1.Text = findcontext("[cos-title-ne]");
             }
         }
 
@@ -9029,8 +8692,8 @@ namespace QuenchingModCN
 
         private void achbtn1_Copy21_Click_1(object sender, RoutedEventArgs e)
         {
-            if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start("http://tianxiazhengyi.net/QMdownload.html"); }
-            else { System.Diagnostics.Process.Start("http://tianxiazhengyi.net/QMdownloadEN.html"); }
+            if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start("https://tianxiazhengyi.net/QMdownload.html"); }
+            else { System.Diagnostics.Process.Start("https://tianxiazhengyi.net/QMdownloadEN.html"); }
         }
 
         private void mainbtn_check_Copy3_Click_2(object sender, RoutedEventArgs e)
@@ -9175,7 +8838,7 @@ namespace QuenchingModCN
                     else
                     {
                         MessageBox.Show(mainstring[2]);
-                        this.Dispatcher.Invoke(() => { maincheckt.Text = mainstring[2] + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
+                        this.Dispatcher.Invoke(() => { maincheckt.Text = findcontext("changeable-main-hint-fileneedupdate") + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
                         return;
                     }
                 }
@@ -9208,7 +8871,8 @@ namespace QuenchingModCN
 
         private void mb_mod_open(object sender, RoutedEventArgs e)
         {
-            dl_m_mod.Visibility = Visibility.Visible;
+            //dl_m_mod.Visibility = Visibility.Visible;
+            dl_install.Visibility = Visibility.Visible;
         }
         private void mb_lang_open(object sender, RoutedEventArgs e)
         {
@@ -9228,7 +8892,7 @@ namespace QuenchingModCN
         }
         private void mb_mod_close(object sender, RoutedEventArgs e)
         {
-            dl_m_mod.Visibility = Visibility.Hidden;
+            dl_install.Visibility = Visibility.Hidden;
         }
         private void Msg_mod_y_Click(object sender, RoutedEventArgs e)
         {
@@ -9579,45 +9243,56 @@ namespace QuenchingModCN
             WriteIniInt("set", "tile", level);
             set_tile_by_meta();
 
-            switch (level)
+             switch (level)
+             {
+                 case 1:
+                     dirmove(dir_root + "t00", dir_root + "terrainart");
+                     streamrwDic("clifftypes00.slk", dir_root + "terrainart/");
+                     File.Copy(dir_root + "terrainart/clifftypes00.slk", dir_root + "terrainart/clifftypes.slk", true);
+                     //File.Delete(dir_root + "terrainart/clifftypes00.slk");
+                     break;
+                 case 2:
+                     dirmove(dir_root + "t16", dir_root + "terrainart");
+                     streamrwDic("clifftypes16.slk", dir_root + "terrainart/");
+                     File.Copy(dir_root + "terrainart/clifftypes16.slk", dir_root + "terrainart/clifftypes.slk", true);
+                     //File.Delete(dir_root + "terrainart/clifftypes16.slk");
+                     break;
+                 case 3:
+                     dirmove(dir_root + "t18", dir_root + "terrainart");
+                     streamrwDic("clifftypes18.slk", dir_root + "terrainart/");
+                     File.Copy(dir_root + "terrainart/clifftypes18.slk", dir_root + "terrainart/clifftypes.slk", true);
+                     //File.Delete(dir_root + "terrainart/clifftypes18.slk");
+                     break;
+                 case 4:
+                     dirmove(dir_root + "t20", dir_root + "terrainart");
+                     streamrwDic("clifftypes20.slk", dir_root + "terrainart/");
+                     File.Copy(dir_root + "terrainart/clifftypes20.slk", dir_root + "terrainart/clifftypes.slk", true);
+                     //File.Delete(dir_root + "terrainart/clifftypes20.slk");
+                     break;
+             }
+
+            try
             {
-                case 1:
-                    dirmove(dir_root + "t00", dir_root + "terrainart");
-                    streamrwDic("clifftypes00.slk", dir_root + "terrainart/");
-                    File.Copy(dir_root + "terrainart/clifftypes00.slk", dir_root + "terrainart/clifftypes.slk");
-                    File.Delete(dir_root + "terrainart/clifftypes00.slk");
-                    break;
-                case 2:
-                    dirmove(dir_root + "t16", dir_root + "terrainart");
-                    streamrwDic("clifftypes16.slk", dir_root + "terrainart/");
-                    File.Copy(dir_root + "terrainart/clifftypes16.slk", dir_root + "terrainart/clifftypes.slk");
-                    File.Delete(dir_root + "terrainart/clifftypes16.slk");
-                    break;
-                case 3:
-                    dirmove(dir_root + "t18", dir_root + "terrainart");
-                    streamrwDic("clifftypes18.slk", dir_root + "terrainart/");
-                    File.Copy(dir_root + "terrainart/clifftypes18.slk", dir_root + "terrainart/clifftypes.slk");
-                    File.Delete(dir_root + "terrainart/clifftypes18.slk");
-                    break;
-                case 4:
-                    dirmove(dir_root + "t20", dir_root + "terrainart");
-                    streamrwDic("clifftypes20.slk", dir_root + "terrainart/");
-                    File.Copy(dir_root + "terrainart/clifftypes20.slk", dir_root + "terrainart/clifftypes.slk");
-                    File.Delete(dir_root + "terrainart/clifftypes20.slk");
-                    break;
+                if (GetIniInt("mod", "water", 0) == 0) { streamrwDic("water.slk", dir_root + "terrainart/"); }
+                else { File.Delete(dir_root + "terrainart/water.slk"); }
             }
+            catch { }
         }
 
         private void set_tile_by_meta()
         {
-            string t = File.ReadAllText(dir_root + "terrainart/meta.que");
-            switch (t)
+            if (Directory.Exists(dir_root + "terrainart"))
             {
-                case "00": dirmove(dir_root + "terrainart", dir_root + "t00"); break;
-                case "16": dirmove(dir_root + "terrainart", dir_root + "t16"); break;
-                case "18": dirmove(dir_root + "terrainart", dir_root + "t18"); break;
-                case "20": dirmove(dir_root + "terrainart", dir_root + "t20"); break;
+                string t = File.ReadAllText(dir_root + "terrainart/meta.que");
+                switch (t)
+                {
+                    case "00": dirmove(dir_root + "terrainart", dir_root + "t00"); break;
+                    case "16": dirmove(dir_root + "terrainart", dir_root + "t16"); break;
+                    case "18": dirmove(dir_root + "terrainart", dir_root + "t18"); break;
+                    case "20": dirmove(dir_root + "terrainart", dir_root + "t20"); break;
+                }
             }
+
         }
 
         //private void newt2b2_Click(object sender, RoutedEventArgs e)
@@ -9733,7 +9408,7 @@ namespace QuenchingModCN
                 {
                     File.Copy("./quenching/temp/lsonc1.temp", "./quenching/temp/lsonc1.w3x", true);
                     File.Delete("./quenching/temp/lsonc1.temp");
-                    this.Dispatcher.Invoke(() => { maincheckt.Text = mainstring[2] + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
+                    this.Dispatcher.Invoke(() => { maincheckt.Text = findcontext("changeable-main-hint-fileneedupdate") + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
                     Process myprocess = new Process();
                     ProcessStartInfo startInfo = new ProcessStartInfo(dir_root + "x86_64/Warcraft III.exe", "-launch -loadfile \"" + Directory.GetCurrentDirectory() + "\\quenching\\temp\\lsonc1.w3x\" -mapdiff 1 -testmapprofile WorldEdit   -fixedseed 1 ");
                     //-launch -uid w3\
@@ -9749,7 +9424,7 @@ namespace QuenchingModCN
                     {
                         File.Copy("./quenching/temp/lsonc1.temp", "./quenching/temp/lsonc1.w3x", true);
                         File.Delete("./quenching/temp/lsonc1.temp");
-                        this.Dispatcher.Invoke(() => { maincheckt.Text = mainstring[2] + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
+                        this.Dispatcher.Invoke(() => { maincheckt.Text = findcontext("changeable-main-hint-fileneedupdate") + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
                         Process myprocess = new Process();
                         ProcessStartInfo startInfo = new ProcessStartInfo(dir_root + "x86_64/Warcraft III.exe", "-launch -loadfile \"" + Directory.GetCurrentDirectory() + "\\quenching\\temp\\lsonc1.w3x\" -mapdiff 1 -testmapprofile WorldEdit   -fixedseed 1 ");
                         //-launch -uid w3\
@@ -9761,8 +9436,7 @@ namespace QuenchingModCN
                     }
                     else
                     {
-                        MessageBox.Show(mainstring[2]);
-                        this.Dispatcher.Invoke(() => { maincheckt.Text = mainstring[2] + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
+                        this.Dispatcher.Invoke(() => { maincheckt.Text = findcontext("changeable-main-hint-fileneedupdate") + System.Environment.NewLine + getonelineque("./quenching/version.que"); pb.Visibility = Visibility.Hidden; });
                         return;
                     }
                 }

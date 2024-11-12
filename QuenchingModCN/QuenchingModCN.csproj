@@ -120,11 +120,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="MListReader.cs" />
-    <Compile Include="MainwindowConst.cs" />
     <Compile Include="lang.xaml.cs">
       <DependentUpon>lang.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MZip.cs" />
+    <Compile Include="MainViewModel.cs" />
     <Page Include="lang.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -187,6 +186,7 @@
     <Resource Include="clifftypes16.slk" />
     <Resource Include="clifftypes18.slk" />
     <Resource Include="clifftypes20.slk" />
+    <Resource Include="hc-trans-sp.que" />
     <None Include="packages.config" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
@@ -330,7 +330,7 @@
     <Resource Include="theme3.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="theme4.png" />
+    <Resource Include="themeX.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="mainmenu2.webm" />
@@ -587,6 +587,15 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="wn4.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="mainmenu4.webm" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="mainmenu0.avi" />
+    <Resource Include="theme4.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Resource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

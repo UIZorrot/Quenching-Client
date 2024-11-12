@@ -1,192 +1,294 @@
-魔 兽 重 制 版 增 强 模 组
-淬 火 试 炼
-目前版本
-启动游戏
-常用功能
-更新日志
-删除MOD
-安装MOD/补丁
-检查更新
-关于我们
-不兼容W3C
-白屏修复
-战役解锁
-更新 (暂时无效)
-常用链接
-综合
-主页
-淬火试炼
-涂装
-战役
-介绍鸣谢
-关于
-支持
-鸣谢
-关于淬火
-这是一款由 [天下正义] 制作的魔兽重制版改良模组\n感谢社区和魔兽爱好者们帮助\n我们得到了许多HTML界面和着色器方面的支持\n\n这是一个遵循cc4.0的开源项目\n你不仅能够免费体验, 而且署名之后也可以使用其中的素材\n\n我们由于经济和生活压力, 只能使用业余时间制作\n您的支持对我们有重要的意义
-微信捐赠
-支付宝捐赠
-支持
-暴雪经典组\n他们贡献了绝大部分代码\n没有它们MOD是无法完成的\n\n网易暴雪\n在比赛中的使用和转播\n\nBack2Warcraft\n使用MOD转播国外比赛\n同时非常感谢他的慷慨捐赠\n\n玉米Yumiko\n使用MOD进行实机游戏\n最早支持我们的主播\n\n桥林\n使用MOD进行赛事转播\n帮助推荐以及传播
-鸣谢
-由于人数过多\n我们将会将该名单迁至网站\n\n新的主页预计五月上线\n请注意您是否出现\n\n如果发现了遗漏\n或者你希望更改展示姓名\n请尽快联系我们
-可以用于商业, 但是请务必在非常显眼的地方注明 [淬火试炼] [天下正义] 以及产品 ICON
-综合设置
-基础模块
-地形效果
-画面效果
-额外装饰
-地形环境
-透明水面
-阴影映射
-模拟遮蔽
-单位变化
-反和谐补丁
-高级植被
-高级着色器
-固定光源
-预装功能
-打开
-关闭
-使用经典版需在主界面关闭
-游戏界面
-主要界面
-原版
-淬火
-嘉年华
-其它选项
-缩减光晕
-增强选择圈
-半身头像
-英文语音
-可能与其他插件冲突且会覆盖用户设置\n游戏内置的快捷键会优先覆盖改键\n选择 [ 网格 ] 方案即按照技能按钮位置修改键位\n选择 [ 自定 ] 方案即使用Customkeybinding文件\n修改之后需要点击 [ 应用 ] 按钮
-调整设置
-设置不能在游戏当中更改\n为避免和地图冲突功能仅限对战地图\n能够用于经典版
-打开
-关闭
-物品栏
-命令栏
-仅英雄
-应用
-原版
-网格
-自定
-镜头
-亮度
-迷雾
-视距
-倾角
-红
-绿
-蓝
-浓度
-单位涂装
-类别
-英 雄
-单 位
-选择
-人族
-涂装
-原版
-吉安娜
-安东尼达斯
-精灵大法师
-怀旧模式
-怀旧模式
-\n所有的单位模型将使用经典版本\n为了避免冲突\n在这个模式下无法更换任何英雄和涂装
-退出怀旧模式
-战团涂装
-人 类
-兽 人
-不 死 族
-暗 夜 精 灵
-原版
-在淬火引擎中模型会表现的更加细致\n原版可使用 [ 单位辨识 ] 选项
-原版
-部落荣耀
-未制作
-未制作
-战役成就
-战役列表
-淬火战役
-预装功能
-列表
-淬火序章
-删除战役
-请载入战役
-请载入战役
-请载入战役
-淬火成就
-成 就 列 表
-第 1 页
-兽族大逃亡 
-前所未有的游戏实机画面\n更丰富的支线任务\n剧情和游戏性的扩展\n绑定离线成就系统
-提示
-怀旧模式使用经典版的单位模型\n会覆盖所有其他涂装\n适合更加适应经典版画面的玩家
-确定
-取消
-游戏更新
-v1.5\n\n\n增加了俄语\n现在读取战役可以读取未加密的w3n格式了\n下载中心增加DOTA\n下载中心增加重制版血色使命\n下载中心增加重制版光影相随\n增加4个英雄涂装\n增加了1个战团涂装\n修复了一些可能的BUG\n
-返回
-安装战役
-中文
-ENG
-普通模式
-对战模式
-怀旧模式
-安装MOD
-手动安装
-锁定经典版
-锁定重制版
-说明书
-混乱兽人
-打开MOD
-关闭MOD
-更换主题
-原版
-煅炉
-黑潮
-自定义
-返回
-更换主题
-更换游戏内的背景文件\n如果使用自定义请确保文件为webm或者mp4格式
-光影参数
-阴影
-光照
-自定义皮肤
-半身头像
-光照
-初始迷雾
-英文语音
-手动安装
----------------------------------------------------
-基础设置
-进入官网
-- 安装设置 -
-更新\安装
-主要
-备用
-更改设置
-线路设置
-已下载包体
-注意：这里指的是自动安装包
-- 基础设置 -
-版本
-显卡
-开关
-版本
-最新内容
-复古模式
-怀旧模式经过细致的考虑重新回归\n体验最经典的魔兽画面
-树木高度
-将淬火的默认树木降低一些\n复古模式中无效
-暗夜孤星
-以恐怖之潮为背景的全新地图\n快抢先体验吧
-立刻开始
-客户端更新
-战役支持难度选择和战役记忆\n涂装界面更加直观了
-详细日志
-种族
-难度选择
-选择关卡
-- 语言设置 -
+[main-title-mode]重 制 版
+[main-title-1]魔 兽 重 制 版 增 强 模 组
+[main-title-2]淬 火 试 炼
+[main-version]目前版本
+[main-version-value]目前版本
+[main-btn-start]启动游戏
+[main-btn-dis]常用功能
+[main-btn-del]删除MOD
+[main-btn-help]使用说明
+[main-btn-setup]安装MOD
+[main-btn-set] 基础设置
+[main-btn-about]关于我们
+[main-bigbtn-update]更新
+[main-bigbtn-set]综合
+[main-bigbtn-main]淬火试炼
+[main-bigbtn-cos]涂装
+[main-bigbtn-camp]战役
+[main-thx-title]介绍鸣谢
+[main-thx-btn-about]关于
+[main-thx-btn-support]支持
+[main-thx-btn-thx]鸣谢
+[main-thx-about-title]关于淬火
+[main-thx-about-dis]这是一款由 [天下正义] 制作的魔兽重制版改良模组\n感谢社区和魔兽爱好者们帮助\n我们得到了许多HTML界面和着色器方面的支持\n\n这是一个遵循cc4.0的开源项目\n你不仅能够免费体验, 而且署名之后也可以使用其中的素材\n\n我们由于经济和生活压力, 只能使用业余时间制作\n您的支持对我们有重要的意义
+[main-thx-about-pay1]微信捐赠
+[main-thx-about-pay2]支付宝捐赠
+[main-thx-support-title]- 支持 -
+[main-thx-support-dis]暴雪经典组\n他们贡献了绝大部分代码\n没有它们MOD是无法完成的\n\n网易暴雪\n在比赛中的使用和转播\n\nBack2Warcraft\n使用MOD转播国外比赛\n同时非常感谢他的慷慨捐赠\n\n玉米Yumiko\n使用MOD进行实机游戏\n最早支持我们的主播\n\n桥林\n使用MOD进行赛事转播\n帮助推荐以及传播
+[main-thx-thx]- 鸣谢 -
+[main-thx-thx-dis]由于人数过多\n我们将会将该名单迁至网站\n\n新的主页预计五月上线\n请注意您是否出现\n\n如果发现了遗漏\n或者你希望更改展示姓名\n请尽快联系我们
+[main-thx-cc40]可以用于商业, 但是请务必在非常显眼的地方注明 [淬火试炼] [天下正义] 以及产品 ICON
+[set-title]综合设置
+[set-tree]装饰设置
+[set-tree-old]复古
+[set-tree-tall]高耸
+[set-tree-short]低垂
+[set-tile]地形环境
+[set-water]水面
+[set-water-rel]正常
+[set-water-tran]清澈
+[set-unit]单位变化
+[set-vio]反和谐
+[set-btn-vio]安装
+[set-foli]植被
+[set-shader]高级着色器
+[set-ld]光源
+[set-ld-st]固定
+[set-ld-ro]旋转
+[set-installed]已安装
+[set-turnon]打开
+[set-turnoff]关闭
+[set-turnoffclassic]使用经典版需在主界面关闭
+[set-gameui]游戏界面
+[set-ui-classic]原版
+[set-ui-que]淬火
+[set-ui-blz]嘉年华
+[set-glow]缩减光晕
+[set-half]半身头像
+[set-light-melee]对战
+[cos-title]单位涂装
+[cos-title-cat]类别
+[cos-title-hero]英 雄
+[cos-title-unit]单 位
+[cos-title-custom]自 定 义
+[cos-title-choose]选择
+[cos-title-race]种族
+[cos-title-btn-choose]选定
+[cos-title-cos]涂装
+[cos-title-org]原版
+[cos-title-hum]人 类
+[cos-title-orc]兽 人
+[cos-title-ud]不 死 族
+[cos-title-ne]暗 夜 精 灵
+[main-back]返回
+[camp-install]安装战役
+[main-lang]中文
+[main-set-locksd]锁定经典版
+[main-set-lockhd]锁定重制版
+[main-set-turnonmod]打开MOD
+[main-set-turnoffmod]关闭MOD
+[main-btn-theme]更换主题
+[main-btn-theme-org]原版
+[main-btn-theme-que]煅炉
+[main-btn-theme-war2]黑潮
+[main-btn-theme-city]城外
+[main-btn-theme-custom]自定义
+[main-btn-theme-customskin]自定义皮肤
+[main-btn-theme-title]更换主题
+[main-btn-theme-dis]更换游戏内的背景文件\n如果使用自定义请确保文件为mp4格式
+[set-light]光照
+[set-fog]初始迷雾
+[main-btn-website]进入官网
+[main-setup-title]- 安装设置 -
+[main-setup-title-mode]版本
+[main-setup-title-gpu]显卡
+[main-setup-title-sw]开关
+[main-version]目前版本
+[new-title]最新内容
+[new-1]资源整合
+[new-1-dis]我们加入了过去数个版本的资源\n并且进行了重新优化
+[new-2]客户端更新
+[new-2-dis]增加了一个新的游戏背景\n同时修改结果会应用于客户端
+[new-3]自由搭配
+[new-3-dis]我们重构了设置选项卡\n能够更加自由的搭配资源
+[new-3-btn]前往下载
+[new-4]对战光照
+[new-4-dis]经过仔细的考虑\n我们制作了一种专用于对战的光照
+[new-4-btn]详细日志
+[camp-title-diff]难度选择
+[camp-title-diff-1]简单
+[camp-title-diff-2]中等
+[camp-title-diff-3]困难
+[camp-title-level]选择关卡
+[camp-title]自定义战役
+[camp-title-list]战役列表
+[camp-btn-read]读取战役
+[camp-btn-del]删除战役
+[camp-btn-unlock]战役解锁
+[camp-btn-map]打开地图
+[lang-title]- 语言设置 -
+[pro-hint]文件更新中请勿关闭
+[pro-hint-perfix]移动文件
+[main-update-title-1]下载源
+[main-update-title-2]设置
+[main-update-officialsite]网盘链接
+[changeable-cos-hero-name]原版
+[changeable-cos-orc-unit-1]部落荣耀
+[changeable-cos-orc-unit-1-dis]五位兽人战士将获得更加强力的外观\n来帮助部落征战南北
+[changeable-cos-hum-unit-1]联盟精英
+[changeable-cos-hum-unit-1-dis]更换五位不同的联盟士兵模型\n整装待发准备出击
+[changeable-cos-disable]未解锁
+[changeable-cos-disable-dis]这个战团涂装暂时无法使用\n请选择其他
+[changeable-set-unit]单位变化
+[changeable-set-unit-dis]对单位模型的各种调整变化\n关闭之后涂装将不可使用
+[changeable-set-tree]环境变换
+[changeable-set-tree-dis]重新制作了更加精致贴图和模型\n你可以选择不同版本的资源
+[changeable-set-vio]国际服画面
+[changeable-set-vio-dis]部分地区会屏蔽部分成人特效\n解锁体验完整的重制版画面效果
+[changeable-set-water]水面
+[changeable-set-water-dis]在两种不同的水面直接切换\n扭曲透视或者泛光效果
+[changeable-set-foli]植被
+[changeable-set-foli-dis]华丽的植被可能带来卡顿\n您可以根据硬件选择适合的植被
+[changeable-set-shader]高级着色器
+[changeable-set-shader-dis]通过大量画面调整算法\n获得更完美的画面效果
+[changeable-set-light]全局光照
+[changeable-set-light-dis]大幅优化游戏内的环境光\n使得画面明暗鲜明
+[changeable-set-ld]光源方向
+[changeable-set-ld-dis]光源会影响阴影和昼夜变换效果\n可选固定或者旋转
+[changeable-set-tile]地形环境
+[changeable-set-tile-dis]综合性的改变纹理和光效\n带来全新的画面表现
+[changeable-set-ui-1]原版UI
+[changeable-set-ui-1-dis]更大的图标和小地图\n兼容所有RPG地图
+[changeable-set-ui-3]淬火UI
+[changeable-set-ui-3-dis]更宽阔的视野\n简洁的界面设计\n操作变化较少
+[changeable-set-ui-2]嘉年华UI
+[changeable-set-ui-2-dis]更少的视线遮挡\n特殊的头像风格\n操作变化较大
+[changeable-set-glow]英雄光晕
+[changeable-set-glow-dis]精简后的英雄光晕较小\n更加适合RPG地图的风格
+[changeable-set-half]半身像
+[changeable-set-half-dis]嘉年华风格的头像文件\n不适合原版UI
+[changeable-cos-hum]人族
+[changeable-cos-orc]兽族
+[changeable-cos-ud]不死
+[changeable-cos-ne]暗夜
+[changeable-cos-na]中立
+[changeable-cos-none]未制作
+[changeable-cos-hum-mage-1]吉安娜
+[changeable-cos-hum-mage-2]安东尼达斯
+[changeable-cos-hum-pa-2]阿尔塞斯
+[changeable-cos-hum-pa-4]白银之手
+[changeable-cos-orc-bm-2]地狱咆哮
+[changeable-cos-orc-fs-2]盲眼先知
+[changeable-cos-ud-dl-1]提克尼奥斯
+[changeable-cos-na-pl-3]玛诺洛斯
+[changeable-cos-na-pl-1]玛瑟里顿
+[changeable-cos-ne-kog-1]塞纳留斯
+[changeable-cos-orc-bm-4]混沌剑圣
+[changeable-cos-hum-mage-3]精灵大法师
+[changeable-cos-ud-dk-2]黑暗冠军
+[changeable-cos-ud-dl-3]玛法理瑟斯
+[changeable-cos-ne-pom-2]步行泰兰德
+[changeable-cos-na-ga-1]原生食人魔
+[changeable-cos-na-dr-2]游侠
+[changeable-cos-hum-pa-1]乌瑟尔
+[changeable-cos-hum-mk-1]穆拉丁
+[changeable-cos-hum-bm-1]凯尔
+[changeable-cos-orc-bm-1]萨穆罗
+[changeable-cos-orc-bm-5]卡加斯
+[changeable-cos-orc-fs-1]萨尔
+[changeable-cos-orc-tc-1]凯恩·血蹄
+[changeable-cos-orc-sh-1]洛克汗
+[changeable-cos-hum-pa-3]堕落王子
+[changeable-cos-ud-lich-1]克尔苏加德
+[changeable-cos-ud-dl-2]德洛赛克
+[changeable-cos-ud-cl-1]阿努巴拉克
+[changeable-cos-ne-kog-2]玛法里奥
+[changeable-cos-ne-pom-1]泰兰德
+[changeable-cos-ne-dh-1]伊利丹
+[changeable-cos-ne-wd-1]玛维
+[changeable-cos-na-sw-1]法斯琪女士
+[changeable-cos-na-tk-1]工程师加兹劳
+[changeable-cos-na-pl-2]阿兹加洛
+[changeable-cos-na-bm-1]雷克萨
+[changeable-cos-na-pa-1]陈·烈酒风暴
+[changeable-cos-na-dr-1]希尔瓦娜斯
+[changeable-main-hint-checkupdate]检查更新中
+[changeable-main-hint-good]网络已连接
+[changeable-main-hint-bad]网络未连接
+[changeable-main-hint-checkfile]检查文件
+[changeable-main-hint-fileneedupdate]需要更新文件
+[changeable-main-hint-latest]当前为最新版本 
+[changeable-main-hint-download]下载文件
+[changeable-main-hint-networkerror]网络连接错误
+[changeable-main-pro-copyfile]复制文件
+[changeable-main-pro-unzip]解压文件
+[changeable-main-pro-off]关闭状态
+[changeable-main-pro-fix]修正用户设置
+[changeable-main-pro-noturnoff]文件更新中请勿关闭
+[changeable-main-pro-apply]应用设置
+[changeable-main-hint-noinstall]还未安装MOD
+[changeable-main-hint-needupdate]官网有新版本
+[changeable-main-hint-success]已成功安装
+[changeable-main-hint-hint]提示
+[changeable-main-hint-notwar3]这不是一个有效的魔兽争霸3重制版根目录, 请重新确定您的魔兽争霸版本以及安装的位置.
+[changeable-main-btn-del]删除MOD
+[changeable-main-btn-turnoff]关闭MOD
+[changeable-main-btn-page1]第 1 页
+[changeable-main-btn-w3c]兼容W3C
+[changeable-main-btn-now3c]不兼容W3C
+[changeable-main-btn-clientlatest]客户端的版本是最新的
+[changeable-thx-1]- 暴雪经典组 -\n他们贡献了大部分代码\n没有它们MOD是无法完成的\n\n- 网易暴雪 -\n在比赛中的使用和转播\n\n- Back2Warcraft -\n使用MOD转播国外比赛\n同时非常感谢他的慷慨捐赠\n\n- 玉米Yumiko -\n使用MOD进行实机游戏\n最早支持我们的主播\n\n- 桥林 -\n使用MOD进行赛事转播\n帮助推荐以及传播\n
+[changeable-thx-2]- 霜冻公爵 -\n提供反和谐方式,\n提供客户端测试工具\n\n- CodeXL -\n提供着色器编辑所需资料\n\n- Reteras\Magos -\n提供了精简模型工具\n\n- Blender -\n通过Blender软件我们能进一步修改模型\n\n- Tasyen -\n给出了许多关于fdf修改的教程\n\n- WardenIO -\n提供HD模块的代码解析
+[changeable-thx-3]- Ladik -\n提供Casc文件的破解方式\n\n- Nvtt -\n提供DDS图片的处理软件\n\n- Wanderbraun -\n向俄罗斯的朋友推荐我们的MOD\n\n- Rey Gaming -\n在Youtube持续提供MOD比赛视频\n\n- Warglaive -\n向西班牙语社区持续提供MOD视频\n\n- Daniel Sadowski -\n为我们提供音乐
+[changeable-thx-4]- 官方论坛 -\nSaido, taichi, pat, dingo\n在官方论坛持续更新我们的动态\n\n- 群管理人员 -\n呜喵王, 大叔, 白羽, hahatgj, 逆鳞, 大哥\n提供持续的社群管理\n\n- 中文推广 -\n星星哥/格瓦斯劳斯基/依瑞斯/斯美拉琪海露\n战术TNT/WRY魔兽联盟/平川电竞/冰糖解说\n\n- Kam -\n国外社区KOL引荐交流
+[changeable-thx-5]- wTc -\n提供Reddit论坛推广\n\n- Hiveworkshop -\n提供素材以及网站合作\n\n- 英文战役合作 -\nCSW Team/InsaneMonster/Tomoraider\n\n- 中文战役合作 -\n记忆/鬼画桃符\n蓝蓝子/淬火粉丝/织星人\n\n- 魔坛情报局 -\n提供MOD报道以及组织比赛
+[changeable-thx-6]- Vulfat -\n提供英雄以及战团皮肤\n\n- Andreiki -\n俄语翻译\n\n- 战役代码 -\n幻想的仪式/杰克川\n\n- 测试 -\n安林喵/是甜食哇/无可救药的废萌\n暗夜鱼人艾琳/Scream放点盐/成都第二菜包子\n\n- Wfz -\n提供MOD系列战役攻略
+[changeable-thx-7]- Coding.net -\n提供云服务\n\n- Fenix Gaming -\n在西班牙语社区提供MOD直播\n\n- Ralle -\n提供Hive的专区支持\n\n- 俄语推广 -\nArrow's Path/PavellGameChannel\n\n- 其它模型 -\nMystic/Xyrohn21/Malmgreva\n\n*名单遗漏请尽快联系我们*
+[changeable-cos-hint-noclassic]这个皮肤在经典版是无效的
+[changeable-cos-hint-nounit]关闭单位变化后不可使用皮肤功能
+[changeable-main-hint-turnon]打开
+[changeable-main-hint-turnoff]关闭
+[changeable-main-hint-qmdelask]确定移除淬火MOD内容?
+[changeable-main-hint-qmset]是否需要移除配置文件?
+[changeable-main-hint-qmdel]淬火试炼MOD已经成功被删除
+[changeable-main-hint-choosecamp]请选择文件
+[changeable-main-hint-nogoodcamp]这不是一个有效的淬火战役文件
+[changeable-main-hint-qminstalled]安装成功
+[changeable-main-hint-qminstalledfailed]安装失败，可能由于压缩包损坏或者硬盘空间不足，请修正后重试
+[changeable-main-hint-cn]中文
+[changeable-main-hint-en]ENG 
+[changeable-cos-fail]替换皮肤失败, 请重新启动客户端
+[changeable-main-hint-noclassic]这个选项不可在经典版使用
+[changeable-main-hint-modeclassic]经 典 核 心 版
+[changeable-main-hint-modeqm]重 制 完 全 版
+[changeable-main-hint-updateask]检查到客户端有新版本, 是否需要升级
+[changeable-main-hint-chooseinstallzip]请选择淬火试炼安装/补丁文件
+[changeable-main-hint-unavailable]不可用
+[changeable-main-hint-vioinstall]反和谐安装之后是不能关闭的, 确定安装?
+[changeable-main-hint-turnoffwar3]请关闭魔兽争霸以及相关软件, 然后再试
+[changeable-main-hint-delandinstall]你已经安装了淬火试炼MOD, 你可以先删除MOD再安装 
+[changeable-cos-sd]涂装经典版
+[changeable-main-hint-restart]这个设置需要重新启动游戏之后生效
+[changeable-cos-hum-pa-6]圣骑士 I
+[changeable-cos-hum-pa-7]圣骑士 II
+[changeable-cos-hum-pa-8]守护者
+[changeable-cos-hum-pa-9]海军上将
+[changeable-cos-hum-pa-5]灰烬使者
+[changeable-cos-orc-bm-3]混沌地狱咆哮
+[changeable-cos-orc-bm-5]阿卡玛
+[changeable-cos-ud-unit-1]冰冠护卫
+[changeable-cos-ud-unit-1-dis]来自诺森德的五位强大死灵\n帮助你主宰战场
+[changeable-cos-na-fl-1]上古之神
+[changeable-cos-hum-mk-2]黑铁氏族
+[changeable-cos-orc-bm-6]卡加斯
+[changeable-cos-orc-fs-3]古尔丹
+[changeable-cos-ne-unit-1]近卫军团
+[changeable-cos-ne-unit-1-dis]暗夜精灵中的五位精锐\n以月神的名义击倒敌人
+[changeable-cos-ud-lich-2]女妖
+[changeable-cos-na-dr-3]游骑兵
+[changeable-cos-hum-unit-2]血精灵
+[changeable-cos-hum-unit-2-dis]高贵的精灵兼具战斗机巧\n优雅的打击敌人
+[changeable-cos-orc-unit-2]混乱兽人
+[changeable-cos-orc-unit-2-dis]饮用恶魔血液\n使兽人战士更加野蛮
+[changeable-cos-ud-unit-2]诅咒教派
+[changeable-cos-ud-unit-2-dis]将大地上的一切\n都变成行尸走肉
+[changeable-cos-orc-sh-2]沃金
+[changeable-main-hint-dash]----------------------------
+[changeable-cos-ud-dk-1]巫妖王
+[changeable-cos-ud-dk-2]黑暗骑士
+[changeable-cos-ne-wd-2]暗夜孤星
+[changeable-cos-ud-dl-4]巴纳扎尔
+[changeable-cos-ud-dl-5]达文格尔
+[changeable-cos-ud-dl-6]麦尔盖尼斯
+[changeable-set-fog]初始迷雾
+[changeable-set-fog-dis]让地图具备天空盒子和大气雾效果\n黑色阴影区域也会得到染色
