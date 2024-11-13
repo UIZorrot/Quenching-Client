@@ -53,6 +53,43 @@ namespace QuenchingModCN
         }
         */
         private IntPtr war3;
+
+        public void Patch_Temp()
+        {
+            string folderPath = dir_root + "replaceabletextures/water";
+            // 检查文件夹是否存在
+            if (Directory.Exists(folderPath))
+            {
+                for (int i = 0; i <= 45; i++)
+                {
+                    string fileName = $"water{i:D2}.dds"; // 生成文件名，D2 表示两位数字格式
+                    string filePath = Path.Combine(folderPath, fileName);
+
+                    // 如果文件存在，删除它
+                    if (File.Exists(filePath))
+                    {
+                        try
+                        {
+                            File.Delete(filePath);
+                            Console.WriteLine($"已删除文件: {filePath}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"删除文件 {filePath} 时出错: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"文件不存在: {filePath}");
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("指定的文件夹不存在.");
+            }
+        }
+
         public void unZipFiledist(string TargetFile, string fileDir)
         {
             //this.Dispatcher.Invoke(() => { pb.Visibility = Visibility.Visible; pbp.Value = 0; pbp.Maximum = zipmaxint; pbtext2.Text = mainstring[9]; });
@@ -2613,15 +2650,15 @@ namespace QuenchingModCN
             //  streamrwDic("unitskin-new.txt", dir_root + "units/");
             // File.Copy(dir_root + "units/unitskin-new.txt", dir_root + "units/unitskin.txt");
             //}
-            if (GetIniInt("mod", "off", 0) == 0)
-            {
-                Directory.CreateDirectory(dir_root + "units");
-                streamname("destructableskin-que.txt", dir_root + "units/destructableskin.txt");
-                if (GetIniInt("mod", "lockc", 0) == 1)
-                { File.Delete(dir_root + "units/destructableskin.txt"); }
-                if (GetIniInt("mod", "newold", 0) == 1)
-                { streamname("destructableskin-old.txt", dir_root + "units/destructableskin.txt"); }
-            }
+            //if (GetIniInt("mod", "off", 0) == 0)
+            //{
+            //    Directory.CreateDirectory(dir_root + "units");
+            //    streamname("destructableskin-que.txt", dir_root + "units/destructableskin.txt");
+            //    if (GetIniInt("mod", "lockc", 0) == 1)
+            //    { File.Delete(dir_root + "units/destructableskin.txt"); }
+            //    if (GetIniInt("mod", "newold", 0) == 1)
+            //    { streamname("destructableskin-old.txt", dir_root + "units/destructableskin.txt"); }
+            //}
             //initDNC();
             //Directory.CreateDirectory(".//_retail_//environment");
             //try { File.Delete("./Quenching/temp/environment.zip"); } catch { }
@@ -4200,7 +4237,8 @@ namespace QuenchingModCN
                         catch { }
                     }
                     //
-                    if (GetIniInt("set", "trees", 1) == 1) { try { streamname("destructableskin-que.txt", dir_root + "units/destructableskin.txt"); } catch { } }
+                    try { File.Delete(dir_root + "units/units/destructableskin.txt"); } catch{ }
+                    //if (GetIniInt("set", "trees", 1) == 1) { try { streamname("destructableskin-que.txt", dir_root + "units/destructableskin.txt"); } catch { } }
                     //
                     this.Dispatcher.Invoke(() => { pbp.Value = 0; pbp.Maximum = 3; pbtext2.Text = mainstring[9]; });
                     //实际效果
@@ -4288,7 +4326,7 @@ namespace QuenchingModCN
                         catch { }
                     }
                     //
-                    if (GetIniInt("set", "trees", 1) == 1) { try { streamname("destructableskin-que.txt", dir_root + "units/destructableskin.txt"); } catch { } }
+                    try { File.Delete(dir_root + "units/units/destructableskin.txt"); } catch { }
                     Directory.CreateDirectory(dir_root + "units/units-que/");
                     try { File.Copy(dir_root + "units/units-que/unitskin.txt", dir_root + "units/unitskin.txt", true); } catch { }
                     this.Dispatcher.Invoke(() => { pbp.Value = pbp.Value + 1; pbtext1.Text = mainstring[9] + "./dnc"; });
@@ -4952,7 +4990,7 @@ namespace QuenchingModCN
             btnclickF(setbtn_tree_b6);
             btnclickT(btn);
 
-            WriteIniInt("set", "trees", level);
+            WriteIniInt("set", "tree", level);
 
             try
             {
