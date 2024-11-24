@@ -145,6 +145,9 @@ public class DoodadsEditor
         handler.Write("STlt", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree");
         handler.Write("STlt", "file", "Doodads/que/d20/LordaeronTree/LordaeronTree");
 
+        handler.Write("ZTtw", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+        handler.Write("ZTtc", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+
         handler.SaveFile(filePath);
     }
 
@@ -191,6 +194,9 @@ public class DoodadsEditor
         handler.Write("STlt", "texFile", "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree");
         handler.Write("STlt", "file", "Doodads/que/d20/lordaerontree-short/LordaeronTree");
 
+        handler.Write("ZTtw", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+        handler.Write("ZTtc", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+
         handler.SaveFile(filePath);
     }
     public static void Doodads_to_00(string filePath)
@@ -221,6 +227,23 @@ public class DoodadsEditor
         handler.Write("Yts2", "texFile", "ReplaceableTextures/tree/t00/LordaeronTree/LordaeronSummerTree");
         handler.Write("Yts3", "texFile", "ReplaceableTextures/tree/t00/LordaeronTree/LordaeronSummerTree");
         handler.Write("STlt", "texFile", "ReplaceableTextures/tree/t00/LordaeronTree/LordaeronSummerTree");
+
+        handler.Write("ZTtw", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+        handler.Write("ZTtc", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+        handler.Write("BTtw", "texFile", "ReplaceableTextures/tree/tc/barrenstree/barrenstree");
+        handler.Write("BTtc", "texFile", "ReplaceableTextures/tree/tc/barrenstree/barrenstree");
+
+        //handler.Write("ATtr", "file", "Doodads/que/d00/AshenvaleTree/AshenTree");
+        //handler.Write("CTtr", "file", "Doodads/que/d00/AshenvaleTree/AshenTree");
+        //handler.Write("FTtw", "file", "Doodads/que/d00/LordaeronTree/LordaeronTree");
+        //handler.Write("LTlt", "file", "Doodads/que/d00/LordaeronTree/LordaeronTree");
+        //handler.Write("WTtw", "file", "Doodads/que/d00/LordaeronTree/LordaeronTree");
+        //handler.Write("WTst", "file", "Doodads/que/d00/LordaeronTree/LordaeronTree");
+        //handler.Write("VTlt", "file", "Doodads/que/d00/LordaeronTree/LordaeronTree");
+        //handler.Write("JTct", "file", "Doodads/que/d00/lordaerontree/lordaerontree");
+        //handler.Write("JTtw", "file", "Doodads/que/d00/LordaeronTree/LordaeronTree");
+        //handler.Write("LFpt", "file", "Doodads/que/d00/LordaeronTree/LordaeronTree");
+        //handler.Write("STlt", "file", "Doodads/que/d00/LordaeronTree/LordaeronTree");
 
         handler.SaveFile(filePath);
     }
@@ -266,6 +289,12 @@ public class DoodadsEditor
         handler.Write("STlt", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronSummerTree");
         handler.Write("STlt", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
 
+        handler.Write("ZTtw", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+        handler.Write("ZTtc", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+        handler.Write("Yts1", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+        handler.Write("Yts2", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+        handler.Write("Yts3", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+
         handler.SaveFile(filePath);
     }
 
@@ -309,6 +338,12 @@ public class DoodadsEditor
         handler.Write("Yts3", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronSummerTree");
         handler.Write("STlt", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronSummerTree");
         handler.Write("STlt", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
+
+        handler.Write("ZTtw", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+        handler.Write("ZTtc", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+        handler.Write("Yts1", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+        handler.Write("Yts2", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+        handler.Write("Yts3", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
 
         handler.SaveFile(filePath);
     }

@@ -25,6 +25,8 @@ using System.ComponentModel;
 using System.Collections.ObjectModel;
 using StormLibSharp;
 using StormLibWarp;
+using ICSharpCode.SharpZipLib.Core;
+using System.Runtime.InteropServices.ComTypes;
 
 
 namespace QuenchingModCN
@@ -87,6 +89,73 @@ namespace QuenchingModCN
             else
             {
                 Console.WriteLine("指定的文件夹不存在.");
+            }
+        }
+
+        public void ExtractZipFile()
+        {
+            try
+            {
+                string zipFilePath = quezipfile;
+                string destinationPath = dir_root;
+                if (!File.Exists(zipFilePath))
+                {
+                    throw new FileNotFoundException("The specified zip file does not exist.", zipFilePath);
+                }
+
+                // Ensure the destination directory exists
+                Directory.CreateDirectory(destinationPath);
+                this.Dispatcher.Invoke(() => { pb.Visibility = Visibility.Visible; pbp.Maximum = zipmaxint; });
+
+                using (FileStream fs = File.OpenRead(zipFilePath))
+                using (ZipFile zipFile = new ZipFile(fs))
+                {
+                    foreach (ZipEntry entry in zipFile)
+                    {
+                        string entryName = entry.Name;
+
+                        // Skip "quenchingAssets/" folder in the zip structure
+                        if (entryName.StartsWith("Quenching-Assets-main/"))
+                        {
+                            entryName = entryName.Substring("Quenching-Assets-main/".Length);
+                        }
+
+                        if (entryName.StartsWith("Quenching-Assets/"))
+                        {
+                            entryName = entryName.Substring("Quenching-Assets/".Length);
+                        }
+
+                        // If the path is empty (e.g., the folder itself), skip it
+                        if (string.IsNullOrEmpty(entryName)) continue;
+
+                        string destinationFilePath = Path.Combine(destinationPath, entryName);
+
+                        // Ensure the directory for the file exists
+                        string directoryPath = Path.GetDirectoryName(destinationFilePath);
+                        if (!string.IsNullOrEmpty(directoryPath))
+                        {
+                            Directory.CreateDirectory(directoryPath);
+                        }
+
+                        // Extract file if it's not a directory
+                        if (!entry.IsDirectory)
+                        {
+                            using (Stream zipStream = zipFile.GetInputStream(entry))
+                            using (FileStream fileStream = File.Create(destinationFilePath))
+                            {
+                                byte[] buffer = new byte[4096];
+                                StreamUtils.Copy(zipStream, fileStream, buffer);
+                                this.Dispatcher.Invoke(() => { pbp.Value = pbp.Value + 1; pbtext1.Text = mainstring[9] + destinationFilePath; });
+
+                            }
+                        }
+                    }
+                }
+                this.Dispatcher.Invoke(() => { pb.Visibility = Visibility.Hidden; pbp.Value = 0; });
+                MessageBox.Show(mbtext[22]);
+            }
+            catch {
+                this.Dispatcher.Invoke(() => { pb.Visibility = Visibility.Hidden; pbp.Value = 0; });
             }
         }
 
@@ -2218,10 +2287,10 @@ namespace QuenchingModCN
             try { Directory.Move(s, d); } catch { }
         }
 
-        string ver = "v2.4";
-        string cver = "v2.4";
-        string clientver = "v2.4";
-        string clientvertemp = "v2.4";
+        string ver = "v2.5";
+        string cver = "v2.5";
+        string clientver = "v2.5";
+        string clientvertemp = "v2.5";
 
         public void checkupdate()
         {
@@ -2616,9 +2685,9 @@ namespace QuenchingModCN
 
             Application.Current.MainWindow.Show();
 
-            if (GetIniInt("mod", "2.4", 0) == 0)
+            if (GetIniInt("mod", "2.5", 0) == 0)
             {
-                WriteIniInt("mod", "2.4", 1);
+                WriteIniInt("mod", "2.5", 1);
                 try { DelectDir("./quenching/temp"); } catch { }
             }
 
@@ -2638,12 +2707,12 @@ namespace QuenchingModCN
 
             //安装经典版文件
             Directory.CreateDirectory(".//_retail_//webui");
-            if (!System.IO.Directory.Exists(".//_retail_//ui") && !System.IO.Directory.Exists(".//_retail_//ui-dis"))
-            {
-                Directory.CreateDirectory(".//_retail_//ui");
-                streamrwDic("ui.zip", "./Quenching/temp/");
-                unZipFiledist("./Quenching/temp/ui.zip", "./_retail_/ui");
-            }
+            //if (!System.IO.Directory.Exists(".//_retail_//ui") && !System.IO.Directory.Exists(".//_retail_//ui-dis"))
+            //{
+            //    Directory.CreateDirectory(".//_retail_//ui");
+            //    streamrwDic("ui.zip", "./Quenching/temp/");
+            //    unZipFiledist("./Quenching/temp/ui.zip", "./_retail_/ui");
+            //}
             //if (!System.IO.Directory.Exists(".//_retail_//units") && System.IO.Directory.Exists(".//_retail_//units-dis"))
             //{
             //   Directory.CreateDirectory(".//_retail_//units");
@@ -3153,6 +3222,7 @@ namespace QuenchingModCN
             catch (Exception e) { }
             //有多少部分被下载了
             System.Windows.Threading.DispatcherTimer tmr = new System.Windows.Threading.DispatcherTimer();
+            Patch_Temp();
             tmr.Interval = TimeSpan.FromSeconds(5);
             tmr.Tick += new EventHandler(Count_Download_Mod_Part);
             tmr.Start();
@@ -5009,11 +5079,11 @@ namespace QuenchingModCN
                 }
                 if (level == 3)
                 {
-                    DoodadsEditor.Doodads_to_16(dir_root + "units/destructableskin.txt");
+                    DoodadsEditor.Doodads_to_18(dir_root + "units/destructableskin.txt");
                 }
                 if (level == 4)
                 {
-                    DoodadsEditor.Doodads_to_18(dir_root + "units/destructableskin.txt");
+                    DoodadsEditor.Doodads_to_16(dir_root + "units/destructableskin.txt");
                 }
                 if (level == 5)
                 {
@@ -5122,10 +5192,13 @@ namespace QuenchingModCN
             if (uibtn1.Tag == null)
             {
                 btnclickT(uibtn1); btnclickF(uibtn2); btnclickF(uibtn3); uibtn1.Tag = ""; uibtn2.Tag = null; uibtn3.Tag = null;
-                fileloadflag = 12;
+                try
+                {
+                    DelectDir(".//_retail_//ui");
+                }
+                catch { }
+               
                 WriteIniInt("mod", "ui", 0);
-                Thread thread = new Thread(new ThreadStart(filetemplate));
-                thread.Start();
             }
         }
 
@@ -5134,10 +5207,13 @@ namespace QuenchingModCN
             if (uibtn2.Tag == null)
             {
                 btnclickT(uibtn2); btnclickF(uibtn1); btnclickF(uibtn3); uibtn2.Tag = ""; uibtn1.Tag = null; uibtn3.Tag = null;
-                fileloadflag = 13;
-                WriteIniInt("mod", "ui", 1);
-                Thread thread = new Thread(new ThreadStart(filetemplate));
-                thread.Start();
+                try
+                {
+                    Directory.CreateDirectory(".//_retail_//ui");
+                }
+                catch { }
+                streamrwDic("ui-blz.zip", "./Quenching/temp/");
+                unZipFiledist("./Quenching/temp/ui-blz.zip", "./_retail_/ui");
             }
         }
 
@@ -5146,10 +5222,13 @@ namespace QuenchingModCN
             if (uibtn3.Tag == null)
             {
                 btnclickT(uibtn3); btnclickF(uibtn2); btnclickF(uibtn1); uibtn3.Tag = ""; uibtn2.Tag = null; uibtn1.Tag = null;
-                fileloadflag = 14;
-                WriteIniInt("mod", "ui", 2);
-                Thread thread = new Thread(new ThreadStart(filetemplate));
-                thread.Start();
+                try
+                {
+                    Directory.CreateDirectory(".//_retail_//ui");
+                }
+                catch { }
+                streamrwDic("ui-que.zip", "./Quenching/temp/");
+                unZipFiledist("./Quenching/temp/ui-que.zip", "./_retail_/ui");
             }
         }
 
@@ -7004,12 +7083,7 @@ namespace QuenchingModCN
                             {
                                 if (System.Windows.Forms.MessageBox.Show(mbtext[33], "", System.Windows.Forms.MessageBoxButtons.OKCancel) == System.Windows.Forms.DialogResult.OK)
                                 {
-                                    downloadversion = 1;
-                                    //lockhd
-
-                                    //
-                                    Thread thread = new Thread(new ThreadStart(maincheckfile));
-                                    thread.Start();
+                                    System.Diagnostics.Process.Start("https://tianxiazhengyi.net/");
                                     return;
                                 }
                             }
@@ -7028,55 +7102,24 @@ namespace QuenchingModCN
             }
             else
             {
-                if (File.Exists("./QMF2.4.zip"))
+                OpenFileDialog dialog = new OpenFileDialog();
+                dialog.Multiselect = true;//该值确定是否可以选择多个文件
+                dialog.Title = mbtext[35];
+                dialog.Filter = "zip Files (*.zip)|*.zip;";
+                if (dialog.ShowDialog() == true)
                 {
-                    quezipfile = "./QMF2.4.zip";
+
+                    quezipfile = dialog.FileName;
                     try
                     {
-                        Console.WriteLine("has");
                         zipmaxint = 3000;
-                        Thread thread = new Thread(new ThreadStart(unZipFile));
+                        Thread thread = new Thread(new ThreadStart(ExtractZipFile));
                         thread.Start();
-                        return;
 
                     }
                     catch
                     { MessageBox.Show(mbtext[21]); }
-                }
-                else
-                {
-                    downloadversion = 1;
-                    try
-                    {
-                        DelectDir(dir_root + "war3campImported");
-                        DelectDir(dir_root + "music");
-                        DelectDir(dir_root + "sound");
-                        DelectDir(dir_root + "campaign");
-                        DelectDir(dir_root + "abilities");
-                        DelectDir(dir_root + "objects");
-                        DelectDir(dir_root + "sharedfx");
-                        DelectDir(dir_root + "sharedmodels");
-                        DelectDir(dir_root + "units");
-                        DelectDir(dir_root + "ui");
-                        DelectDir(dir_root + "webui");
-                        DelectDir(dir_root + "cos");
-                        DelectDir(dir_root + "es");
-                        DelectDir(dir_root + "scripts");
-                        DelectDir(dir_root + "textures");
-                        DelectDir(dir_root + "terrainart");
-                        DelectDir(dir_root + "replaceabletextures");
-                        DelectDir(dir_root + "shaders");
-                        DelectDir(dir_root + "splats");
-                        DelectDir(dir_root + "doodads");
-                        DelectDir(dir_root + "buildings");
-                        DelectDir(dir_root + "environment");
-                        DelectDir(dir_root + "qc");
-                        DelectDir(dir_root + "movies");
-                    }
-                    catch
-                    { MessageBox.Show(mbtext[21]); }
-                    Thread thread = new Thread(new ThreadStart(maincheckfile));
-                    thread.Start();
+
                 }
             }
         }
@@ -7093,7 +7136,7 @@ namespace QuenchingModCN
                 try
                 {
                     zipmaxint = 1500;
-                    Thread thread = new Thread(new ThreadStart(unZipFile));
+                    Thread thread = new Thread(new ThreadStart(ExtractZipFile));
                     thread.Start();
 
                 }
@@ -8277,6 +8320,8 @@ namespace QuenchingModCN
             if (dialog.ShowDialog() == true)
             {
                 File.Copy(dialog.FileName, dir_root + "webui/webms/mainmenu.webm", true);
+                File.Copy(dialog.FileName, dir_root + "webui/webms/mainmenu_1.webm", true);
+                File.Copy(dialog.FileName, dir_root + "webui/webms/mainmenu_tft.webm", true);
                 File.Copy(dialog.FileName, "./quenching/mainmenuX.mp4", true);
 
                 WriteIniInt("mod", "them", 4);
@@ -8313,16 +8358,22 @@ namespace QuenchingModCN
                 case 2:
                     btnclickT(themey_2);
                     File.Copy(dir_root + "webui/webms/mainmenu2.webm", dir_root + "webui/webms/mainmenu.webm", true);
+                    File.Copy(dir_root + "webui/webms/mainmenu2.webm", dir_root + "webui/webms/mainmenu_1.webm", true);
+                    File.Copy(dir_root + "webui/webms/mainmenu2.webm", dir_root + "webui/webms/mainmenu_tft.webm", true);
                     mediaElement.Source = new Uri("./quenching/mainmenu2.mp4", UriKind.Relative);
                     break;
                 case 3:
                     btnclickT(themey_3);
                     File.Copy(dir_root + "webui/webms/mainmenu3.webm", dir_root + "webui/webms/mainmenu.webm", true);
+                    File.Copy(dir_root + "webui/webms/mainmenu3.webm", dir_root + "webui/webms/mainmenu_1.webm", true);
+                    File.Copy(dir_root + "webui/webms/mainmenu3.webm", dir_root + "webui/webms/mainmenu_tft.webm", true);
                     mediaElement.Source = new Uri("./quenching/mainmenu3.mp4", UriKind.Relative);
                     break;
                 case 4:
                     btnclickT(themey_4);
                     File.Copy(dir_root + "webui/webms/mainmenu4.webm", dir_root + "webui/webms/mainmenu.webm", true);
+                    File.Copy(dir_root + "webui/webms/mainmenu4.webm", dir_root + "webui/webms/mainmenu_1.webm", true);
+                    File.Copy(dir_root + "webui/webms/mainmenu4.webm", dir_root + "webui/webms/mainmenu_tft.webm", true);
                     mediaElement.Source = new Uri("./quenching/mainmenu4.mp4", UriKind.Relative);
                     break;
 
@@ -8728,10 +8779,12 @@ namespace QuenchingModCN
             }
         }
 
+        public string DownloadURL = "https://tianxiazhengyi.net/QM/QMdownload.html";
+
         private void achbtn1_Copy21_Click_1(object sender, RoutedEventArgs e)
         {
-            if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start("https://tianxiazhengyi.net/QMdownload.html"); }
-            else { System.Diagnostics.Process.Start("https://tianxiazhengyi.net/QMdownloadEN.html"); }
+            if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start(DownloadURL); }
+            else { System.Diagnostics.Process.Start(DownloadURL); }
         }
 
         private void mainbtn_check_Copy3_Click_2(object sender, RoutedEventArgs e)
@@ -9424,8 +9477,8 @@ namespace QuenchingModCN
 
         private void uibtnsm1_Copy1_Click(object sender, RoutedEventArgs e)
         {
-            if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start("www.tianxiazhengyi.net/QMDownload.html"); }
-            else { System.Diagnostics.Process.Start("www.tianxiazhengyi.net/QMDownloadEN.html"); }
+            if (GetIniInt("mod", "lang", 0) == 0) { System.Diagnostics.Process.Start(DownloadURL); }
+            else { System.Diagnostics.Process.Start(DownloadURL); }
 
         }
 

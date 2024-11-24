@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:QuenchingModCN"
         mc:Ignorable="d"
         KeyDown="MainWindows_Keydown"
-        Title="QMClient v2.4" Height="635" Width="959.5" ResizeMode="NoResize" WindowStyle="None"  Background="Black" BorderThickness="2" BorderBrush="#FFC3C3C3" Padding="2">
+        Title="QMClient v2.5" Height="635" Width="959.5" ResizeMode="NoResize" WindowStyle="None"  Background="Black" BorderThickness="2" BorderBrush="#FFC3C3C3" Padding="2">
 
     <Window.Resources>
         <FontFamily x:Key="ClassicBrush">pack://application:,,,/#Trajan Pro 3</FontFamily>
