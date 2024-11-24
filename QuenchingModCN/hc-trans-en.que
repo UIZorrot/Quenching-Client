@@ -33,16 +33,16 @@
 [set-tree-old]Retro
 [set-tree-tall]Tall
 [set-tree-short]Short
-[set-tile]Terrain Environment
-[set-water]Water Surface
+[set-tile]Terrain
+[set-water]Water
 [set-water-rel]Normal
 [set-water-tran]Clear
 [set-unit]Unit Changes
-[set-vio]Anti-Censorship
+[set-vio]Violence
 [set-btn-vio]Install
 [set-foli]Foliage
-[set-shader]Advanced Shaders
-[set-ld]Light Source
+[set-shader]Shaders
+[set-ld]Light
 [set-ld-st]Fixed
 [set-ld-ro]Rotating
 [set-installed]Installed
@@ -53,10 +53,10 @@
 [set-ui-classic]Classic
 [set-ui-que]Quenching
 [set-ui-blz]Carnival
-[set-glow]Reduce Glow
-[set-half]Half-body Portrait
+[set-glow]Glow
+[set-half]Portrait
 [set-light-melee]Melee
-[cos-title]Unit Paint
+[cos-title]Paint
 [cos-title-cat]Category
 [cos-title-hero]Hero
 [cos-title-unit]Unit

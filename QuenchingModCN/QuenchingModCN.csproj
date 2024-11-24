@@ -162,7 +162,6 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
     <Resource Include="trans-ru.que" />
-    <Resource Include="ui.zip" />
     <Resource Include="hc-trans-fr.que" />
     <Resource Include="trans-fr.que" />
     <Resource Include="hc-trans-pt.que" />
@@ -312,6 +311,8 @@
     <Resource Include="shaders-133.zip" />
     <Resource Include="Readme.docx" />
     <Resource Include="water.slk" />
+    <Resource Include="ui-blz.zip" />
+    <Resource Include="ui-que.zip" />
     <None Include="wc3_victoryscreen_banner_Qcustom9.png" />
   </ItemGroup>
   <ItemGroup>
