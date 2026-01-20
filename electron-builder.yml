@@ -1,0 +1,15 @@
+{
+   icon: "assets/ico/logo - mixin.ico",
+   directories : {
+      output : "__Bin"
+   },
+   files : ["dist/"],
+   extraResources : [
+      {
+         from : "dist/statics",
+         to : "statics"
+      }
+   ],
+   electronVersion: "33.1.0",
+   asar : true,
+}

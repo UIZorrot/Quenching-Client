@@ -1,0 +1,29 @@
+{
+	"name": "requester",
+	"main": "src",
+	"version": "2.0.0-experimental",
+	"scripts" : {
+		"test" : "jest"
+	} ,
+	"prettier": {
+		"printWidth": 120,
+		"tabWidth": 3,
+		"useTabs": true,
+		"semi": true,
+		"jsxSingleQuote": false,
+		"singleQuote": true,
+		"trailingComma": "all",
+		"bracketSameLine": false,
+		"arrowParens": "always",
+		"bracketSpacing": true,
+		"parser": "typescript"
+	},
+	"devDependencies" : {
+		"jest" : "29.3.1"
+	} ,
+	"dependencies": {
+		"tapable" : "2.2.1" ,
+		"lodash": "4.17.21",
+		"url": "0.11.0"
+	}
+}

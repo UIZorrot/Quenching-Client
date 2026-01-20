@@ -1,0 +1,40 @@
+.collapse {
+	background: transparent;
+	user-select: none;
+	border-image: url(../assets/war3_metal_frame_4k.png) 80 fill repeat;
+	border-image-width: 24px;
+	padding: 24px 27px;
+	;
+	:global{
+		.ant-collapse-header{
+			align-items: center !important;
+			display: flex;
+			
+			.ant-collapse-expand-icon{
+				
+				.ant-collapse-arrow{
+					width: 24px;
+					height: 24px;
+					display: flex;
+					background-image: url("../assets/chevron-down-icon-resting.png");
+					background-size: cover;
+					transition: transform 0.1s ease;
+					transform: rotate(90deg);
+					
+					&.active{
+						transform: rotate(0deg);
+					}
+					&:hover{
+						background-image: url("../assets/chevron-down-icon-hover.png");
+					}
+				}
+			}
+			
+			.ant-collapse-header-text{
+				font-size: 22px;
+				font-variant: small-caps;
+				color: #ccc9b8;
+			}
+		}
+	}
+}

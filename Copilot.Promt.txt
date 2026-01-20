@@ -1,0 +1,6 @@
+* 代码一律使用tab进行缩进,yaml等缩进敏感的文件除外
+* In All ESM modules, always place all import statements at the BOTTOM ⬇️ of the file (not the top). Sort imports by priority: first reaxel modules, then UI components, followed by css/less files, and finally third-party npm packages.
+* 仔细检查是否遗漏Types类型等代码
+* import语句引用模块需参考tsconfig.json中的paths配置,优先选择最合适的绝对路径,相对路径只在封闭的模块文件夹内部使用
+* 多参考其他模块的代码,保持一致性
+* 一律使用export const xxx,并注意避免多余的export {xxx}

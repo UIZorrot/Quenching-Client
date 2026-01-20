@@ -1,0 +1,53 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"allowSyntheticDefaultImports": true,
+		"allowUnusedLabels": true,
+		"baseUrl": ".",
+		"declaration": false,
+		"declarationMap": false,
+		"esModuleInterop": true,
+		"experimentalDecorators": true,
+		"jsx": "react-jsx",
+		"resolveJsonModule": true,
+		"strictFunctionTypes": false,
+		"strict": false,
+		"strictBindCallApply": false,
+		"strictNullChecks": false,
+		"allowUnreachableCode": true,
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"noEmit": true,
+		"noImplicitAny": false,
+		"noImplicitReturns": false,
+		"noImplicitUseStrict": false,
+		"noUnusedLocals": false,
+		"noUnusedParameters": false,
+		"preserveConstEnums": true,
+		"checkJs": true,
+		"target": "ESNext",
+		"allowImportingTsExtensions": true,
+		"allowArbitraryExtensions": true,
+		"types": [
+			"react"
+		],
+		"paths": {
+			"#root/*": [
+				"./*"
+			],
+			"#root-projects/*": [
+				"./src/*"
+			],
+			"#generic/*": [
+				"./src/generic-services/*"
+			]
+		}
+	},
+	"exclude": [
+		"dist",
+		".git",
+		".idea",
+		".svn",
+		"vendors"
+	]
+}

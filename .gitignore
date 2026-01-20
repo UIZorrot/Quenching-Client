@@ -1,0 +1,6 @@
+node_modules
+.idea
+__Bin
+projects/AI-WebTools-AIO
+projects/Autohotkey-GUI
+projects/QuenChing-Mod-Client/dist/

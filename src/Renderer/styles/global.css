@@ -1,0 +1,415 @@
+/* 全局样式 - 临时解决CSS模块问题 */
+
+/* 字体导入 */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap');
+
+/* 全局重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Cinzel', 'Microsoft YaHei UI Light', sans-serif;
+  background: #000;
+  color: #d4af37;
+  overflow: hidden;
+}
+
+/* 主窗口样式 - 仿照原版WPF 960x635 */
+.main-window {
+  width: 960px;
+  height: 635px;
+  background: #000;
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  margin: 0 auto;
+  border: 2px solid #c3c3c3;
+  border-radius: 0;
+}
+
+.main-window::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 标题栏样式 */
+.title-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 15px;
+  z-index: 1000;
+  -webkit-app-region: drag;
+}
+
+.title-bar-left,
+.title-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  -webkit-app-region: no-drag;
+}
+
+/* 背景视频样式 */
+.background-video {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.background-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* 主要内容区域 */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #d4af37;
+  max-width: 800px;
+  margin: 0 auto;
+  height: 100%;
+  position: relative;
+  z-index: 10;
+}
+
+/* Logo样式 */
+.logo-section {
+  margin-bottom: 30px;
+}
+
+.logo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+}
+
+/* 标题样式 */
+.title-section {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.main-title {
+  color: #d4af37 !important;
+  font-size: 4rem !important;
+  font-weight: 700 !important;
+  margin: 0 0 15px 0 !important;
+  text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.9), 0 0 20px rgba(212, 175, 55, 0.3);
+  font-family: 'Cinzel', serif !important;
+  background: linear-gradient(45deg, #d4af37, #f4d03f, #d4af37);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.subtitle {
+  color: #b8860b !important;
+  font-size: 1.4rem !important;
+  display: block;
+  margin-bottom: 30px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  font-style: italic;
+  opacity: 0.9;
+}
+
+/* 版本信息 */
+.version-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.9rem;
+  color: #888;
+}
+
+/* 启动按钮 */
+.start-button {
+  background: linear-gradient(45deg, #d4af37, #f4d03f) !important;
+  border: 3px solid #d4af37 !important;
+  border-radius: 12px !important;
+  height: 60px !important;
+  min-width: 200px !important;
+  font-size: 1.3rem !important;
+  font-weight: bold !important;
+  color: #000 !important;
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.4) !important;
+  transition: all 0.3s ease !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  margin: 30px 0 !important;
+}
+
+.start-button:hover {
+  transform: translateY(-3px) scale(1.05) !important;
+  box-shadow: 0 8px 20px rgba(212, 175, 55, 0.6) !important;
+  border-color: #f4d03f !important;
+}
+
+.start-button:active {
+  transform: translateY(-1px) scale(1.02) !important;
+}
+
+/* 底部区域 */
+.bottom-section {
+  position: absolute;
+  bottom: 30px;
+  left: 30px;
+  right: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 15px 25px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.bottom-left {
+  color: #888;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.bottom-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+/* 底部按钮 */
+.bottom-button {
+  color: #d4af37 !important;
+  border: 1px solid rgba(212, 175, 55, 0.5) !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+  background: rgba(212, 175, 55, 0.05) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+.bottom-button:hover {
+  background: rgba(212, 175, 55, 0.2) !important;
+  color: #f4d03f !important;
+  border-color: #f4d03f !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3) !important;
+}
+
+/* 新闻面板 */
+.news-panel {
+  position: fixed;
+  top: 50px;
+  right: -380px;
+  width: 380px;
+  height: calc(100vh - 100px);
+  z-index: 1000;
+  transition: right 0.3s ease;
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 12px;
+  border: 2px solid #d4af37;
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.news-panel.expanded {
+  right: 10px;
+}
+
+.news-panel .ant-card {
+  background: transparent !important;
+  border: none !important;
+  height: 100% !important;
+}
+
+.news-panel .ant-card-body {
+  padding: 20px !important;
+  height: 100% !important;
+  overflow-y: auto !important;
+}
+
+/* 语言选择器 */
+.language-button {
+  color: #d4af37 !important;
+  border: 1px solid #d4af37 !important;
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+}
+
+/* 模态框样式 */
+.ant-modal-root {
+  z-index: 10000 !important;
+}
+
+.ant-modal-mask {
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+.ant-modal-content {
+  background: rgba(0, 0, 0, 0.95) !important;
+  border: 2px solid #d4af37 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.3) !important;
+}
+
+.ant-modal-header {
+  background: transparent !important;
+  border-bottom: 1px solid #d4af37 !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.ant-modal-title {
+  color: #d4af37 !important;
+  font-weight: bold !important;
+  font-size: 1.2rem !important;
+}
+
+.ant-modal-body {
+  color: #d4af37 !important;
+}
+
+.ant-modal-footer {
+  border-top: 1px solid #d4af37 !important;
+  background: transparent !important;
+}
+
+/* 卡片样式 */
+.ant-card {
+  background: rgba(0, 0, 0, 0.7) !important;
+  border: 1px solid #d4af37 !important;
+  border-radius: 8px !important;
+}
+
+.ant-card-head {
+  background: transparent !important;
+  border-bottom: 1px solid #d4af37 !important;
+}
+
+.ant-card-head-title {
+  color: #d4af37 !important;
+}
+
+.ant-card-body {
+  color: #d4af37 !important;
+}
+
+/* 按钮样式 */
+.ant-btn-primary {
+  background: linear-gradient(45deg, #d4af37, #f4d03f) !important;
+  border: 2px solid #d4af37 !important;
+  color: #000 !important;
+}
+
+.ant-btn-text {
+  color: #d4af37 !important;
+}
+
+/* 输入框样式 */
+.ant-input,
+.ant-select-selector {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid #d4af37 !important;
+  color: #d4af37 !important;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4af37;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f4d03f;
+}
+
+/* 动画 */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .main-title {
+    font-size: 2.5rem !important;
+  }
+
+  .news-panel {
+    width: 300px;
+    right: -250px;
+  }
+
+  .news-panel.expanded {
+    right: 10px;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-title {
+    font-size: 2rem !important;
+  }
+
+  .bottom-section {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
