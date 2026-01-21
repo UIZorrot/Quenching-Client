@@ -7,6 +7,8 @@
 		"electron": "tsx scripts/electron.start/index.ts",
 		"pack": "tsx scripts/webpack.build production",
 		"build": "tsx scripts/webpack.build production",
+		"dist:win": "npm run build && electron-builder --win",
+		"dist:mac": "npm run build && electron-builder --mac",
 		"dev": "concurrently \"npm run start\" \"npm run electron\"",
 		"postinstall": "patch-package"
 	},
@@ -29,6 +31,7 @@
 		"electron-log": "^5.2.0",
 		"electron-store": "^8.1.0",
 		"fs-extra": "^11.1.1",
+		"glob": "^10.5.0",
 		"inquirer": "^12.0.0",
 		"jszip": "^3.10.1",
 		"lodash": "^4.17.21",

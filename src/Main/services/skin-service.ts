@@ -75,8 +75,10 @@ export class SkinService {
   }
 
   async applyBatchSkin(batchChanges: { unitId: string; changes: SkinChange[] }[]): Promise<boolean> {
+    console.log(`[SkinService] applyBatchSkin called with ${batchChanges.length} units`);
     const war3Path = configManager.get('war3Path');
     if (!war3Path) {
+      console.error('[SkinService] Warcraft III path not configured');
       throw new Error('Warcraft III path not configured');
     }
 
@@ -86,9 +88,11 @@ export class SkinService {
     const retailPath = path.join(war3Path, '_retail_');
     const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
     const unitskinPath = path.join(baseDir, 'units', 'unitskin.txt');
+    console.log(`[SkinService] Target unitskin.txt: ${unitskinPath}`);
 
     // 如果初始化后还是不存在，则报错
     if (!(await fs.pathExists(unitskinPath))) {
+      console.error(`[SkinService] unitskin.txt not found at ${unitskinPath}`);
       throw new Error(`unitskin.txt not found at ${unitskinPath}`);
     }
 
@@ -97,6 +101,7 @@ export class SkinService {
 
     for (const item of batchChanges) {
       const { unitId, changes } = item;
+      console.log(`[SkinService] Applying changes to unit [${unitId}]:`, changes);
 
       // Find the section
       const sectionHeader = `[${unitId}]`;

@@ -40,6 +40,15 @@
 			],
 			"#generic/*": [
 				"./src/generic-services/*"
+			],
+			"#main/*": [
+				"./src/Main/*"
+			],
+			"#renderer/*": [
+				"./src/Renderer/*"
+			],
+			"#src/*": [
+				"./src/*"
 			]
 		}
 	},

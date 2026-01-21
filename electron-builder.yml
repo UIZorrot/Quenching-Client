@@ -1,15 +1,37 @@
-{
-   icon: "assets/ico/logo - mixin.ico",
-   directories : {
-      output : "__Bin"
-   },
-   files : ["dist/"],
-   extraResources : [
-      {
-         from : "dist/statics",
-         to : "statics"
-      }
-   ],
-   electronVersion: "33.1.0",
-   asar : true,
-}
+appId: com.quenching.mod.client
+productName: Quenching Mod Client
+electronVersion: 33.1.0
+
+directories:
+  output: __Bin
+
+files:
+  - dist/**/*
+  - package.json
+
+extraResources:
+  - from: dist/statics
+    to: statics
+  - from: assets
+    to: assets
+
+win:
+  icon: assets/ico/logo - mixin.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: Quenching Mod
+
+mac:
+  icon: assets/quenching/logo.png
+  target:
+    - dmg
+    - zip
+  category: public.app-category.games
+
+asar: true

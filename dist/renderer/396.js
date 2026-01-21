@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkquenching_electron_client=self.webpackChunkquenching_electron_client||[]).push([[396],{6396:(e,n,c)=>{c.r(n),c.d(n,{IPC:()=>l});var l=IPC}}]);

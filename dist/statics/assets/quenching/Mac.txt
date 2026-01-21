@@ -1,1 +1,0 @@
-defaults write “com.blizzard.Warcraft III” “Allow Local Files” -int 1
