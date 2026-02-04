@@ -1,0 +1,12 @@
+{
+	"name": "utils",
+	"scripts": {
+		"test": "jest"
+	},
+	"main": "src",
+	"private": true,
+	"version": "1.0.0",
+	"dependencies": {
+		"shallowequal": "1.1.0"
+	}
+}

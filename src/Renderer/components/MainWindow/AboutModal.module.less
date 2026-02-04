@@ -1,0 +1,368 @@
+:global(.ant-modal) {
+  &.aboutModal {
+    .ant-modal-content {
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+
+    .ant-modal-header {
+      background: rgba(255, 215, 0, 0.1);
+      border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+
+      .ant-modal-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: bold;
+      }
+    }
+
+    .ant-modal-body {
+      background: transparent;
+      color: #fff;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .ant-modal-footer {
+      background: rgba(255, 215, 0, 0.05);
+      border-top: 1px solid rgba(255, 215, 0, 0.2);
+      text-align: center;
+
+      .ant-btn-primary {
+        background: linear-gradient(180deg, #EDD55E 0%, #FFD500 100%);
+        border-color: #C7C7C7;
+        color: #2C2C2C;
+
+        &:hover {
+          background: linear-gradient(180deg, #FFD500 0%, #EDD55E 100%);
+        }
+      }
+    }
+  }
+}
+
+.aboutContent {
+  text-align: center;
+}
+
+.logoSection {
+  margin-bottom: 24px;
+
+  .logo {
+    width: 120px;
+    height: 124px;
+    object-fit: contain;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.3));
+  }
+
+  .title {
+    color: transparent !important;
+    background: linear-gradient(180deg, #FFFFEA58 0%, #FFFFCD00 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    text-shadow: 0 0 15px #FCDB04;
+    margin-bottom: 8px !important;
+    font-size: 28px !important;
+    font-family: 'Trajan Pro 3', serif !important;
+  }
+
+  .subtitle {
+    display: block;
+    color: rgba(245, 245, 245, 0.8) !important;
+    font-size: 16px;
+    margin-bottom: 8px;
+    font-family: 'Trajan Pro 3', serif;
+  }
+
+  .version {
+    display: block;
+    color: rgba(255, 215, 0, 0.9) !important;
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.divider {
+  border-color: rgba(255, 215, 0, 0.2) !important;
+  margin: 20px 0 !important;
+}
+
+.description {
+  text-align: left;
+  margin-bottom: 16px;
+
+  .descText {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 12px !important;
+  }
+}
+
+.credits {
+  text-align: left;
+
+  .sectionTitle {
+    color: #ffd700 !important;
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .creditItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .role {
+      color: rgba(255, 255, 255, 0.7) !important;
+      font-size: 13px;
+    }
+
+    .name {
+      color: rgba(255, 215, 0, 0.9) !important;
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+}
+
+.techInfo {
+  text-align: left;
+
+  .sectionTitle {
+    color: #ffd700 !important;
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .techItem {
+    display: block;
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 13px;
+    margin-bottom: 6px;
+
+    strong {
+      color: rgba(255, 215, 0, 0.9);
+    }
+  }
+}
+
+.links {
+  margin: 20px 0;
+
+  .linkButton {
+    color: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 4px !important;
+    height: 36px !important;
+
+    &:hover {
+      color: #ffd700 !important;
+      border-color: rgba(255, 215, 0, 0.5) !important;
+      background: rgba(255, 215, 0, 0.1) !important;
+    }
+
+    :global(.anticon) {
+      color: inherit;
+    }
+  }
+}
+
+.copyright {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  .copyrightText {
+    display: block;
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+}
+
+// 滚动条样式
+.aboutContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.aboutContent::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.aboutContent::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 3px;
+
+  &:hover {
+    background: rgba(255, 215, 0, 0.5);
+  }
+}
+
+.logoSection {
+  margin-bottom: 24px;
+
+  .logo {
+    width: 120px;
+    height: 124px;
+    object-fit: contain;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.3));
+  }
+
+  .title {
+    color: transparent !important;
+    background: linear-gradient(180deg, #FFFFEA58 0%, #FFFFCD00 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    text-shadow: 0 0 15px #FCDB04;
+    margin-bottom: 8px !important;
+    font-size: 28px !important;
+    font-family: 'Trajan Pro 3', serif !important;
+  }
+
+  .subtitle {
+    display: block;
+    color: rgba(245, 245, 245, 0.8) !important;
+    font-size: 16px;
+    margin-bottom: 8px;
+    font-family: 'Trajan Pro 3', serif;
+  }
+
+  .version {
+    display: block;
+    color: rgba(255, 215, 0, 0.9) !important;
+    font-size: 14px;
+    font-weight: 600;
+  }
+}
+
+.divider {
+  border-color: rgba(255, 215, 0, 0.2) !important;
+  margin: 20px 0 !important;
+}
+
+.description {
+  text-align: left;
+  margin-bottom: 16px;
+
+  .descText {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 12px !important;
+  }
+}
+
+.credits {
+  text-align: left;
+
+  .sectionTitle {
+    color: #ffd700 !important;
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .creditItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .role {
+      color: rgba(255, 255, 255, 0.7) !important;
+      font-size: 13px;
+    }
+
+    .name {
+      color: rgba(255, 215, 0, 0.9) !important;
+      font-size: 13px;
+      font-weight: 500;
+    }
+  }
+}
+
+.techInfo {
+  text-align: left;
+
+  .sectionTitle {
+    color: #ffd700 !important;
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+    font-weight: 600 !important;
+  }
+
+  .techItem {
+    display: block;
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 13px;
+    margin-bottom: 6px;
+
+    strong {
+      color: rgba(255, 215, 0, 0.9);
+    }
+  }
+}
+
+.links {
+  margin: 20px 0;
+
+  .linkButton {
+    color: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 4px !important;
+    height: 36px !important;
+
+    &:hover {
+      color: #ffd700 !important;
+      border-color: rgba(255, 215, 0, 0.5) !important;
+      background: rgba(255, 215, 0, 0.1) !important;
+    }
+
+    :global(.anticon) {
+      color: inherit;
+    }
+  }
+}
+
+.copyright {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  .copyrightText {
+    display: block;
+    color: rgba(255, 255, 255, 0.5) !important;
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+}
+
+// 滚动条样式
+.aboutContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.aboutContent::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.aboutContent::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 3px;
+
+  &:hover {
+    background: rgba(255, 215, 0, 0.5);
+  }
+}

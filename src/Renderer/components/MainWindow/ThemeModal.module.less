@@ -1,0 +1,203 @@
+:global(.ant-modal) {
+  &.themeModal {
+    .ant-modal-content {
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .ant-modal-header {
+      background: rgba(255, 215, 0, 0.1);
+      border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+      
+      .ant-modal-title {
+        color: #fff;
+        font-size: 18px;
+        font-weight: bold;
+      }
+    }
+    
+    .ant-modal-body {
+      background: transparent;
+      color: #fff;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    
+    .ant-modal-footer {
+      background: rgba(255, 215, 0, 0.05);
+      border-top: 1px solid rgba(255, 215, 0, 0.2);
+      
+      .ant-btn {
+        &:not(.ant-btn-primary) {
+          background: transparent;
+          border-color: rgba(255, 255, 255, 0.3);
+          color: #fff;
+          
+          &:hover {
+            border-color: #ffd700;
+            color: #ffd700;
+          }
+        }
+        
+        &.ant-btn-primary {
+          background: linear-gradient(180deg, #EDD55E 0%, #FFD500 100%);
+          border-color: #C7C7C7;
+          color: #2C2C2C;
+          
+          &:hover {
+            background: linear-gradient(180deg, #FFD500 0%, #EDD55E 100%);
+          }
+        }
+      }
+    }
+  }
+}
+
+.themeContent {
+  .description {
+    display: block;
+    color: rgba(255, 255, 255, 0.8) !important;
+    margin-bottom: 24px !important;
+    font-size: 14px;
+    text-align: center;
+  }
+}
+
+.themeGrid {
+  margin-top: 16px;
+}
+
+.themeCard {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 2px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  
+  &:hover {
+    border-color: rgba(255, 215, 0, 0.5) !important;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2) !important;
+    transform: translateY(-2px);
+  }
+  
+  &.selected {
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4) !important;
+    background: rgba(255, 215, 0, 0.05) !important;
+  }
+  
+  :global(.ant-card-body) {
+    background: transparent;
+    padding: 16px;
+  }
+  
+  :global(.ant-card-meta-title) {
+    color: #fff !important;
+    margin-bottom: 8px !important;
+  }
+  
+  :global(.ant-card-meta-description) {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+}
+
+.themePreview {
+  position: relative;
+  height: 120px;
+  overflow: hidden;
+  border-radius: 6px 6px 0 0;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+  
+  &:hover img {
+    transform: scale(1.05);
+  }
+}
+
+.selectedOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 215, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .checkIcon {
+    font-size: 24px;
+    color: #ffd700;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    padding: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.themeTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.themeDescription {
+  .descText {
+    display: block;
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 8px !important;
+  }
+  
+  .authorText {
+    display: block;
+    color: rgba(255, 215, 0, 0.8) !important;
+    font-size: 12px;
+    font-style: italic;
+  }
+}
+
+// 滚动条样式
+.themeContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.themeContent::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.themeContent::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 3px;
+  
+  &:hover {
+    background: rgba(255, 215, 0, 0.5);
+  }
+}
+
+// 响应式调整
+@media (max-width: 768px) {
+  .themeGrid {
+    :global(.ant-col) {
+      margin-bottom: 16px;
+    }
+  }
+  
+  .themePreview {
+    height: 100px;
+  }
+}

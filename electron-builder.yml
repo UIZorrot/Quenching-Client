@@ -1,0 +1,38 @@
+appId: com.quenching.mod.client
+productName: QM Client
+
+directories:
+  output: __Bin
+
+files:
+  - dist/**/*
+  - "!dist/statics/**/*"
+  - "!dist/**/*.map"
+  - "!**/assets/**"  # 排除 assets，避免重复打包
+  - package.json
+
+extraResources:
+  - from: dist/statics
+    to: statics
+  - from: assets
+    to: assets
+
+win:
+  icon: assets/quenching/1.ico
+  target:
+    - target: dir
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: QM
+
+mac:
+  icon: assets/quenching/logo.png
+  target:
+    - dir
+  category: public.app-category.games
+
+asar: true

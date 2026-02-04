@@ -1,0 +1,180 @@
+@import './fonts.less';
+
+// 全局样式重置
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: @font-family-primary;
+  background: #000;
+  color: #fff;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+}
+
+// Antd 组件样式覆盖
+.ant-modal-mask {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.ant-modal {
+  .ant-modal-content {
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+  }
+  
+  .ant-modal-header {
+    background: rgba(255, 215, 0, 0.1);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  }
+  
+  .ant-modal-body {
+    background: transparent;
+    color: #fff;
+  }
+  
+  .ant-modal-footer {
+    background: rgba(255, 215, 0, 0.05);
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+  }
+}
+
+.ant-btn {
+  &.ant-btn-primary {
+    background: linear-gradient(180deg, #EDD55E 0%, #FFD500 100%);
+    border-color: #C7C7C7;
+    color: #2C2C2C;
+    
+    &:hover {
+      background: linear-gradient(180deg, #FFD500 0%, #EDD55E 100%);
+    }
+  }
+}
+
+.ant-message {
+  .ant-message-notice {
+    .ant-message-notice-content {
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      color: #fff;
+    }
+  }
+}
+
+.ant-notification {
+  .ant-notification-notice {
+    background: rgba(0, 0, 0, 0.95);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    color: #fff;
+  }
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 4px;
+  
+  &:hover {
+    background: rgba(255, 215, 0, 0.5);
+  }
+}
+
+// 选择文本样式
+::selection {
+  background: rgba(255, 215, 0, 0.3);
+  color: #fff;
+}
+
+// 禁用文本选择（除了特定元素）
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input, textarea, [contenteditable] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+// 动画效果
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+// 工具类
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.5s ease-out;
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+// 响应式断点
+@media (max-width: 1200px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 12px;
+  }
+}
