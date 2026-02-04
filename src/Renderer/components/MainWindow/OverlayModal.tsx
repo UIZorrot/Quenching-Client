@@ -8,6 +8,7 @@ interface OverlayModalProps {
   children: React.ReactNode;
   title?: string;
   width?: number | string;
+  titleFont?: string;
 }
 
 export const OverlayModal: React.FC<OverlayModalProps> = ({
@@ -15,7 +16,8 @@ export const OverlayModal: React.FC<OverlayModalProps> = ({
   onClose,
   children,
   title,
-  width = '80%'
+  width = '80%',
+  titleFont = "'Trajan Pro 3', serif"
 }) => {
   const { playHover } = useSound();
   const [visible, setVisible] = useState(false);
@@ -83,66 +85,66 @@ export const OverlayModal: React.FC<OverlayModalProps> = ({
       >
         {/* 标题栏 */}
         {title && (
-            <div style={{
-                padding: '20px 0',
-                textAlign: 'center',
-                color: '#d4af37',
-                fontSize: '2rem',
-                fontFamily: "'Trajan Pro 3', serif",
-                textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-                borderBottom: '1px solid rgba(212, 175, 55, 0.3)',
-                marginBottom: '20px'
-            }}>
-                {title}
-            </div>
+          <div style={{
+            padding: '20px 0',
+            textAlign: 'center',
+            color: '#d4af37',
+            fontSize: '2rem',
+            fontFamily: titleFont,
+            textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+            borderBottom: '1px solid rgba(212, 175, 55, 0.3)',
+            marginBottom: '20px'
+          }}>
+            {title}
+          </div>
         )}
 
         {/* 内容区域 - 可滚动 */}
         <div style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '10px',
-            scrollbarWidth: 'thin',
-            scrollbarColor: '#d4af37 rgba(0,0,0,0.3)'
+          flex: 1,
+          overflowY: 'auto',
+          padding: '10px',
+          scrollbarWidth: 'thin',
+          scrollbarColor: '#d4af37 rgba(0,0,0,0.3)'
         }}>
-            {children}
+          {children}
         </div>
-        
+
         {/* 关闭按钮 (右上角) */}
-        <div 
-            onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-            }}
-            style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                width: '36px',
-                height: '36px',
-                cursor: 'pointer',
-                color: '#d4af37',
-                fontSize: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid #d4af37',
-                borderRadius: '50%',
-                background: 'rgba(0,0,0,0.8)',
-                transition: 'all 0.2s',
-                zIndex: 3000
-            }}
-            onMouseEnter={e => {
-                playHover();
-                e.currentTarget.style.background = '#d4af37';
-                e.currentTarget.style.color = '#000';
-            }}
-            onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(0,0,0,0.8)';
-                e.currentTarget.style.color = '#d4af37';
-            }}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onClose();
+          }}
+          style={{
+            position: 'absolute',
+            top: '10px',
+            right: '10px',
+            width: '36px',
+            height: '36px',
+            cursor: 'pointer',
+            color: '#d4af37',
+            fontSize: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid #d4af37',
+            borderRadius: '50%',
+            background: 'rgba(0,0,0,0.8)',
+            transition: 'all 0.2s',
+            zIndex: 3000
+          }}
+          onMouseEnter={e => {
+            playHover();
+            e.currentTarget.style.background = '#d4af37';
+            e.currentTarget.style.color = '#000';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'rgba(0,0,0,0.8)';
+            e.currentTarget.style.color = '#d4af37';
+          }}
         >
-            ×
+          ×
         </div>
       </div>
     </div>,

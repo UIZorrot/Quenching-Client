@@ -24,11 +24,11 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
 
     // 种族数据
     const races = [
-        { id: 'hum', name: '人类', icon: './assets/quenching/human-icon-pressed.png' },
-        { id: 'orc', name: '兽人', icon: './assets/quenching/orc-icon-pressed.png' },
-        { id: 'ud', name: '不死族', icon: './assets/quenching/undead-icon-pressed.png' },
-        { id: 'ne', name: '暗夜精灵', icon: './assets/quenching/nightelf-icon-pressed.png' },
-        { id: 'neutral', name: '中立', icon: './assets/quenching/logo.png' }
+        { id: 'hum', name: t('skin.race.hum'), icon: './assets/quenching/human-icon-pressed.png' },
+        { id: 'orc', name: t('skin.race.orc'), icon: './assets/quenching/orc-icon-pressed.png' },
+        { id: 'ud', name: t('skin.race.ud'), icon: './assets/quenching/undead-icon-pressed.png' },
+        { id: 'ne', name: t('skin.race.ne'), icon: './assets/quenching/nightelf-icon-pressed.png' },
+        { id: 'neutral', name: t('skin.race.neutral'), icon: './assets/quenching/logo.png' }
     ];
 
     // 获取当前种族的英雄列表
@@ -83,22 +83,24 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
             const filePath = await (window as any).electronAPI.selectModelFile();
             if (filePath) {
                 setCustomSkins(prev => ({ ...prev, [unitId]: filePath }));
-                setSelectedSkinId(unitId); // 选中该单位，以便激活应用按钮
+                setSelectedSkinId(unitId);
+                // 选择模型后立即应用
+                await handleApplySkin('custom', unitId);
             }
         } catch (error) {
             console.error('Failed to select model file:', error);
-            message.error('选择模型文件失败');
+            message.error(t('skin.model.select.fail'));
         }
     };
 
     const handleApplySkin = async (targetId: string, skinId: string) => {
         console.log('[SkinModal] handleApplySkin called:', { targetId, skinId, selectedCategory, selectedHeroId });
         if (!skinId) {
-            message.warning('请先选择一个皮肤');
+            message.warning(t('skin.select.prompt'));
             return;
         }
 
-        message.loading({ content: '正在应用涂装...', key: 'applySkin' });
+        message.loading({ content: t('skin.applying'), key: 'applySkin' });
 
         try {
             if (selectedCategory === 'hero') {
@@ -109,16 +111,16 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                     return;
                 }
                 await (window as any).electronAPI.applySkin(currentHero.unitId, skin.config);
-                message.success({ content: `已成功应用 ${currentHero?.name} 的涂装: ${skin.name}`, key: 'applySkin' });
+                message.success({ content: t('skin.apply.success'), key: 'applySkin' });
             } else if (selectedHeroId === 'custom') {
                 const filePath = customSkins[skinId];
                 console.log('[SkinModal] Custom skin selection:', { skinId, filePath });
                 if (!filePath) {
-                    message.error({ content: '请先选择模型文件', key: 'applySkin' });
+                    message.error({ content: t('skin.model.select'), key: 'applySkin' });
                     return;
                 }
                 await (window as any).electronAPI.applySkin(skinId, [{ field: 'file', value: filePath }]);
-                message.success({ content: `已成功应用自定义涂装`, key: 'applySkin' });
+                message.success({ content: t('skin.apply.success'), key: 'applySkin' });
             } else {
                 const warband = currentWarbands.find(w => w.id === skinId);
                 console.log('[SkinModal] Warband skin selection:', warband);
@@ -140,17 +142,17 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
 
                 console.log('[SkinModal] Batch skin changes:', batchChanges);
                 await (window as any).electronAPI.applyBatchSkin(batchChanges);
-                message.success({ content: `已成功应用战团涂装: ${warband.name}`, key: 'applySkin' });
+                message.success({ content: t('skin.apply.success'), key: 'applySkin' });
             }
         } catch (error: any) {
             console.error('Failed to apply skin:', error);
-            message.error({ content: `应用失败: ${error.message || '未知错误'}`, key: 'applySkin' });
+            message.error({ content: `${t('skin.apply.fail')}: ${error.message || ''}`, key: 'applySkin' });
         }
     };
 
     return (
         <OverlayModal
-            title="单位涂装"
+            title={t('skin.title')}
             open={open}
             onClose={onClose}
         >
@@ -211,7 +213,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                 fontSize: '16px'
                             }}
                         >
-                            英雄
+                            {t('skin.category.hero')}
                         </Button>
                         <Button
                             type={selectedCategory === 'unit' ? "primary" : "default"}
@@ -229,7 +231,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                 fontSize: '16px'
                             }}
                         >
-                            单位
+                            {t('skin.category.unit')}
                         </Button>
                     </Space>
                 </div>
@@ -244,7 +246,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                             minHeight: '500px'
                         }}>
                             <Text style={{ color: '#d4af37', fontSize: '18px', marginBottom: '20px', display: 'block' }}>
-                                {selectedCategory === 'hero' ? '选择英雄' : '单位分类'}
+                                {selectedCategory === 'hero' ? t('skin.select.hero') : t('skin.category.unit.select')}
                             </Text>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                                 {selectedCategory === 'hero' ? (
@@ -272,7 +274,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                                 alt={hero.name}
                                                 style={{ width: '48px', height: '48px', marginRight: '15px', borderRadius: '4px' }}
                                             />
-                                            <span style={{ color: '#d4af37', fontSize: '16px' }}>{hero.name}</span>
+                                            <span style={{ color: '#d4af37', fontSize: '16px' }}>{t(`skin.hero.${hero.id}` as any, hero.name)}</span>
                                         </div>
                                     ))
                                 ) : (
@@ -295,10 +297,10 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                         >
                                             <img
                                                 src="./assets/quenching/logo.png"
-                                                alt="战团涂装"
+                                                alt={t('skin.warband')}
                                                 style={{ width: '48px', height: '48px', marginRight: '15px', borderRadius: '4px' }}
                                             />
-                                            <span style={{ color: '#d4af37', fontSize: '16px' }}>战团涂装</span>
+                                            <span style={{ color: '#d4af37', fontSize: '16px' }}>{t('skin.warband')}</span>
                                         </div>
                                         <div
                                             onClick={() => {
@@ -319,10 +321,10 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                         >
                                             <img
                                                 src="./assets/quenching/human-icon-pressed.png"
-                                                alt="自定义涂装"
+                                                alt={t('skin.custom')}
                                                 style={{ width: '48px', height: '48px', marginRight: '15px', borderRadius: '4px', filter: 'sepia(1) saturate(5) hue-rotate(0deg)' }}
                                             />
-                                            <span style={{ color: '#d4af37', fontSize: '16px' }}>自定义涂装</span>
+                                            <span style={{ color: '#d4af37', fontSize: '16px' }}>{t('skin.custom')}</span>
                                         </div>
                                     </div>
                                 )}
@@ -333,7 +335,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                     {/* 右侧：皮肤预览 */}
                     <Col span={18}>
                         <Text style={{ color: '#d4af37', fontSize: '18px', marginBottom: '20px', display: 'block' }}>
-                            {selectedHeroId === 'custom' ? '自定义单位模型' : '可用涂装'}
+                            {selectedHeroId === 'custom' ? t('skin.custom.model') : t('skin.available')}
                         </Text>
 
                         <div style={{
@@ -349,6 +351,8 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                             console.log('[SkinModal] Skin clicked:', skin.id);
                                             playSmall();
                                             setSelectedSkinId(skin.id);
+                                            // 立即应用皮肤
+                                            handleApplySkin(currentHero.id, skin.id);
                                         }}
                                         onMouseEnter={() => playHover()}
                                         style={{
@@ -381,7 +385,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                                 color: selectedSkinId === skin.id ? '#000' : '#d4af37',
                                                 fontWeight: 'bold'
                                             }}>
-                                                {skin.name}
+                                                {t(`skin.hero.${selectedHeroId}.skin.${skin.id}` as any, skin.name)}
                                             </span>
                                         </div>
                                     </div>
@@ -414,7 +418,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                             alt={unit.name}
                                             style={{ width: '64px', height: '64px', borderRadius: '4px' }}
                                         />
-                                        <span style={{ color: '#d4af37', fontSize: '16px', fontWeight: 'bold' }}>{unit.name}</span>
+                                        <span style={{ color: '#d4af37', fontSize: '16px', fontWeight: 'bold' }}>{t(`skin.unit.${unit.unitId}` as any, unit.name)}</span>
 
                                         <Button
                                             size="small"
@@ -431,7 +435,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                                 fontSize: '12px'
                                             }}
                                         >
-                                            {customSkins[unit.unitId] ? '重选模型' : '选择模型'}
+                                            {customSkins[unit.unitId] ? t('skin.model.reselect') : t('skin.model.select')}
                                         </Button>
 
                                         {customSkins[unit.unitId] && (
@@ -452,7 +456,13 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                 currentWarbands.map((warband) => (
                                     <div
                                         key={warband.id}
-                                        onClick={() => setSelectedSkinId(warband.id)}
+                                        onClick={() => {
+                                            playSmall();
+                                            setSelectedSkinId(warband.id);
+                                            // 立即应用战团皮肤
+                                            handleApplySkin('warband', warband.id);
+                                        }}
+                                        onMouseEnter={() => playHover()}
                                         style={{
                                             background: selectedSkinId === warband.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
                                             border: selectedSkinId === warband.id ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
@@ -483,7 +493,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                                                 color: selectedSkinId === warband.id ? '#000' : '#d4af37',
                                                 fontWeight: 'bold'
                                             }}>
-                                                {warband.name}
+                                                {t(`skin.warband.${warband.id}` as any, warband.name)}
                                             </span>
                                         </div>
                                     </div>
@@ -493,47 +503,10 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
 
                         {!selectedSkinId && (
                             <div style={{ color: '#666', textAlign: 'center', marginTop: '50px' }}>
-                                {selectedCategory === 'hero' ? '请选择一个英雄涂装' :
-                                    selectedHeroId === 'custom' ? '请选择一个单位进行自定义' : '请选择一个战团涂装'}
+                                {selectedCategory === 'hero' ? t('skin.prompt.hero') :
+                                    selectedHeroId === 'custom' ? t('skin.prompt.custom') : t('skin.prompt.warband')}
                             </div>
                         )}
-
-                        {/* 底部操作栏 */}
-                        <div style={{ marginTop: '40px', textAlign: 'right', borderTop: '1px solid rgba(212, 175, 55, 0.2)', paddingTop: '20px' }}>
-                            <Space size="middle">
-                                <Button
-                                    size="large"
-                                    onClick={onClose}
-                                    style={{
-                                        background: 'transparent',
-                                        border: '1px solid #666',
-                                        color: '#888',
-                                        width: '120px'
-                                    }}
-                                >
-                                    取消
-                                </Button>
-                                <Button
-                                    type="primary"
-                                    size="large"
-                                    disabled={!selectedSkinId}
-                                    onClick={() => {
-                                        playSmall();
-                                        handleApplySkin(selectedHeroId, selectedSkinId);
-                                    }}
-                                    onMouseEnter={() => playHover()}
-                                    style={{
-                                        background: '#d4af37',
-                                        borderColor: '#d4af37',
-                                        color: '#000',
-                                        fontWeight: 'bold',
-                                        width: '150px'
-                                    }}
-                                >
-                                    应用涂装
-                                </Button>
-                            </Space>
-                        </div>
                     </Col>
                 </Row>
             </div>

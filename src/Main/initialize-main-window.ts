@@ -1,8 +1,18 @@
-const { runInExcutable, absAppRunningPath, absAppStaticsPath } = reaxel_ElectronENV();
+import { useQuitHook } from './useQuitHook';
+import { reaxel_ScreenAdapter } from '#main/reaxels/screen-adpater';
+import { reaxel_ElectronENV } from '#main/reaxels/runtime-paths';
+import { useBeautifulDevtool } from '#generic/modify-electron/beautiful-devtool';
+import { useOpenDevtools } from '#generic/modify-electron/open-devtools';
+import { dev } from 'electron-is';
+import { BrowserWindow, BrowserWindowConstructorOptions, screen } from 'electron';
+import path from 'path';
+
+
+const { runInExcutable, absAppRunningPath, absAssetsPath } = reaxel_ElectronENV();
 //4k下的尺寸
 const appAttributes = {
 	width: 1800,
-	height: 1800
+	height: 1350
 }
 const devtoolsWidth = 1300;
 
@@ -12,7 +22,7 @@ export const initializeMainWindow = async (
 	}
 ): Promise<BrowserWindow> => {
 	const defaultExtraOptions: ExtraOptions = {
-		openDevTools: (dev(), false, true),
+		openDevTools: dev(),
 	}
 	const { calcActualAppSize } = reaxel_ScreenAdapter();
 	const actualAppSize = await calcActualAppSize();
@@ -28,7 +38,7 @@ export const initializeMainWindow = async (
 		center: true,
 		resizable: false,
 		frame: false, // 无边框窗口
-		icon: path.join(absAppStaticsPath, 'assets/ico/logo - mixin.ico')
+		icon: path.join(absAssetsPath, 'quenching/1.ico')
 	};
 
 	options = _.merge({
@@ -78,11 +88,3 @@ type ExtraOptions = Partial<{
 	openDevTools: boolean,
 }>
 
-import { useQuitHook } from './useQuitHook';
-import { reaxel_ScreenAdapter } from '#main/reaxels/screen-adpater';
-import { reaxel_ElectronENV } from '#main/reaxels/runtime-paths';
-import { useBeautifulDevtool } from '#generic/modify-electron/beautiful-devtool';
-import { useOpenDevtools } from '#generic/modify-electron/open-devtools';
-import { dev } from 'electron-is';
-import { BrowserWindow, BrowserWindowConstructorOptions, screen } from 'electron';
-import path from 'path';

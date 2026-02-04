@@ -1,39 +1,73 @@
-const { absAppStaticsPath } = reaxel_ElectronENV();
+const { absAssetsPath } = reaxel_ElectronENV();
 
 app.whenReady().then(() => {
-
-	const trayIconPath = path.join(absAppStaticsPath, 'assets/quenching/1.ico');
-	const contextMenu = Menu.buildFromTemplate([
-		{
-			label: '显示魔兽reaxes助手',
-			async click() {
-
-				reaxel_MainProcessHub().mainWindow?.show();
-				console.log('打开应用');
-				// 在这里处理打开应用的逻辑（例如打开窗口）
-			},
-		},
-		{
-			label: '退出',
-			async click() {
-				quit('tray-exit');
-			},
-		},
-	]);
+	const trayIconPath = path.join(absAssetsPath, 'quenching/1.ico');
 	const tray = new Tray(trayIconPath);
 
-	tray.setContextMenu(contextMenu);
+	const rebuildMenu = () => {
+		const lang = configManager.get('language') || 'zh-CN';
+		const isEn = lang === 'en-US';
+		const isKo = lang === 'ko-KR';
 
-	tray.setToolTip('魔兽reaxes助手');
+		let showLabel = '显示主窗口';
+		let exitLabel = '退出';
+		let tooltip = '淬火试炼 - Quenching Mod Client';
+
+		if (isEn) {
+			showLabel = 'Show Main Window';
+			exitLabel = 'Quit';
+			tooltip = 'Quenching Mod Client';
+		} else if (isKo) {
+			showLabel = '기본 창 표시';
+			exitLabel = '종료';
+			tooltip = 'Quenching Mod Client';
+		}
+
+		const contextMenu = Menu.buildFromTemplate([
+			{
+				label: showLabel,
+				async click() {
+					reaxel_MainProcessHub().mainWindow?.show();
+				},
+			},
+			{
+				label: exitLabel,
+				async click() {
+					quit('tray-exit');
+				},
+			},
+		]);
+
+		tray.setContextMenu(contextMenu);
+		tray.setToolTip(tooltip);
+	};
+
+	rebuildMenu();
 
 	tray.on('click', async () => {
-		reaxel_MainProcessHub().mainWindow?.show();
+		const mainWindow = reaxel_MainProcessHub().mainWindow;
+		if (mainWindow) {
+			if (mainWindow.isVisible()) {
+				if (mainWindow.isMinimized()) mainWindow.restore();
+				mainWindow.show();
+				mainWindow.focus();
+			} else {
+				mainWindow.show();
+			}
+		}
 	});
 
+	// 监听语言变化 (通过 setConfig 的 IPC 调用)
+	ipcMain.on('config:set', (event, key, value) => {
+		if (key === 'language') {
+			rebuildMenu();
+		}
+	});
 });
 
 import { quit } from './useQuitEvent';
 import { reaxel_MainProcessHub } from '#main/reaxels/main-process-hub';
 import { reaxel_ElectronENV } from '#main/reaxels/runtime-paths';
-import { Tray, Menu, app } from 'electron';
+import { Tray, Menu, app, ipcMain } from 'electron';
 import path from 'node:path';
+import { configManager } from './services/config-manager';

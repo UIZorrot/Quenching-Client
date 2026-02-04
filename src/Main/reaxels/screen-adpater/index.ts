@@ -24,7 +24,7 @@ import { mainWindowResolutionPresets } from './resolution-presets';
 /*app在4k分辨率下的基础宽高*/
 const baseAppBounds = {
 	width: 1920,
-	height: 1450,
+	height: 1350,
 };
 // 移除顶层await，在需要时异步获取
 let windowsTextScale: number = 1; // 默认值

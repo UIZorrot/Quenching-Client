@@ -1920,12 +1920,19 @@
   dependencies:
     "@types/node" "*"
 
-"@types/node@*", "@types/node@^22.7.7", "@types/node@^22.9.0", "@types/node@>=18":
+"@types/node@*", "@types/node@^22.9.0", "@types/node@>=18":
   version "22.10.1"
   resolved "https://registry.npmjs.org/@types/node/-/node-22.10.1.tgz"
   integrity sha512-qKgsUwfHZV2WCWLAnVP1JqnpE6Im6h3Y0+fYgMTasNQ7V++CBX5OT1as0g0f+OyubbFqhf6XVNIsmN4IIhEgGQ==
   dependencies:
     undici-types "~6.20.0"
+
+"@types/node@^20.9.0":
+  version "20.19.30"
+  resolved "https://registry.npmmirror.com/@types/node/-/node-20.19.30.tgz"
+  integrity sha512-WJtwWJu7UdlvzEAUm484QNg5eAoq5QR08KDNx7g45Usrs2NtOPiX8ugDqmKdXkyL03rBqU5dYNYVQetEpBHq2g==
+  dependencies:
+    undici-types "~6.21.0"
 
 "@types/plist@^3.0.1":
   version "3.0.5"
@@ -4256,13 +4263,13 @@ electron-to-chromium@^1.5.41:
   resolved "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.70.tgz"
   integrity sha512-P6FPqAWIZrC3sHDAwBitJBs7N7IF58m39XVny7DFseQXK2eiMn7nNQizFf63mWDDUnFvaqsM8FI0+ZZfLkdUGA==
 
-electron@^35.2.1:
-  version "35.2.1"
-  resolved "https://registry.npmjs.org/electron/-/electron-35.2.1.tgz"
-  integrity sha512-LO4xXLpzkPPUVLvAbdHMlW7N9Z+Qqz+7QsmSWXluTIQMeJk+v7o36nUTZghyA2I1s//tlMvuaCtle6Qo2W0Ktg==
+electron@33.1.0:
+  version "33.1.0"
+  resolved "https://registry.npmmirror.com/electron/-/electron-33.1.0.tgz"
+  integrity sha512-7KiY6MtRo1fVFLPGyHS7Inh8yZfrbUTy43nNwUgMD2CBk729BgSwOC2WhmcptNJVlzHJpVxSWkiVi2hp9mH/bw==
   dependencies:
     "@electron/get" "^2.0.0"
-    "@types/node" "^22.7.7"
+    "@types/node" "^20.9.0"
     extract-zip "^2.0.1"
 
 electronmon@^2.0.3:
@@ -9665,6 +9672,11 @@ undici-types@~6.20.0:
   version "6.20.0"
   resolved "https://registry.npmjs.org/undici-types/-/undici-types-6.20.0.tgz"
   integrity sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==
+
+undici-types@~6.21.0:
+  version "6.21.0"
+  resolved "https://registry.npmmirror.com/undici-types/-/undici-types-6.21.0.tgz"
+  integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
 
 uni-global@^1.0.0:
   version "1.0.0"

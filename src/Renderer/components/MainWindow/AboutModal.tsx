@@ -13,8 +13,19 @@ interface AboutModalProps {
 }
 
 export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const { playSmall, playHover } = useSound();
+
+  // 根据语言选择收款码图片
+  const isChinese = currentLanguage === 'zh-CN';
+  const qrCode1 = isChinese
+    ? './assets/quenching/962b388fc81544d58b857d7dedade73e.png'
+    : './assets/quenching/1paypal.png';
+  const qrCode2 = isChinese
+    ? './assets/quenching/21d39a30b6f638c5081d47fce3daf453.png'
+    : './assets/quenching/1usdc.png';
+  const qrLabel1 = isChinese ? t('about.support.alipay') : 'PayPal';
+  const qrLabel2 = isChinese ? t('about.support.wechat') : 'USDC';
 
   const handleOpenLink = (url: string) => {
     window.electronAPI?.openExternal(url);
@@ -22,31 +33,31 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
 
   const creditCategories = [
     {
-      title: '工具 (Tools)',
+      title: t('about.category.tools'),
       members: '暴雪经典组 / 霜冻公爵 / AMDOpen / FFXDirve / Reteras-Magos / Blender / Nvtt / Ladik'
     },
     {
-      title: '代码 (Code)',
+      title: t('about.category.code'),
       members: 'WardenIO / Tasyen / 幻想的仪式 / 杰克川 / TriggerHappy'
     },
     {
-      title: '美术 (Art)',
+      title: t('about.category.art'),
       members: 'kantarion / Mystic / Xyrohn21 / Malmgreva / CSWteam / Vulfar / Mr.Orgeman / Superfrycook'
     },
     {
-      title: '媒体与宣传 (Media & Promotion)',
+      title: t('about.category.media'),
       members: 'Hiveworkshop / 魔坛情报局 / 网易暴雪 / Back2Warcraft / W3Unite / 桥林 / 星星哥 / 格瓦斯劳斯基 / 依瑞斯 / 斯美拉琪海露 / 战术TNT / WRY魔兽联盟 / 平川电竞 / 冰糖解说 / Ralle / Warglaive / Kam / wTc / Yumiko / Arrow\'s Path / PavellGameChannel / Wanderbraun / FenixGaming / ReyGaming'
     },
     {
-      title: '战役与测试 (Campaign & Testing)',
+      title: t('about.category.campaign'),
       members: 'InsaneMonster / Tomoraider / 记忆 / 鬼画桃符 / 花仙 / 织星人 / 淬火粉丝 / 安林喵 / 是甜食哇 / 无可救药的废萌 / 暗夜鱼人艾琳 / Scream放点盐 / 成都第二菜包子'
     },
     {
-      title: '社群管理 (Community)',
+      title: t('about.category.community'),
       members: '呜喵王 / 大叔 / 白羽 / hahatgj / 逆鳞 / 大哥 / Saido / taichi / pat / dingo'
     },
     {
-      title: '翻译贡献 (Translation)',
+      title: t('about.category.translation'),
       members: '蓝蓝子 / Andreiki / AzashBR / Azqswxzeman沐恩大军 / 远古杀戮者 / 成都第二菜包子 / yhx1129 / Allen / Su夜樱梦琉 / 安哥唯是我 / bili_54272497996 / 王师天下 / Tomcat沉诣 / ThomasDetective / eitac / 茶几先生丶 / 小生意気なロリコン / SunMoonman / LoreCraft / 蓝色的天空之意 / icywreck / MeantIt / 老白人生 / Corgiloveartisanyoung / 略嗨PuTonSpeeD / Yang大侠不迟到 / 慕雪时晴 / 超魔导师马哈德 / 凡尘不动我心 / 中华唯我霸天健 / DandLX / 阿祁_51 / 捉奸大师PetersJulian / DanielbimFreelancer / Euljan-Nick / 呢喃的寻梦者老白 / 憨憨人士 / 大青蛙 / 杨声耀 / 带着铅笔去流浪 / 杰 / jerry / kusanagi浮幽者叶羽星辰 / 傲瑰 / 万事屋银银银酱 / 彼岸无垠 / 不看不看-辉耀狂战'
     }
   ];
@@ -101,7 +112,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
 
         {/* Core Team Section */}
         <div style={{ textAlign: 'center', marginBottom: '50px' }}>
-          <Title level={4} style={{ color: '#d4af37', marginBottom: '35px', fontSize: '1.5rem', letterSpacing: '2px' }}>核心制作团队</Title>
+          <Title level={4} style={{ color: '#d4af37', marginBottom: '35px', fontSize: '1.5rem', letterSpacing: '2px' }}>{t('about.team.core')}</Title>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: '80px', flexWrap: 'wrap' }}>
             <div>
@@ -123,7 +134,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
 
         {/* Community Contributors Section */}
         <div style={{ textAlign: 'center' }}>
-          <Title level={4} style={{ color: '#d4af37', marginBottom: '40px', fontSize: '1.5rem', letterSpacing: '2px' }}>社区贡献者 (Community Contributors)</Title>
+          <Title level={4} style={{ color: '#d4af37', marginBottom: '40px', fontSize: '1.5rem', letterSpacing: '2px' }}>{t('about.team.community')}</Title>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '40px', textAlign: 'left', maxWidth: '850px', margin: '0 auto' }}>
             {creditCategories.map((cat, index) => (
@@ -167,7 +178,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
             fontSize: '1.5rem',
             letterSpacing: '2px'
           }}>
-            支持项目 (Support the Project)
+            {t('about.support.title')}
           </Title>
           <div style={{
             display: 'flex',
@@ -187,12 +198,12 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
                 boxShadow: '0 0 20px rgba(0,0,0,0.5)'
               }}>
                 <img
-                  src="./assets/quenching/962b388fc81544d58b857d7dedade73e.png"
-                  alt="Alipay"
+                  src={qrCode1}
+                  alt={qrLabel1}
                   style={{ width: '180px', height: '221px', display: 'block' }}
                 />
               </div>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>支付宝 (Alipay)</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>{qrLabel1}</Text>
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{
@@ -203,12 +214,12 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
                 boxShadow: '0 0 20px rgba(0,0,0,0.5)'
               }}>
                 <img
-                  src="./assets/quenching/21d39a30b6f638c5081d47fce3daf453.png"
-                  alt="WeChat Pay"
+                  src={qrCode2}
+                  alt={qrLabel2}
                   style={{ width: '180px', height: '221px', display: 'block' }}
                 />
               </div>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>微信支付 (WeChat Pay)</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem' }}>{qrLabel2}</Text>
             </div>
           </div>
           <Paragraph style={{
@@ -217,7 +228,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
             fontSize: '0.85rem',
             fontStyle: 'italic'
           }}>
-            您的支持是我们持续优化《淬火》项目的最大动力。
+            {t('about.support.desc')}
           </Paragraph>
         </div>
 
@@ -233,7 +244,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
             onMouseEnter={() => playHover()}
             style={{ color: '#d4af37', fontSize: '1rem' }}
           >
-            官方网站
+            {t('about.link.website')}
           </Button>
           <Button
             type="link"
@@ -257,7 +268,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
             onMouseEnter={() => playHover()}
             style={{ color: '#d4af37', fontSize: '1rem' }}
           >
-            支持我们
+            {t('about.link.support')}
           </Button>
         </div>
 

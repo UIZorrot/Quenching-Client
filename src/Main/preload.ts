@@ -95,7 +95,8 @@ const electronAPI: ElectronAPI = {
   executeCommand: (command: string) => ipcRenderer.invoke('system:exec', command),
 
   getFullPackageStatus: (war3Path?: string) => ipcRenderer.invoke('mod:get-full-package-status', war3Path),
-  installFullPackage: (zipPath: string) => ipcRenderer.invoke('mod:install-full-package', zipPath)
+  installFullPackage: (zipPath: string) => ipcRenderer.invoke('mod:install-full-package', zipPath),
+  syncAssets: () => ipcRenderer.invoke('mod:sync-assets')
 };
 
 // 通过contextBridge安全地暴露API
@@ -119,6 +120,10 @@ contextBridge.exposeInMainWorld('versions', {
 ipcRenderer.on('show-about', () => {
   // 可以在这里触发渲染进程的事件
   window.dispatchEvent(new CustomEvent('electron-show-about'));
+});
+
+ipcRenderer.on('mod:install-progress', (event, data) => {
+  window.dispatchEvent(new CustomEvent('mod-install-progress', { detail: data }));
 });
 
 // 错误处理

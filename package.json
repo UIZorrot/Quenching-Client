@@ -1,6 +1,6 @@
 {
 	"name": "quenching-electron-client",
-	"version": "1.0.0",
+	"version": "3.0.0",
 	"main": "dist/main.js",
 	"scripts": {
 		"start": "tsx scripts/webpack.start/index.ts 4410",
@@ -27,7 +27,6 @@
 		"@dnd-kit/utilities": "^3.2.2",
 		"antd": "^5.22.0",
 		"archiver": "^5.3.1",
-		"casclib": "^1.0.4",
 		"electron-log": "^5.2.0",
 		"electron-store": "^8.1.0",
 		"fs-extra": "^11.1.1",
@@ -86,7 +85,7 @@
 		"copy-webpack-plugin": "^12.0.2",
 		"css-loader": "^7.1.2",
 		"dependency-cruiser": "^16.8.0",
-		"electron": "^35.2.1",
+		"electron": "33.1.0",
 		"electron-builder": "^25.1.8",
 		"electron-is": "^3.0.0",
 		"electronmon": "^2.0.3",

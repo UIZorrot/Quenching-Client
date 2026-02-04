@@ -13,7 +13,6 @@ import {
 } from '@ant-design/icons';
 import { useTranslation } from '../../utils/i18n';
 import { useWar3Detector } from '../../hooks/useWar3Detector';
-import { useModInstaller } from '../../hooks/useModInstaller';
 import { useWar3Settings } from '../../hooks/useWar3Settings';
 import { useSound } from '../../hooks/useSound';
 import { BackgroundVideo } from './BackgroundVideo';
@@ -22,7 +21,6 @@ import SettingsModal from './SettingsModal';
 import { ThemeModal } from './ThemeModal';
 import { AboutModal } from './AboutModal';
 import { NewsPanel } from './NewsPanel';
-import { InstallModal } from './InstallModal';
 import { SkinModal } from './SkinModal';
 import { useGlobalLoading } from '../GlobalLoadingProvider';
 // import styles from './MainWindow.module.less';
@@ -79,8 +77,7 @@ const styles: any = {
   aboutContent: 'about-content',
   componentList: 'component-list',
   componentItem: 'component-item',
-  selected: 'selected',
-  installProgress: 'install-progress'
+  selected: 'selected'
 };
 
 export const MainWindow: React.FC = () => {
@@ -101,10 +98,6 @@ export const MainWindow: React.FC = () => {
     detectInstallations
   } = useWar3Detector();
 
-  const {
-    isInstalling,
-    progress,
-  } = useModInstaller();
 
   const { modSettings, saveModSettings, loadSettings } = useWar3Settings();
 
@@ -113,21 +106,28 @@ export const MainWindow: React.FC = () => {
   const [modEnabledUI, setModEnabledUI] = useState(modSettings?.modEnabled ?? true);
   const [isModToggling, setIsModToggling] = useState(false);
   const [modToggleStatus, setModToggleStatus] = useState<{ message: string; percent: number } | null>(null);
+  const [installProgress, setInstallProgress] = useState<{ message: string; percent: number } | null>(null);
+
+  useEffect(() => {
+    const handleProgress = (e: any) => {
+      setInstallProgress(e.detail);
+    };
+    window.addEventListener('mod-install-progress', handleProgress);
+    return () => window.removeEventListener('mod-install-progress', handleProgress);
+  }, []);
 
   const { playMain, playSmall, playHover } = useSound();
 
   // 同步全局 Loading 状态
   useEffect(() => {
     if (isModToggling) {
-      showLoading(modToggleStatus?.message || '正在切换MOD...', modToggleStatus?.percent);
+      showLoading(modToggleStatus?.message || t('msg.settings.updating'), modToggleStatus?.percent);
     } else if (installingFullPackage) {
-      showLoading('正在安装完整包...');
-    } else if (isInstalling && progress?.status === 'installing') {
-      showLoading(progress?.message || '处理中...', typeof progress?.progress === 'number' ? progress.progress : undefined);
+      showLoading(installProgress?.message || t('msg.install.full_package'), installProgress?.percent);
     } else {
       hideLoading();
     }
-  }, [isModToggling, modToggleStatus, installingFullPackage, isInstalling, progress, showLoading, hideLoading]);
+  }, [isModToggling, modToggleStatus, installingFullPackage, installProgress, showLoading, hideLoading, t]);
 
   // 窗口控制
   const handleMinimize = useCallback(() => {
@@ -245,7 +245,7 @@ export const MainWindow: React.FC = () => {
     }
 
     if (!targetPath) {
-      message.error('未检测到 Warcraft III 安装路径，请在设置中指定目录。');
+      message.error(t('install.not_found'));
       setIsModToggling(false);
       return;
     }
@@ -316,10 +316,10 @@ export const MainWindow: React.FC = () => {
 
       await saveModSettings(targetPath, { modEnabled: newEnabled });
       setModEnabledUI(newEnabled);
-      message.success(newEnabled ? 'MOD 已启用' : 'MOD 已禁用');
+      message.success(newEnabled ? t('msg.mod.enabled') : t('msg.mod.disabled'));
     } catch (error) {
       console.error('[ModToggle] toggle failed:', error);
-      message.error('设置失败');
+      message.error(t('msg.mod.failed'));
     } finally {
       console.log('[ModToggle] toggle finished');
       setIsModToggling(false);
@@ -367,14 +367,20 @@ export const MainWindow: React.FC = () => {
 
     // 4. 执行启动
     try {
-      if (window.electronAPI?.launchGame) {
+      if (window.electronAPI?.launchGame && window.electronAPI?.syncAssets) {
+        // 先检查并同步必要的资源文件
+        showLoading(t('msg.checking.assets') || '正在检查核心资源...', 0);
+        await window.electronAPI.syncAssets();
+        hideLoading();
+
         // 注意：launchGame 在 Main process 会优先读取 Config 中的 war3Path
         // 所以只要 selectGamePath 成功保存了 Config，这里直接调用即可
         await window.electronAPI.launchGame();
-        message.success('游戏启动成功！');
+        message.success(t('msg.game.start.success'));
       }
     } catch (error) {
-      message.error(`游戏启动失败: ${error.message}`);
+      hideLoading();
+      message.error(`${t('msg.game.start.failed')}: ${error.message}`);
     }
   };
 
@@ -385,7 +391,7 @@ export const MainWindow: React.FC = () => {
     }
     const path = await window.electronAPI.selectGamePath();
     if (path) {
-      message.success(`已设置魔兽目录: ${path}`);
+      message.success(`${t('msg.war3.path.set')}: ${path}`);
       // 重新检测安装信息，刷新当前安装显示
       detectInstallations();
     }
@@ -396,13 +402,13 @@ export const MainWindow: React.FC = () => {
     // 检查 MOD 是否开启：涂装 and 设置按钮受限
     if (modalType === 'skin' || modalType === 'settings') {
       if (!modEnabledUI) {
-        message.error('请先开启淬火 MOD 引擎');
+        message.error(t('msg.mod.engine.required'));
         return;
       }
     }
 
     if (modalType === 'setup' && !currentInstallation) {
-      message.warning('请先检测War3安装路径');
+      message.warning(t('install.not_found'));
       detectInstallations();
       return;
     }
@@ -414,15 +420,6 @@ export const MainWindow: React.FC = () => {
     setActiveModal(null);
   };
 
-  // 安装设置处理
-  const handleInstallSetup = () => {
-    if (!currentInstallation) {
-      message.error('未检测到War3安装路径');
-      return;
-    }
-
-    openModal('install');
-  };
 
   // 音效播放
   const playHoverSound = () => {
@@ -466,8 +463,9 @@ export const MainWindow: React.FC = () => {
 
     try {
       setInstallingFullPackage(true);
+      setInstallProgress(null);
       const zipPath = await window.electronAPI.selectFile?.({
-        title: '请选择淬火Mod整合包 (zip)',
+        title: t('msg.install.select_zip'),
         filters: [{ name: 'Zip Archive', extensions: ['zip'] }]
       });
 
@@ -480,17 +478,17 @@ export const MainWindow: React.FC = () => {
 
       if (result && result.success) {
         if (result.skipped) {
-          message.info('淬火Mod整合包已安装，无需重复操作');
+          message.info(t('msg.install.already_installed'));
         } else {
-          message.success('淬火Mod整合包安装完成');
+          message.success(t('msg.install.success'));
         }
         setIsFullPackageInstalled(true);
       } else if (result && result.error === 'noWar3Path') {
-        message.error('请先设置魔兽目录再安装淬火Mod整合包');
+        message.error(t('msg.install.no_path'));
       } else if (result && result.error === 'noZip') {
-        message.error('选择的文件无效或不存在，请确认后重试');
+        message.error(t('msg.install.invalid_zip'));
       } else {
-        message.error(`安装失败: ${(result && result.error) || '未知错误'}`);
+        message.error(`${t('msg.install.failed')}: ${(result && result.error) || '未知错误'}`);
       }
     } catch (e: any) {
       message.error(`安装失败: ${e && e.message ? e.message : '未知错误'}`);
@@ -669,7 +667,7 @@ export const MainWindow: React.FC = () => {
                   : 'grayscale(0.8) brightness(0.4)',
                 transform: modEnabledUI ? 'scale(1)' : 'scale(0.95)',
               }}
-              title="点击图标打开/关闭淬火"
+              title={t('main.tips.toggle')}
             >
               <img
                 src="./assets/quenching/logo.png"
@@ -748,9 +746,11 @@ export const MainWindow: React.FC = () => {
                 color: '#888',
                 fontSize: '14px',
                 fontStyle: 'italic',
+                width: '200px',
+                textAlign: 'center',
                 textShadow: '0 1px 1px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.5)',
               }}>
-                点击图标打开/关闭
+                {t('main.tips.toggle')}
               </div>
             </div>
 
@@ -771,8 +771,8 @@ export const MainWindow: React.FC = () => {
 
             <Text className={styles.modeText} style={{ textShadow: '0 1px 1px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.5)', color: '#d4af37' }}>
               {currentInstallation ?
-                (isFullPackageInstalled ? '完整包已安装' : '完整包未安装') :
-                '未检测到War3'
+                (isFullPackageInstalled ? t('main.status.full_installed') : t('main.status.full_not_installed')) :
+                t('main.status.no_war3')
               }
             </Text>
             {/* {!isInWar3Directory && (
@@ -789,16 +789,16 @@ export const MainWindow: React.FC = () => {
                 <Button
                   type="link"
                   onClick={() => window.electronAPI?.openExternal('https://www.tianxiazhengyi.net/qm/qmdownload.html')}
-                  style={{ textShadow: '0 1px 1px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.5)', color: '#d4af37', fontWeight: 700 }}
+                  style={{ textShadow: '0 1px 1px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.5)', color: '#d4af37', fontWeight: 700, fontFamily: "'Trajan Pro 3', serif" }}
                 >
-                  有新版本下载
+                  {t('msg.update.download')}
                 </Button>
               </div>
             )}
             <div style={{ marginBottom: '8px' }}>
               <div
                 onClick={
-                  installingFullPackage || isFullPackageInstalled
+                  installingFullPackage
                     ? undefined
                     : handleInstallFullPackage
                 }
@@ -806,19 +806,19 @@ export const MainWindow: React.FC = () => {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 8,
-                  cursor: installingFullPackage || isFullPackageInstalled ? 'default' : 'pointer',
+                  cursor: installingFullPackage ? 'default' : 'pointer',
                   color: '#d4af37',
-                  textDecoration: installingFullPackage || isFullPackageInstalled ? 'none' : 'underline',
-                  opacity: installingFullPackage || isFullPackageInstalled ? 0.7 : 1,
+                  textDecoration: installingFullPackage ? 'none' : 'underline',
+                  opacity: installingFullPackage ? 0.7 : 1,
                   textShadow: '0 1px 1px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.5)'
                 }}
               >
                 <Text>
                   {isFullPackageInstalled
-                    ? ' '
+                    ? t('msg.install.reinstall')
                     : installingFullPackage
-                      ? ' '
-                      : '点击安装完整包'}
+                      ? t('msg.install.installing')
+                      : t('setup.btn.install_full')}
                 </Text>
               </div>
             </div>
@@ -829,8 +829,8 @@ export const MainWindow: React.FC = () => {
               className={styles.startButton}
               onClick={handleStartGame}
               onMouseEnter={playHoverSound}
-              disabled={isInstalling}
-              loading={isInstalling && progress?.status === 'installing'}
+              disabled={installingFullPackage}
+              loading={installingFullPackage}
               style={{
                 background: 'linear-gradient(45deg, #d4af37, #f4d03f)',
                 border: '2px solid #d4af37',
@@ -844,10 +844,7 @@ export const MainWindow: React.FC = () => {
                 filter: 'drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.6))',
               }}
             >
-              {isInstalling ?
-                (progress?.message || '处理中...') :
-                t('main.btn.start')
-              }
+              {t('main.btn.start')}
             </Button>
 
             {/* 更换魔兽目录（文字按钮样式） */}
@@ -858,37 +855,18 @@ export const MainWindow: React.FC = () => {
                   cursor: 'pointer',
                   color: '#d4af37',
                   textDecoration: 'underline',
-                  textShadow: '0 1px 1px rgba(0, 0, 0, 0.8)'
+                  fontSize: '0.9rem',
+                  textShadow: '0 1px 1px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.5)'
                 }}
               >
-                更换魔兽目录
+                {t('setup.btn.change')}
               </Text>
             </div>
-
-            {/* 安装进度显示 */}
-            {isInstalling && progress && (
-              <div className={styles.progressSection}>
-                <Text className={styles.progressText}>
-                  {progress.message}
-                </Text>
-                <div className={styles.progressBar}>
-                  <div
-                    className={styles.progressFill}
-                    style={{
-                      width: `${progress.progress || 0}%`,
-                      backgroundColor: progress.status === 'error' ? '#ff4d4f' : '#52c41a'
-                    }}
-                  />
-                </div>
-                <Text className={styles.progressPercent}>
-                  {progress.progress || 0}%
-                </Text>
-              </div>
-            )}
-
           </div>
 
+
         </div>
+
 
 
         {/* 底部按钮区域 */}
@@ -957,15 +935,11 @@ export const MainWindow: React.FC = () => {
         onClose={closeModal}
       />
 
-      <InstallModal
-        open={activeModal === 'install'}
-        onClose={closeModal}
-      />
 
       <SkinModal
         open={activeModal === 'skin'}
         onClose={closeModal}
       />
-    </Layout>
+    </Layout >
   );
 };

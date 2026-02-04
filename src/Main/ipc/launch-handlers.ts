@@ -43,15 +43,25 @@ export function registerLaunchHandlers() {
     });
 
     ipcMain.handle('game:select-path', async () => {
+        const isMac = process.platform === 'darwin';
         const result = await dialog.showOpenDialog({
-            properties: ['openDirectory'],
-            title: '请选择魔兽争霸III安装目录 (包含 Warcraft III.exe)'
+            properties: isMac ? ['openDirectory', 'openFile'] : ['openDirectory'],
+            title: isMac ? '请选择魔兽争霸III安装目录或 Warcraft III.app' : '请选择魔兽争霸III安装目录 (包含 Warcraft III.exe)',
+            filters: isMac ? [{ name: 'Applications', extensions: ['app'] }] : []
         });
 
         if (!result.canceled && result.filePaths.length > 0) {
-            const selectedPath = result.filePaths[0];
+            let selectedPath = result.filePaths[0];
 
-            const possibleExes = [
+            // 如果用户直接选择了 .app 文件，我们将路径设为其父目录（root）
+            if (isMac && selectedPath.endsWith('.app')) {
+                selectedPath = path.dirname(selectedPath);
+            }
+
+            const possibleExes = isMac ? [
+                path.join(selectedPath, 'Warcraft III.app'),
+                path.join(selectedPath, '_retail_', 'Warcraft III.app'),
+            ] : [
                 path.join(selectedPath, 'Warcraft III.exe'),
                 path.join(selectedPath, '_retail_', 'x86_64', 'Warcraft III.exe'),
                 path.join(selectedPath, 'x86_64', 'Warcraft III.exe')
@@ -69,7 +79,8 @@ export function registerLaunchHandlers() {
                 configManager.set('war3Path', selectedPath);
                 return selectedPath;
             } else {
-                dialog.showErrorBox('路径无效', '所选目录中未找到 Warcraft III.exe，请重新选择正确的游戏安装目录。');
+                const msg = isMac ? '所选目录中未找到 Warcraft III.app' : '所选目录中未找到 Warcraft III.exe';
+                dialog.showErrorBox('路径无效', `${msg}，请重新选择正确的游戏安装目录。`);
                 return null;
             }
         }
@@ -102,12 +113,13 @@ export function registerLaunchHandlers() {
             };
         }
 
-        if (await isFullPackageInstalled(war3Path)) {
-            return {
-                success: true,
-                skipped: true
-            };
-        }
+        // 允许覆盖安装，移除已安装检查
+        // if (await isFullPackageInstalled(war3Path)) {
+        //     return {
+        //         success: true,
+        //         skipped: true
+        //     };
+        // }
 
         if (!zipPath || !(await fs.pathExists(zipPath))) {
             return {
@@ -117,7 +129,10 @@ export function registerLaunchHandlers() {
         }
 
         try {
-            await AssetSyncService.extractZip(zipPath, war3Path);
+            const targetPath = path.join(war3Path, '_retail_');
+            await AssetSyncService.extractZip(zipPath, targetPath, (percent, currentFile) => {
+                event.sender.send('mod:install-progress', { percent, message: `正在安装: ${currentFile}` });
+            });
             return {
                 success: true,
                 skipped: false
@@ -127,6 +142,20 @@ export function registerLaunchHandlers() {
                 success: false,
                 error: e && e.message ? e.message : String(e)
             };
+        }
+    });
+
+    ipcMain.handle('mod:sync-assets', async (event) => {
+        try {
+            const war3Path = configManager.get('war3Path');
+            if (war3Path) {
+                // Ensure we call syncAssetsBeforeLaunch which handles checking mod status and missing files
+                await AssetSyncService.syncAssetsBeforeLaunch(war3Path);
+            }
+        } catch (error) {
+            console.error('[LaunchHandlers] Failed to sync assets:', error);
+            // Optionally rethrow if you want the renderer to know it failed
+            throw error;
         }
     });
 }

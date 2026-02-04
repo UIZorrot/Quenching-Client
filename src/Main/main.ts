@@ -149,21 +149,30 @@ app.whenReady().then(async () => {
   // 注册所有API
   registerAllAPIs();
 
+  console.log('\n==================== [AssetSync] Startup Check Begin ====================');
   try {
     const war3Path = configManager.get('war3Path');
     console.log(`[Main] Current War3Path from config: ${war3Path}`);
+
     if (war3Path) {
+      console.log('[Main] War3Path detected, starting asset synchronization...');
       await AssetSyncService.syncAssetsBeforeLaunch(war3Path);
+      console.log('[Main] Asset synchronization completed.');
+
       // 启动时清理已禁用的着色器文件
       const modSettings = configManager.get('modSettings');
       if (modSettings) {
         await cleanupShadersOnStartup(war3Path, modSettings);
         await cleanupScriptsOnStartup(war3Path, modSettings);
       }
+    } else {
+      console.warn('[Main] War3Path not configured. Skipping asset synchronization.');
+      console.warn('[Main] Please configure the Warcraft III path in settings to enable asset sync.');
     }
   } catch (error) {
-    console.error('Failed to sync core assets on startup:', error);
+    console.error('[Main] Failed to sync core assets on startup:', error);
   }
+  console.log('==================== [AssetSync] Startup Check Complete ====================\n');
 
   // 创建窗口
   createWindow();

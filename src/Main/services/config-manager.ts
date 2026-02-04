@@ -2,13 +2,14 @@ import Store from 'electron-store';
 
 interface AppConfig {
     war3Path: string;
-    language: 'cn' | 'en' | 'pt' | 'ru' | 'fr' | 'es';
+    language: 'zh-CN' | 'en-US' | 'ko-KR' | 'fr-FR' | 'pt-BR' | 'ru-RU' | 'es-ES';
     theme: string;
     // Mods
     antiHarmony: boolean;
     terrainMode: 'classic' | 'hd' | 'custom';
     lightMode: number; // 0-10
     modSettings: any;
+    customThemes?: any[];
 }
 
 const schema = {
@@ -18,8 +19,8 @@ const schema = {
     },
     language: {
         type: 'string',
-        enum: ['cn', 'en', 'pt', 'ru', 'fr', 'es'],
-        default: 'cn'
+        enum: ['zh-CN', 'en-US', 'ko-KR', 'fr-FR', 'pt-BR', 'ru-RU', 'es-ES'],
+        default: 'zh-CN'
     },
     theme: {
         type: 'string',
@@ -42,6 +43,18 @@ const schema = {
         type: 'object',
         default: {},
         additionalProperties: true
+    },
+    customThemes: {
+        type: 'array',
+        default: [],
+        items: {
+            type: 'object',
+            properties: {
+                id: { type: 'string' },
+                videoPath: { type: 'string' },
+                name: { type: 'string' }
+            }
+        }
     }
 } as const;
 
@@ -49,7 +62,19 @@ export class ConfigManager {
     private store: Store<AppConfig>;
 
     constructor() {
-        this.store = new Store<AppConfig>({ schema: schema as any });
+        try {
+            this.store = new Store<AppConfig>({
+                schema: schema as any,
+                clearInvalidConfig: true
+            });
+        } catch (error) {
+            console.error('[Config] Schema violation detected during initialization. Clearing config and retrying...', error);
+
+            this.store = new Store<AppConfig>({
+                schema: schema as any,
+                clearInvalidConfig: true
+            });
+        }
         console.log(`[Config] Store initialized at: ${this.store.path}`);
     }
 

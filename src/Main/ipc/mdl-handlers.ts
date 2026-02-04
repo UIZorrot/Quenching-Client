@@ -27,11 +27,11 @@ export function registerMdlHandlers() {
             // 1. 还原 DNC 文件 (从 zip-environment.zip)
             await restoreDncFiles(war3Path);
 
-            // 2. 如果是 'standard' (普通) 模式，还原后即可结束
-            if (lightingMode === 'standard') {
-                console.log('[MDL] Standard mode selected, restoration complete.');
-                return true;
-            }
+            // 2. 如果是 'standard' (普通) 模式
+            // if (lightingMode === 'standard') {
+            //     console.log('[MDL] Standard mode selected, restoration complete.');
+            //     return true;
+            // }
 
             // 3. 遍历并修改 DNC 文件
             if (await fs.pathExists(dncPath)) {
@@ -51,13 +51,26 @@ export function registerMdlHandlers() {
 }
 
 async function getAssetsDir(): Promise<string> {
-    if (process.env.NODE_ENV === 'development') {
-        // 开发环境：使用 app.getAppPath() 获取项目根目录，然后指向 assets
-        // app.getAppPath() 在开发模式下通常指向 package.json 所在目录
-        return path.join(app.getAppPath(), 'assets');
+    const possiblePaths = [];
+
+    // 1. 开发环境 / 标准 App 路径
+    possiblePaths.push(path.join(app.getAppPath(), 'assets'));
+
+    // 2. 生产环境 resources 目录
+    possiblePaths.push(path.join(process.resourcesPath, 'assets'));
+
+    // 3. 向上查找 (应对某些特殊打包结构)
+    possiblePaths.push(path.join(app.getAppPath(), '..', 'assets'));
+
+    for (const p of possiblePaths) {
+        if (await fs.pathExists(p)) {
+            console.log(`[MDL] Found assets dir at: ${p}`);
+            return p;
+        }
     }
-    // 生产环境
-    return path.join(process.resourcesPath, 'assets');
+
+    console.warn('[MDL] Assets directory not found in standard locations, defaulting to appPath/assets');
+    return path.join(app.getAppPath(), 'assets');
 }
 
 async function restoreDncFiles(war3Path: string) {
@@ -74,9 +87,6 @@ async function restoreDncFiles(war3Path: string) {
 
     // 找到 zip-environment.zip
     const assetsDir = await getAssetsDir();
-    console.log(`[MDL] Assets directory: ${assetsDir}`);
-
-    // Core file location: QuenChing-Electron-Client\assets\quenching\zip-environment.zip
     const zipPath = path.join(assetsDir, 'quenching', 'zip-environment.zip');
 
     if (await fs.pathExists(zipPath)) {
@@ -84,9 +94,32 @@ async function restoreDncFiles(war3Path: string) {
         // 解压到 _retail_/environment
         const targetDir = envPath;
         console.log(`[MDL] Extracting to: ${targetDir}`);
-        await extractZip(zipPath, targetDir);
+
+        try {
+            await extractZip(zipPath, targetDir);
+
+            // 验证解压结果
+            if (await fs.pathExists(dncPath)) {
+                console.log('[MDL] DNC directory restored successfully.');
+            } else {
+                console.error('[MDL] CRITICAL: DNC directory not found after extraction!');
+                // 尝试列出 targetDir 内容以帮助调试
+                try {
+                    const files = await fs.readdir(targetDir);
+                    console.log(`[MDL] Files in ${targetDir}:`, files);
+                } catch (err) {
+                    console.error('[MDL] Failed to list target dir:', err);
+                }
+                throw new Error('DNC directory restoration failed');
+            }
+        } catch (extractError) {
+            console.error('[MDL] Zip extraction error:', extractError);
+            throw extractError;
+        }
     } else {
-        console.warn(`[MDL] Environment zip not found at: ${zipPath}, skipping restore.`);
+        const msg = `[MDL] Environment zip not found at: ${zipPath}, skipping restore.`;
+        console.warn(msg);
+        throw new Error(msg);
     }
 }
 
@@ -94,25 +127,49 @@ async function extractZip(zipPath: string, extractPath: string): Promise<void> {
     await fs.ensureDir(extractPath);
     return new Promise((resolve, reject) => {
         yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
-            if (err || !zipfile) { reject(err); return; }
+            if (err || !zipfile) {
+                reject(err || new Error('Failed to open zip file'));
+                return;
+            }
+
             zipfile.readEntry();
+
             zipfile.on('entry', (entry) => {
                 if (/\/$/.test(entry.fileName)) {
                     zipfile.readEntry();
                 } else {
                     zipfile.openReadStream(entry, (err2, readStream) => {
-                        if (err2 || !readStream) { reject(err2); return; }
+                        if (err2 || !readStream) {
+                            reject(err2 || new Error('Failed to read zip entry stream'));
+                            return;
+                        }
+
                         const out = path.join(extractPath, entry.fileName);
-                        fs.ensureDir(path.dirname(out)).then(() => {
-                            const ws = fs.createWriteStream(out);
-                            readStream.pipe(ws);
-                            ws.on('close', () => zipfile.readEntry());
-                        }).catch(reject);
+
+                        fs.ensureDir(path.dirname(out))
+                            .then(() => {
+                                const ws = fs.createWriteStream(out);
+                                readStream.pipe(ws);
+                                ws.on('close', () => zipfile.readEntry());
+                                ws.on('error', (wsErr) => {
+                                    console.error(`[MDL] Write stream error for ${out}:`, wsErr);
+                                    reject(wsErr);
+                                });
+                            })
+                            .catch((dirErr) => {
+                                console.error(`[MDL] Directory creation error for ${out}:`, dirErr);
+                                reject(dirErr);
+                            });
                     });
                 }
             });
+
             zipfile.on('end', () => resolve());
-            zipfile.on('error', (e) => reject(e));
+
+            zipfile.on('error', (e) => {
+                console.error('[MDL] Yauzl error:', e);
+                reject(e);
+            });
         });
     });
 }
@@ -138,35 +195,45 @@ async function processMdlFile(filePath: string, fileName: string, mode: string) 
     const lowerName = fileName.toLowerCase();
     const isUnderground = lowerName.includes('underground') || lowerName.includes('dungeon');
     const isUnit = lowerName.includes('unit');
-    const isTerrain = lowerName.includes('terrain');
 
-    // 确定目标参数
-    let targetAmb = 0;
-    let targetInt = 0; // 仅用于 underground 固定值
-    let intMultiplier = 1; // 用于非 underground 的倍率
+    // --- 亮度逻辑配置 ---
+    // Surface Standard: Amb -0.05, Int x1.0
+    // Dungeon Standard: Amb -0.05, Int 5.5 (Unit) / 5.0 (Terrain) [Fixed]
+
+    let targetAmb = -0.14;
+    let targetIntMode: 'multiply' | 'fixed' = 'multiply';
+    let targetIntVal = 1.0;
 
     if (isUnderground) {
-        // 地下环境默认值
-        targetAmb = -0.1;
-        if (isUnit) targetInt = 4.0;
-        else targetInt = 3.5; // 地形
+        // --- 地牢环境 (Dungeon) ---
+        targetIntMode = 'fixed';
+        if (isUnit) {
+            targetIntVal = 4.5; // 地牢单位固定值 (已提升)
+        } else {
+            targetIntVal = 4.0; // 地牢地形固定值 (保持0.5的层次差)
+        }
 
-        // 根据模式微调地下环境
+        // 模式修正 (基于固定值)
         if (mode === 'rpg') {
-            targetAmb = -0.15;
-            targetInt = targetInt * 0.9;
+            targetAmb = -0.2;
+            targetIntVal = targetIntVal * 1.25;
         } else if (mode === 'battle') {
-            targetAmb = 0.1;
-            targetInt = targetInt * 1.25;
+            targetAmb = 0.02;
+            targetIntVal = targetIntVal * 1.1;
         }
     } else {
+        // --- 地面环境 (Surface) ---
+        targetIntMode = 'multiply';
+        targetIntVal = 1.0; // 标准模式保持原值
+
+        // 模式修正 (基于乘数)
         if (mode === 'rpg') {
-            targetAmb = -0.15;
-            if (isUnit) intMultiplier = 0.9;
-            else intMultiplier = 0.8;
+            targetAmb = -0.18;
+            if (isUnit) targetIntVal = 1.15;
+            else targetIntVal = 1;
         } else if (mode === 'battle') {
-            targetAmb = 0.1;
-            intMultiplier = 1.25;
+            targetAmb = 0;
+            targetIntVal = 1.1;
         }
     }
 
@@ -176,7 +243,6 @@ async function processMdlFile(filePath: string, fileName: string, mode: string) 
 
         // 1. 修改 AmbIntensity
         if (lowerLine.startsWith('static ambintensity')) {
-            // 地下环境固定值，其他模式也是直接设置值
             const newVal = `\tstatic AmbIntensity ${targetAmb.toFixed(2)},`;
             if (lines[i] !== newVal) {
                 lines[i] = newVal;
@@ -184,21 +250,21 @@ async function processMdlFile(filePath: string, fileName: string, mode: string) 
             }
         }
 
-        // 2. 修改 Intensity
+        // 2. 修改 Intensity (支持 Static 和 Keyframes)
         if (lowerLine.startsWith('static intensity')) {
-            if (isUnderground) {
-                // 地下环境：使用固定值
-                const newVal = `\tstatic Intensity ${targetInt.toFixed(2)},`;
+            // 处理静态 Intensity
+            if (targetIntMode === 'fixed') {
+                const newVal = `\tstatic Intensity ${targetIntVal.toFixed(2)},`;
                 if (lines[i] !== newVal) {
                     lines[i] = newVal;
                     modified = true;
                 }
             } else {
-                // 其他模式：乘法
+                // Multiply mode
                 const match = line.match(/static Intensity\s+([\d.-]+)/i);
                 if (match) {
                     const val = parseFloat(match[1]);
-                    const newVal = `\tstatic Intensity ${(val * intMultiplier).toFixed(2)},`;
+                    const newVal = `\tstatic Intensity ${(val * targetIntVal).toFixed(2)},`;
                     if (lines[i] !== newVal) {
                         lines[i] = newVal;
                         modified = true;
@@ -206,44 +272,79 @@ async function processMdlFile(filePath: string, fileName: string, mode: string) 
                 }
             }
         } else {
-            // 检查 Intensity 关键帧 (0: 3.33, ...)
+            // 处理 Intensity 动画关键帧 (e.g., "0: 3.33,")
+            // 简单判定：如果在 Intensity 块内 (需要上下文，这里简化为行匹配且上一行可能是Intensity相关)
+            // 更严谨的方法是向上查找最近的 "Intensity"
             const intensityMatch = line.match(/^(\d+):\s*([\d.-]+),?$/);
             if (intensityMatch) {
-                // 确认在 Intensity 块内
+                // 回溯查找是否在 Intensity 块中
                 let isInsideIntensity = false;
                 for (let j = i - 1; j >= 0; j--) {
                     const prev = lines[j].trim();
                     const prevLower = prev.toLowerCase();
-                    if (prevLower.startsWith('intensity')) { isInsideIntensity = true; break; }
-                    if (prev.includes('}') || (prev.includes('{') && !prevLower.includes('intensity'))) { break; }
+                    // 找到 Intensity 头
+                    if (prevLower.startsWith('intensity')) {
+                        isInsideIntensity = true;
+                        break;
+                    }
+                    // 遇到括号闭合或开启主要块，停止
+                    if (prev.includes('}') || (prev.includes('{') && !prevLower.includes('intensity'))) {
+                        break;
+                    }
                 }
 
                 if (isInsideIntensity) {
-                    if (isUnderground) {
-                        // 地下环境：固定值 (覆盖所有时间点)
-                        const time = intensityMatch[1];
-                        const newVal = `\t\t${time}: ${targetInt.toFixed(2)},`;
-                        if (lines[i].trim() !== newVal.trim()) {
-                            lines[i] = newVal;
-                            modified = true;
-                        }
+                    const time = intensityMatch[1];
+                    let newValStr = '';
+
+                    if (targetIntMode === 'fixed') {
+                        newValStr = `${targetIntVal.toFixed(2)}`;
                     } else {
-                        // 其他模式：乘法
-                        const time = intensityMatch[1];
                         const val = parseFloat(intensityMatch[2]);
-                        const newVal = `\t\t${time}: ${(val * intMultiplier).toFixed(2)},`;
-                        if (lines[i].trim() !== newVal.trim()) {
-                            lines[i] = newVal;
-                            modified = true;
-                        }
+                        newValStr = `${(val * targetIntVal).toFixed(2)}`;
                     }
+
+                    const newVal = `\t\t${time}: ${newValStr},`;
+                    if (lines[i].trim() !== newVal.trim()) {
+                        lines[i] = newVal;
+                        modified = true;
+                    }
+                }
+            }
+        }
+
+        // 3. 修改 Rotation (Light Direction)
+        const rotationMatch = line.match(/^(\d+):\s*\{\s*([\d.-]+),\s*([\d.-]+),\s*([\d.-]+),\s*([\d.-]+)\s*\},?$/);
+        if (rotationMatch) {
+            // 回溯查找是否在 Rotation 块中
+            let isInsideRotation = false;
+            for (let j = i - 1; j >= 0; j--) {
+                const prev = lines[j].trim();
+                const prevLower = prev.toLowerCase();
+                if (prevLower.startsWith('rotation')) {
+                    isInsideRotation = true;
+                    break;
+                }
+                if (prev.includes('}') || (prev.includes('{') && !prevLower.includes('rotation'))) {
+                    break;
+                }
+            }
+
+            if (isInsideRotation) {
+                const time = rotationMatch[1];
+                // 修改光照方向 (X, Y, Z, W)
+                // 新方向: { 0.25, 0.25, 0.8, 0 }
+                // 解释：让光线更倾斜一些，增加立体感
+                const newVal = `\t\t${time}: { -0.25, 0.25, 0.8, 0 },`;
+                if (lines[i].trim() !== newVal.trim()) {
+                    lines[i] = newVal;
+                    modified = true;
                 }
             }
         }
     }
 
     if (modified) {
-        // console.log(`[MDL] Modified file: ${fileName}`);
         await fs.writeFile(filePath, lines.join('\n'), 'utf-8');
     }
 }

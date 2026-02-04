@@ -1,12 +1,13 @@
 appId: com.quenching.mod.client
-productName: Quenching Mod Client
-electronVersion: 33.1.0
+productName: QM Client
 
 directories:
   output: __Bin
 
 files:
   - dist/**/*
+  - "!dist/statics/**/*"
+  - "!dist/**/*.map"
   - package.json
 
 extraResources:
@@ -16,22 +17,21 @@ extraResources:
     to: assets
 
 win:
-  icon: assets/ico/logo - mixin.ico
+  icon: assets/quenching/1.ico
   target:
-    - target: nsis
+    - target: dir
       arch:
         - x64
 
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
-  shortcutName: Quenching Mod
+  shortcutName: QM
 
 mac:
   icon: assets/quenching/logo.png
   target:
-    - dmg
-    - zip
+    - dir
   category: public.app-category.games
 
 asar: true

@@ -23,25 +23,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
   const [selectedCategory, setSelectedCategory] = useState<'graphics' | 'game'>('graphics');
   const [previewInfo, setPreviewInfo] = useState<{ title: string; desc: string; image: string | null }>({
     title: '',
-    desc: '请将鼠标悬停在选项上以查看说明',
+    desc: t('settings.preview.default'),
     image: null
   });
 
   const categories = [
-    { id: 'game', name: '游戏设置' },
-    { id: 'graphics', name: '画面设置' }
+    { id: 'game', name: t('settings.category.game') },
+    { id: 'graphics', name: t('settings.category.graphics') }
   ];
 
   const handleSettingChange = async (key: string, value: any) => {
     console.log('[SettingsModal] handleSettingChange called:', key, value);
     if (!currentInstallation?.path) {
       console.warn('[SettingsModal] No War3 installation path found!');
-      message.error('未找到游戏安装目录');
+      message.error(t('install.not_found'));
       return;
     }
 
     try {
-      showLoading('正在应用设置...');
+      showLoading(t('msg.settings.updating'));
       console.log('[SettingsModal] Saving settings to:', currentInstallation.path);
       if (key === 'gameVersion') {
         // gameVersion 对应 War3Preferences.txt 中的 hd 字段
@@ -49,10 +49,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
       } else {
         await saveModSettings(currentInstallation.path, { [key]: value });
       }
-      message.success('设置已更新');
+      message.success(t('msg.settings.updated'));
     } catch (error) {
       console.error('Failed to update setting:', error);
-      const msg = error instanceof Error ? error.message : '设置更新失败';
+      const msg = error instanceof Error ? error.message : t('msg.mod.failed');
       message.error(msg);
     } finally {
       hideLoading();
@@ -61,7 +61,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
 
   const handleSelectVisionModPath = async () => {
     playSmall();
-    const path = await window.electronAPI?.selectDirectory('选择 VisionMod 目录');
+    const path = await window.electronAPI?.selectDirectory(t('setup.visionmod.path'));
     if (path) {
       // 验证目录
       const valid_1 = await window.electronAPI?.pathExists(`${path}/Install Guide.txt`);
@@ -70,16 +70,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
 
       if (valid_1 || valid_2 || valid_3) {
         await handleSettingChange('visionModPath', path);
-        message.success('VisionMod 目录已更新');
+        message.success(t('msg.visionmod.path.set'));
       } else {
-        message.error('该目录不是有效的 VisionMod 目录！');
+        message.error(t('msg.visionmod.path.invalid'));
       }
     }
   };
 
   const renderVisionModPathSelector = () => (
     <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid rgba(212, 175, 55, 0.1)' }}>
-      <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>VisionMod 目录</h3>
+      <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('setup.visionmod.path')}</h3>
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         <div style={{
           flex: 1,
@@ -93,7 +93,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap'
         }}>
-          {modSettings.visionModPath || '未设置 VisionMod 目录'}
+          {modSettings.visionModPath || t('setup.visionmod.unset')}
         </div>
         <Button
           type="primary"
@@ -103,7 +103,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
           onMouseEnter={() => playHover()}
           style={{ borderColor: '#d4af37', color: '#d4af37' }}
         >
-          更改目录
+          {t('setup.btn.change')}
         </Button>
       </div>
     </div>
@@ -144,66 +144,59 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
       {renderVisionModPathSelector()}
       <Row gutter={[20, 20]}>
         <Col span={12}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>水面效果</h3>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.water.title')}</h3>
           <Space wrap>
-            {renderSettingButton('真实', modSettings.water, 'realistic', () => handleSettingChange('water', 'realistic'), () => setPreviewInfo({ title: '水面效果', desc: '更加真实的反射水面效果', image: './assets/quenching/set1.png' }))}
-            {renderSettingButton('透明', modSettings.water, 'transparent', () => handleSettingChange('water', 'transparent'), () => setPreviewInfo({ title: '水面效果', desc: '更加清澈透明的水面效果', image: './assets/quenching/set1.png' }))}
+            {renderSettingButton(t('settings.water.realistic'), modSettings.water, 'realistic', () => handleSettingChange('water', 'realistic'), () => setPreviewInfo({ title: t('settings.water.title'), desc: t('settings.water.realistic.desc'), image: './assets/quenching/set1.png' }))}
+            {renderSettingButton(t('settings.water.transparent'), modSettings.water, 'transparent', () => handleSettingChange('water', 'transparent'), () => setPreviewInfo({ title: t('settings.water.title'), desc: t('settings.water.transparent.desc'), image: './assets/quenching/set1.png' }))}
           </Space>
         </Col>
         <Col span={12}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>植被效果</h3>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.foliage.title')}</h3>
           <Space>
-            {renderSettingButton('开启', modSettings.foliage, true, () => handleSettingChange('foliage', true), () => setPreviewInfo({ title: '植被设置', desc: '华丽的植被可能带来卡顿\n您可以根据硬件选择适合的植被', image: './assets/quenching/set4.png' }))}
-            {renderSettingButton('关闭', modSettings.foliage, false, () => handleSettingChange('foliage', false), () => setPreviewInfo({ title: '植被设置', desc: '关闭植被效果以提升性能', image: null }))}
+            {renderSettingButton(t('settings.btn.turnon'), modSettings.foliage, true, () => handleSettingChange('foliage', true), () => setPreviewInfo({ title: t('settings.foliage.title'), desc: t('settings.foliage.on.desc'), image: './assets/quenching/set4.png' }))}
+            {renderSettingButton(t('settings.btn.turnoff'), modSettings.foliage, false, () => handleSettingChange('foliage', false), () => setPreviewInfo({ title: t('settings.foliage.title'), desc: t('settings.foliage.off.desc'), image: './assets/quenching/set4.png' }))}
           </Space>
         </Col>
         <Col span={12}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>物体着色器</h3>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.shader.title')}</h3>
           <Space>
-            {renderSettingButton('开启', modSettings.objectShader, true, () => handleSettingChange('objectShader', true), () => setPreviewInfo({ title: '物体着色器', desc: '增强物体表面材质细节，使模型更具质感', image: './assets/quenching/set5.png' }))}
-            {renderSettingButton('关闭', modSettings.objectShader, false, () => handleSettingChange('objectShader', false), () => setPreviewInfo({ title: '物体着色器', desc: '关闭物体着色器以提升性能', image: null }))}
+            {renderSettingButton(t('settings.btn.turnon'), modSettings.objectShader, true, () => handleSettingChange('objectShader', true), () => setPreviewInfo({ title: t('settings.shader.title'), desc: t('settings.shader.on.desc'), image: './assets/quenching/set5.png' }))}
+            {renderSettingButton(t('settings.btn.turnoff'), modSettings.objectShader, false, () => handleSettingChange('objectShader', false), () => setPreviewInfo({ title: t('settings.shader.title'), desc: t('settings.shader.off.desc'), image: './assets/quenching/set5.png' }))}
           </Space>
         </Col>
         <Col span={12}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>后处理</h3>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.postprocessing.title')}</h3>
           <Space>
-            {renderSettingButton('开启', modSettings.postProcessing, true, () => handleSettingChange('postProcessing', true), () => setPreviewInfo({ title: '后处理', desc: '开启全屏后处理特效，包括色调映射和色彩校正', image: './assets/quenching/setp7.png' }))}
-            {renderSettingButton('关闭', modSettings.postProcessing, false, () => handleSettingChange('postProcessing', false), () => setPreviewInfo({ title: '后处理', desc: '关闭后处理效果', image: null }))}
-          </Space>
-        </Col>
-        {/* <Col span={12}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>体积雾</h3>
-          <Space>
-            {renderSettingButton('开启', modSettings.volumetricFog, true, () => handleSettingChange('volumetricFog', true), () => setPreviewInfo({ title: '体积雾', desc: '更加真实的三维体积烟雾效果，增加战场氛围喵☁️', image: './assets/quenching/set6.png' }))}
-            {renderSettingButton('关闭', modSettings.volumetricFog, false, () => handleSettingChange('volumetricFog', false), () => setPreviewInfo({ title: '体积雾', desc: '使用传统迷雾效果', image: null }))}
-          </Space>
-        </Col> */}
-        <Col span={12}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>缩减光晕</h3>
-          <Space>
-            {renderSettingButton('开启', modSettings.glow, true, () => handleSettingChange('glow', true), () => setPreviewInfo({ title: '缩减光晕', desc: '缩减重制版中过于明亮的光晕\n使画面更加柔和自然', image: './assets/quenching/ui4.png' }))}
-            {renderSettingButton('关闭', modSettings.glow, false, () => handleSettingChange('glow', false), () => setPreviewInfo({ title: '缩减光晕', desc: '保持默认光晕效果', image: null }))}
+            {renderSettingButton(t('settings.btn.turnon'), modSettings.postProcessing, true, () => handleSettingChange('postProcessing', true), () => setPreviewInfo({ title: t('settings.postprocessing.title'), desc: t('settings.postprocessing.on.desc'), image: './assets/quenching/set9.png' }))}
+            {renderSettingButton(t('settings.btn.turnoff'), modSettings.postProcessing, false, () => handleSettingChange('postProcessing', false), () => setPreviewInfo({ title: t('settings.postprocessing.title'), desc: t('settings.postprocessing.off.desc'), image: './assets/quenching/set9.png' }))}
           </Space>
         </Col>
         <Col span={12}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>半身头像</h3>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.glow.title')}</h3>
           <Space>
-            {renderSettingButton('开启', modSettings.half, true, () => handleSettingChange('half', true), () => setPreviewInfo({ title: '半身头像', desc: '在下方状态栏显示精美的单位半身像\n(需要 VisionMod 2.1+ 版本)', image: './assets/quenching/ui5.png' }))}
-            {renderSettingButton('关闭', modSettings.half, false, () => handleSettingChange('half', false), () => setPreviewInfo({ title: '半身头像', desc: '显示完整头像', image: null }))}
+            {renderSettingButton(t('settings.btn.turnon'), modSettings.glow, true, () => handleSettingChange('glow', true), () => setPreviewInfo({ title: t('settings.glow.title'), desc: t('settings.glow.on.desc'), image: './assets/quenching/ui4.png' }))}
+            {renderSettingButton(t('settings.btn.turnoff'), modSettings.glow, false, () => handleSettingChange('glow', false), () => setPreviewInfo({ title: t('settings.glow.title'), desc: t('settings.glow.off.desc'), image: './assets/quenching/ui4.png' }))}
           </Space>
         </Col>
         <Col span={12}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>环境渲染</h3>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.half.title')}</h3>
           <Space>
-            {renderSettingButton('开启', modSettings.envRender, true, () => handleSettingChange('envRender', true), () => setPreviewInfo({ title: '环境渲染', desc: '开启高级环境渲染效果，提升场景细节与真实感', image: './assets/quenching/setp10.png' }))}
-            {renderSettingButton('关闭', modSettings.envRender, false, () => handleSettingChange('envRender', false), () => setPreviewInfo({ title: '环境渲染', desc: '关闭环境渲染效果', image: null }))}
+            {renderSettingButton(t('settings.btn.turnon'), modSettings.half, true, () => handleSettingChange('half', true), () => setPreviewInfo({ title: t('settings.half.title'), desc: t('settings.half.on.desc'), image: './assets/quenching/ui5.png' }))}
+            {renderSettingButton(t('settings.btn.turnoff'), modSettings.half, false, () => handleSettingChange('half', false), () => setPreviewInfo({ title: t('settings.half.title'), desc: t('settings.half.off.desc'), image: './assets/quenching/ui5.png' }))}
           </Space>
         </Col>
         <Col span={12}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>模型加强</h3>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.envrender.title')}</h3>
           <Space>
-            {renderSettingButton('开启', modSettings.modelEnhance, true, () => handleSettingChange('modelEnhance', true), () => setPreviewInfo({ title: '模型加强', desc: '提升单位与建筑模型的网格细节与材质表现\n(需要 VisionMod 2.1+ 版本)', image: './assets/quenching/setp11.png' }))}
-            {renderSettingButton('关闭', modSettings.modelEnhance, false, () => handleSettingChange('modelEnhance', false), () => setPreviewInfo({ title: '模型加强', desc: '使用默认模型精度', image: null }))}
+            {renderSettingButton(t('settings.btn.turnon'), modSettings.envRender, true, () => handleSettingChange('envRender', true), () => setPreviewInfo({ title: t('settings.envrender.title'), desc: t('settings.envrender.on.desc'), image: './assets/quenching/set8.png' }))}
+            {renderSettingButton(t('settings.btn.turnoff'), modSettings.envRender, false, () => handleSettingChange('envRender', false), () => setPreviewInfo({ title: t('settings.envrender.title'), desc: t('settings.envrender.off.desc'), image: './assets/quenching/set8.png' }))}
+          </Space>
+        </Col>
+        <Col span={12}>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.modelenhance.title')}</h3>
+          <Space>
+            {renderSettingButton(t('settings.btn.turnon'), modSettings.modelEnhance, true, () => handleSettingChange('modelEnhance', true), () => setPreviewInfo({ title: t('settings.modelenhance.title'), desc: t('settings.modelenhance.on.desc'), image: './assets/quenching/set7.png' }))}
+            {renderSettingButton(t('settings.btn.turnoff'), modSettings.modelEnhance, false, () => handleSettingChange('modelEnhance', false), () => setPreviewInfo({ title: t('settings.modelenhance.title'), desc: t('settings.modelenhance.off.desc'), image: './assets/quenching/set7.png' }))}
           </Space>
         </Col>
       </Row>
@@ -213,7 +206,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
   const renderGameSettings = () => (
     <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
       <div style={{ marginBottom: '30px', paddingBottom: '20px', borderBottom: '1px solid rgba(212, 175, 55, 0.1)' }}>
-        <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>魔兽目录</h3>
+        <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('setup.war3.path')}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <div style={{
             flex: 1,
@@ -227,7 +220,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap'
           }}>
-            {currentInstallation?.path || '未设置魔兽目录'}
+            {currentInstallation?.path || t('setup.war3.unset')}
           </div>
           <Button
             type="primary"
@@ -238,7 +231,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
               playSmall();
               const path = await window.electronAPI?.selectGamePath();
               if (path) {
-                message.success('魔兽目录已更新');
+                message.success(t('msg.war3.path.set'));
                 // 强制触发一次检测
                 detectInstallations();
               }
@@ -246,52 +239,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
             onMouseEnter={() => playHover()}
             style={{ borderColor: '#d4af37', color: '#d4af37' }}
           >
-            更改目录
+            {t('setup.btn.change')}
           </Button>
         </div>
       </div>
 
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>UI风格</h3>
-        <Space wrap>
-          {renderSettingButton('经典', modSettings.ui, 'classic', () => handleSettingChange('ui', 'classic'), () => setPreviewInfo({ title: 'UI风格', desc: '原汁原味的经典版 UI', image: './assets/quenching/ui1.png' }))}
-          {renderSettingButton('淬火', modSettings.ui, 'quenching', () => handleSettingChange('ui', 'quenching'), () => setPreviewInfo({ title: 'UI风格', desc: '淬火专属定制 UI 风格', image: './assets/quenching/ui2.png' }))}
-          {renderSettingButton('嘉年华', modSettings.ui, 'carnival', () => handleSettingChange('ui', 'carnival'), () => setPreviewInfo({ title: 'UI风格', desc: '暴雪嘉年华限定 UI 风格', image: './assets/quenching/ui3.png' }))}
-        </Space>
-      </div>
-
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>地形设置</h3>
-        <Space wrap>
-          {renderSettingButton('原版', modSettings.terrain, 'original', () => handleSettingChange('terrain', 'original'), () => setPreviewInfo({ title: '地形设置', desc: '使用原版地形纹理', image: './assets/quenching/setp8.png' }))}
-          {renderSettingButton('最新', modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: '地形设置', desc: '使用淬火最新优化的地形纹理', image: './assets/quenching/setp8.png' }))}
-          {/* {renderSettingButton('复古', modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: '地形设置', desc: '怀旧风格的地形贴图', image: './assets/quenching/setp8.png' }))} */}
-          {/* {renderSettingButton('1.6', modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: '地形设置', desc: '淬火 v1.6 版本地形风格', image: './assets/quenching/setp8.png' }))}
-          {renderSettingButton('1.8', modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: '地形设置', desc: '淬火 v1.8 版本地形风格', image: './assets/quenching/setp8.png' }))} */}
-        </Space>
-      </div>
-
-      <div style={{ marginBottom: '20px' }}>
-        <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>树木设置</h3>
-        <Space wrap>
-          {renderSettingButton('原版', modSettings.tree, 'original', () => handleSettingChange('tree', 'original'), () => setPreviewInfo({ title: '树木设置', desc: '使用原版树木模型', image: null }))}
-          {renderSettingButton('高耸', modSettings.tree, 'tall', () => handleSettingChange('tree', 'tall'), () => setPreviewInfo({ title: '树木设置', desc: '更加高大茂密的树木风格', image: null }))}
-          {renderSettingButton('低垂', modSettings.tree, 'short', () => handleSettingChange('tree', 'short'), () => setPreviewInfo({ title: '树木设置', desc: '枝叶低垂的自然风格树木', image: null }))}
-          {renderSettingButton('复古', modSettings.tree, 'retro', () => handleSettingChange('tree', 'retro'), () => setPreviewInfo({ title: '树木设置', desc: '复古风格树木模型', image: null }))}
-          {/* {renderSettingButton('1.6', modSettings.tree, 'v16', () => handleSettingChange('tree', 'v16'), () => setPreviewInfo({ title: '树木设置', desc: '淬火 v1.6 版本树木模型', image: null }))}
-          {renderSettingButton('1.8', modSettings.tree, 'v18', () => handleSettingChange('tree', 'v18'), () => setPreviewInfo({ title: '树木设置', desc: '淬火 v1.8 版本树木模型', image: null }))} */}
-        </Space>
-      </div>
-
-      <div>
-        <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>光照模式</h3>
-        <Space wrap>
-          {renderSettingButton('普通', modSettings.lighting, 'standard', () => handleSettingChange('lighting', 'standard'), () => setPreviewInfo({ title: '光照模式', desc: '原版标准光照', image: './assets/quenching/set7.png' }))}
-          {renderSettingButton('对战', modSettings.lighting, 'battle', () => handleSettingChange('lighting', 'battle'), () => setPreviewInfo({ title: '光照模式', desc: '为对战优化的明亮清晰光照', image: './assets/quenching/set7.png' }))}
-          {renderSettingButton('RPG', modSettings.lighting, 'rpg', () => handleSettingChange('lighting', 'rpg'), () => setPreviewInfo({ title: '光照模式', desc: '极具氛围感的电影级 RPG 光照', image: './assets/quenching/set7.png' }))}
-        </Space>
-      </div>
-
+      <Row gutter={[20, 20]}>
+        <Col span={24}>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.ui.style')}</h3>
+          <Space wrap>
+            {renderSettingButton(t('settings.ui.quenching'), modSettings.ui, 'quenching', () => handleSettingChange('ui', 'quenching'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.quenching.desc'), image: './assets/quenching/ui1.png' }))}
+            {renderSettingButton(t('settings.ui.classic'), modSettings.ui, 'classic', () => handleSettingChange('ui', 'classic'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.classic.desc'), image: './assets/quenching/ui2.png' }))}
+            {renderSettingButton(t('settings.ui.blizzard'), modSettings.ui, 'carnival', () => handleSettingChange('ui', 'carnival'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.blizzard.desc'), image: './assets/quenching/ui3.png' }))}
+          </Space>
+        </Col>
+        <Col span={24}>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.terrain.style')}</h3>
+          <Space wrap>
+            {renderSettingButton(t('settings.terrain.original'), modSettings.terrain, 'original', () => handleSettingChange('terrain', 'original'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.original'), image: './assets/quenching/set6.png' }))}
+            {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }))}
+            {/* {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }))} */}
+          </Space>
+        </Col>
+        <Col span={24}>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.tree.style')}</h3>
+          <Space wrap>
+            {renderSettingButton(t('settings.tree.original'), modSettings.tree, 'original', () => handleSettingChange('tree', 'original'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.original'), image: './assets/quenching/set2.png' }))}
+            {renderSettingButton(t('settings.tree.tall'), modSettings.tree, 'tall', () => handleSettingChange('tree', 'tall'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.tall'), image: './assets/quenching/set2.png' }))}
+            {renderSettingButton(t('settings.tree.short'), modSettings.tree, 'short', () => handleSettingChange('tree', 'short'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.short'), image: './assets/quenching/set2.png' }))}
+          </Space>
+        </Col>
+        <Col span={24}>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.lighting')}</h3>
+          <Space wrap>
+            {renderSettingButton(t('settings.lighting.standard'), modSettings.lighting, 'standard', () => handleSettingChange('lighting', 'standard'), () => setPreviewInfo({ title: t('settings.lighting'), desc: t('settings.lighting.standard'), image: './assets/quenching/set3.png' }))}
+            {renderSettingButton(t('settings.lighting.level4'), modSettings.lighting, 'battle', () => handleSettingChange('lighting', 'battle'), () => setPreviewInfo({ title: t('settings.lighting'), desc: t('settings.lighting.level4'), image: './assets/quenching/set3.png' }))}
+            {renderSettingButton('RPG', modSettings.lighting, 'rpg', () => handleSettingChange('lighting', 'rpg'), () => setPreviewInfo({ title: t('settings.lighting'), desc: 'RPG', image: './assets/quenching/set3.png' }))}
+          </Space>
+        </Col>
+      </Row>
     </div>
   );
 
@@ -299,7 +285,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
     <OverlayModal
       open={open}
       onClose={onClose}
-      title="设置中心"
+      title={t('settings.title')}
       width="90%"
     >
       <div style={{

@@ -35,6 +35,7 @@ export class ThemeService {
                 // 开发环境下，尝试几个可能的路径
                 const possiblePaths = [
                     path.join(process.cwd(), 'assets'),
+                    path.join(process.cwd(), 'public', 'assets'),
                     path.join(process.cwd(), 'projects', 'QuenChing-Mod-Client', 'assets'),
                     path.join(appPath, 'assets'),
                     path.join(appPath, 'projects', 'QuenChing-Mod-Client', 'assets')
@@ -75,6 +76,9 @@ export class ThemeService {
                     break;
                 case 'tft':
                     sourceFile = path.join(assetsDir, 'quenching', 'mainmenu0.mp4');
+                    break;
+                case 'plaguelands':
+                    sourceFile = path.join(assetsDir, 'quenching', 'mainmenu5.mp4');
                     break;
                 case 'original': // 兼容旧版本 ID
                     sourceFile = path.join(assetsDir, 'quenching', 'mainmenu0.mp4');

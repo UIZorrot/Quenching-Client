@@ -75,9 +75,6 @@ startRendererServer(webpack_conf_for_electron_renderer).
 		// console.log("npm run electron-start:ahk-war3");
 		// exec('npm run electron-start:ahk-war3')'\x1b]8;;file:///path/to/your/file\x1b\\Click to open file\x1b]8;;\x1b\\'
 
-	}).then(() => {
-		// 保持进程存活，防止 WDS 退出
-		setInterval(() => { }, 1000 * 60 * 60);
 	}).catch(e => {
 		console.log('打包失败!', purdy(e, {}));
 	});

@@ -1,6 +1,13 @@
+import { reaxel_ElectronENV } from '#main/reaxels/runtime-paths';
+import process from 'node:process';
+import { promisify } from 'node:util';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import childProcess from 'node:child_process';
+
 const TEN_MEGABYTES = 1000 * 1000 * 10;
 const execFile = promisify(childProcess.execFile);
-const { absAppStaticsPath } = reaxel_ElectronENV();
+const { absAppStaticsPath, absAssetsPath } = reaxel_ElectronENV();
 
 const windows = async () => {
 	// Source: https://github.com/MarkTiedemann/fastlist
@@ -13,11 +20,11 @@ const windows = async () => {
 			binary = 'fastlist-0.3.0-x86.exe';
 			break;
 		default:
-			throw new Error(`Unsupported architecture: ${process.arch}`);
+			throw new Error(`Unsupported architecture: ${process.arch} `);
 	}
 
-	const binaryPath = path.join(absAppStaticsPath, 'assets/ps-list/vendor', binary);
-	const {stdout} = await execFile(binaryPath, {
+	const binaryPath = path.join(absAssetsPath, 'ps-list/vendor', binary);
+	const { stdout } = await execFile(binaryPath, {
 		maxBuffer: TEN_MEGABYTES,
 		windowsHide: true,
 	});
@@ -33,12 +40,12 @@ const windows = async () => {
 		}));
 };
 
-const nonWindowsMultipleCalls = async (options:any = {}) => {
+const nonWindowsMultipleCalls = async (options: any = {}) => {
 	const flags = (options.all === false ? '' : 'a') + 'wwxo';
 	const returnValue = {};
 
 	await Promise.all(['comm', 'args', 'ppid', 'uid', '%cpu', '%mem'].map(async cmd => {
-		const {stdout} = await execFile('ps', [flags, `pid,${cmd}`], {maxBuffer: TEN_MEGABYTES});
+		const { stdout } = await execFile('ps', [flags, `pid, ${cmd} `], { maxBuffer: TEN_MEGABYTES });
 
 		for (let line of stdout.trim().split('\n').slice(1)) {
 			line = line.trim();
@@ -56,8 +63,8 @@ const nonWindowsMultipleCalls = async (options:any = {}) => {
 	// Filter out inconsistencies as there might be race
 	// issues due to differences in `ps` between the spawns
 	return Object.entries(returnValue)
-		.filter(([, value]:any) => value.comm && value.args && value.ppid && value.uid && value['%cpu'] && value['%mem'])
-		.map(([key, value]:any) => ({
+		.filter(([, value]: any) => value.comm && value.args && value.ppid && value.uid && value['%cpu'] && value['%mem'])
+		.map(([key, value]: any) => ({
 			pid: Number.parseInt(key, 10),
 			name: path.basename(value.comm),
 			cmd: value.args,
@@ -72,17 +79,17 @@ const ERROR_MESSAGE_PARSING_FAILED = 'ps output parsing failed';
 
 const psOutputRegex = /^[ \t]*(?<pid>\d+)[ \t]+(?<ppid>\d+)[ \t]+(?<uid>[-\d]+)[ \t]+(?<cpu>\d+\.\d+)[ \t]+(?<memory>\d+\.\d+)[ \t]+(?<comm>.*)?/;
 
-const nonWindowsCall = async (options:any = {}) => {
+const nonWindowsCall = async (options: any = {}) => {
 	const flags = options.all === false ? 'wwxo' : 'awwxo';
 
 	const psPromises = [
-		execFile('ps', [flags, 'pid,ppid,uid,%cpu,%mem,comm'], {maxBuffer: TEN_MEGABYTES}),
-		execFile('ps', [flags, 'pid,args'], {maxBuffer: TEN_MEGABYTES}),
+		execFile('ps', [flags, 'pid,ppid,uid,%cpu,%mem,comm'], { maxBuffer: TEN_MEGABYTES }),
+		execFile('ps', [flags, 'pid,args'], { maxBuffer: TEN_MEGABYTES }),
 	];
 
-	const [psLines, psArgsLines] = (await Promise.all(psPromises)).map(({stdout}) => stdout.trim().split('\n'));
+	const [psLines, psArgsLines] = (await Promise.all(psPromises)).map(({ stdout }) => stdout.trim().split('\n'));
 
-	const psPids = new Set(psPromises.map(promise => promise.child.pid));
+	const psPids = new Set((psPromises as any).map(promise => promise.child.pid));
 
 	psLines.shift();
 	psArgsLines.shift();
@@ -100,7 +107,7 @@ const nonWindowsCall = async (options:any = {}) => {
 			throw new Error(ERROR_MESSAGE_PARSING_FAILED);
 		}
 
-		const {pid, ppid, uid, cpu, memory, comm} = match.groups;
+		const { pid, ppid, uid, cpu, memory, comm } = match.groups;
 
 		const processInfo = {
 			pid: Number.parseInt(pid, 10),
@@ -130,9 +137,3 @@ const psList = process.platform === 'win32' ? windows : nonWindows;
 
 export default psList;
 
-import { reaxel_ElectronENV } from '#main/reaxels/runtime-paths';
-import process from 'node:process';
-import {promisify} from 'node:util';
-import path from 'node:path';
-import {fileURLToPath} from 'node:url';
-import childProcess from 'node:child_process';

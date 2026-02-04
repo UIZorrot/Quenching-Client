@@ -73,7 +73,7 @@ export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSki
       { unitId: 'ocat', name: '粉碎者', icon: 'btndemolisher.png' },
       { unitId: 'ora2', name: '掠夺者', icon: 'btnraider.png' },
       { unitId: 'okot', name: '科多兽', icon: 'btnkotobeast.png' },
-      { unitId: 'owyv', name: '风骑士', icon: 'btnwyvernriderr.png' },
+      { unitId: 'owyv', name: '风骑士', icon: 'btnwyvernrider.png' },
       { unitId: 'obat', name: '巨魔蝙蝠骑士', icon: 'btntrollbatrider.png' },
       { unitId: 'ospw', name: '灵魂行者', icon: 'btnspiritwalker.png' },
       { unitId: 'otau', name: '牛头人', icon: 'btntauren.png' },
@@ -114,14 +114,14 @@ export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSki
       { unitId: 'ehun', name: '女猎手', icon: 'btnhuntress.png' },
       { unitId: 'ebal', name: '弩车', icon: 'btnglaivethrower.png' },
       { unitId: 'edry', name: '树妖', icon: 'btndryad.png' },
-      { unitId: 'edoc', name: '利爪德鲁伊', icon: 'bbtndruidoftheclaw.png' },
+      { unitId: 'edoc', name: '利爪德鲁伊', icon: 'btndruidoftheclaw.png' },
       { unitId: 'emtg', name: '山岭巨人', icon: 'btnmountaingiant.png' },
       { unitId: 'efdr', name: '精灵龙', icon: 'btnfaeriedragon.png' },
       { unitId: 'ehip', name: '角鹰兽', icon: 'btnhippogriff.png' },
       { unitId: 'ehpr', name: '角鹰兽骑士', icon: 'btnhippogriffrider.png' },
       { unitId: 'edot', name: '猛禽德鲁伊', icon: 'btndruidofthetalon.png' },
       { unitId: 'echm', name: '奇美拉', icon: 'btnchimaera.png' },
-      { unitId: 'Edem', name: '恶魔猎手', icon: 'btndemonhunter.png' },
+      { unitId: 'Edem', name: '恶魔猎手', icon: 'btnherodemonhunter.png' },
       { unitId: 'Epot', name: '月之女祭司', icon: 'btnheromoonpriestess.png' },
       { unitId: 'Ekee', name: '丛林守护者', icon: 'btnkeeperofthegrove.png' },
       { unitId: 'Ewar', name: '守望者', icon: 'btnherowarden.png' },
@@ -791,7 +791,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
         id: 'deathknight',
         unitId: 'Udea',
         name: '死亡骑士',
-        icon: 'btnarthasevil.png',
+        icon: 'btnherodeathknight.png',
         skins: [
           {
             id: 'u9_1',
@@ -1027,7 +1027,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
         id: 'priestessofthemoon',
         unitId: 'Epot',
         name: '月之女祭司',
-        icon: 'btnpriestessofthemoon.png',
+        icon: 'btnheromoonpriestess.png',
         skins: [
           {
             id: 'n13_1',
@@ -1109,7 +1109,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
         id: 'demonhunter',
         unitId: 'Edem',
         name: '恶魔猎手',
-        icon: 'btndemonhunter.png',
+        icon: 'btnherodemonhunter.png',
         skins: [
           {
             id: 'n15_1',
@@ -1192,6 +1192,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
   neutral: {
     id: 'neutral',
     name: '中立',
+    warbands: [],
     heroes: [
       {
         id: 'beastmaster',

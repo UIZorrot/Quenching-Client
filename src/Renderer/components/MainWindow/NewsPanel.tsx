@@ -61,14 +61,15 @@ export const NewsPanel: React.FC<NewsPanelProps> = ({
   return (
     <OverlayModal
       open={isExpanded}
-      onClose={() => onToggle?.(false)}
-      title={"最新动态"}
-      width="900px"
+      onClose={() => onToggle(false)}
+      title={t('news.title')}
+      width="1000px"
+      titleFont="'Microsoft YaHei UI', 'SimSun', sans-serif"
     >
       <div className={s.newsModalContent}>
         {isLoading ? (
           <div className={s.loadingContainer} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-            <Spin size="large" tip="正在抓取最新情报..." />
+            <Spin size="large" tip={t('news.loading')} />
           </div>
         ) : filteredNews.length > 0 ? (
           <div className={s.newsListContainer} style={{ padding: '20px' }}>
@@ -80,7 +81,7 @@ export const NewsPanel: React.FC<NewsPanelProps> = ({
                 loading={isLoading}
                 style={{ color: '#d4af37' }}
               >
-                刷新
+                {t('news.refresh')}
               </Button>
             </div>
             {filteredNews.map((item, index) => (
@@ -107,7 +108,7 @@ export const NewsPanel: React.FC<NewsPanelProps> = ({
             {lastUpdated && (
               <div className={s.newsFooter} style={{ textAlign: 'center', marginTop: '32px', paddingBottom: '20px' }}>
                 <Text type="secondary" style={{ fontSize: '11px', color: '#666' }}>
-                  数据来自远程服务器，最后同步: {new Date(lastUpdated).toLocaleString()}
+                  {t('news.data_from')}, {t('news.updated')}: {new Date(lastUpdated).toLocaleString()}
                 </Text>
               </div>
             )}
@@ -116,20 +117,20 @@ export const NewsPanel: React.FC<NewsPanelProps> = ({
           <div className={s.emptyContainer} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
             {errorMessage ? (
               <div className={s.errorContainer} style={{ textAlign: 'center' }}>
-                <Text style={{ color: '#ff4d4f', display: 'block', marginBottom: '16px' }}>网络错误</Text>
+                <Text style={{ color: '#ff4d4f', display: 'block', marginBottom: '16px' }}>{t('news.failed')}</Text>
                 <Button
                   icon={<ReloadOutlined />}
                   onClick={handleRefresh}
                   style={{ color: '#d4af37', borderColor: '#d4af37' }}
                   ghost
                 >
-                  重试
+                  {t('news.retry')}
                 </Button>
               </div>
             ) : (
               <>
                 <Empty
-                  description={<span style={{ color: '#888' }}>暂无新闻</span>}
+                  description={<span style={{ color: '#888' }}>{t('news.empty')}</span>}
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
                 <Button
@@ -142,7 +143,7 @@ export const NewsPanel: React.FC<NewsPanelProps> = ({
                   style={{ marginTop: '16px', color: '#d4af37', borderColor: '#d4af37' }}
                   ghost
                 >
-                  尝试刷新
+                  {t('news.refresh.try')}
                 </Button>
               </>
             )}

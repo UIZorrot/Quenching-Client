@@ -54,12 +54,21 @@ const themes: Theme[] = [
     description: '华丽的城邦风格设计，展现宏伟建筑之美',
     video: 'assets/quenching/mainmenu4.mp4',
     author: 'Design Team'
+  },
+  {
+    id: 'plaguelands',
+    name: '瘟疫之地',
+    description: '被瘟疫笼罩的土地，亡灵天灾的领地',
+    video: 'assets/quenching/mainmenu5.mp4',
+    author: 'Community'
   }
 ];
 
 export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
   const { t } = useTranslation();
   const { playSmall, playHover } = useSound();
+  const [messageApi, contextHolder] = message.useMessage();
+
   const resolveVideo = (src: string) => {
     if (!src) return src;
     const isAssets = src.includes('assets/');
@@ -94,7 +103,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
 
   const handleApplyTheme = async () => {
     const key = 'applyTheme';
-    message.loading({ content: '正在更新 App 主题...', key });
+    messageApi.loading({ content: t('theme.updating'), key });
 
     try {
       // 1. 立即更新 App 内部配置（即便游戏目录不对，App 也要换装）
@@ -107,12 +116,12 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
       const success = await window.electronAPI?.applyTheme(selectedTheme);
 
       if (success) {
-        message.success({ content: 'App 主题已更新！游戏文件也已同步', key });
+        messageApi.success({ content: t('msg.settings.updated'), key });
         onClose();
       } else {
         // 如果失败，只给一个警告提示，但不影响 App 已经切换的主题
-        message.warning({
-          content: 'App 主题已更新，但魔兽目录文件修改失败（可能是路径未设置）🔧',
+        messageApi.warning({
+          content: t('theme.apply.failed') || '主题文件未能成功应用到游戏目录',
           key,
           duration: 4
         });
@@ -121,7 +130,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
       }
     } catch (error) {
       console.error('Failed to apply theme:', error);
-      message.error({ content: '操作出错了...', key });
+      messageApi.error({ content: t('msg.mod.failed'), key });
     }
   };
 
@@ -138,8 +147,8 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
       if (result) {
         const newTheme: Theme & { videoPath: string } = {
           id: `custom-${Date.now()}`,
-          name: `自定义主题 ${customThemes.length + 1}`,
-          description: '这是你亲手创建的主题',
+          name: `${t('theme.custom')} ${customThemes.length + 1}`,
+          description: t('theme.custom'),
           video: result, // 直接使用视频路径
           author: 'Me',
           videoPath: result
@@ -147,7 +156,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
         const updatedCustom = [...customThemes, newTheme];
         setCustomThemes(updatedCustom);
         await window.electronAPI?.setConfig('customThemes', updatedCustom);
-        message.success('添加自定义主题成功');
+        messageApi.success(t('theme.btn.add.success' as any) || '添加自定义主题成功');
       }
     } catch (error) {
       console.error('Failed to add custom theme:', error);
@@ -162,7 +171,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
     if (selectedTheme === id) {
       setSelectedTheme('quenching');
     }
-    message.success('主题已删除');
+    messageApi.success(t('theme.btn.delete.success' as any) || '主题已删除');
   };
 
   // 这里的 currentTheme 用于底部详情显示
@@ -172,11 +181,12 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
 
   return (
     <OverlayModal
-      title="主题中心"
+      title={t('main.btn.theme')}
       open={open}
       onClose={onClose}
       width="90%"
     >
+      {contextHolder}
       <div style={{
         flex: 1,
         display: 'flex',
@@ -256,7 +266,11 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
                         preload="auto"
                         onMouseEnter={(e) => {
                           const video = e.currentTarget;
-                          video.play().catch(err => console.error('Video play failed:', err));
+                          video.play().catch(err => {
+                            if (err.name !== 'AbortError') {
+                              console.error('Video play failed:', err);
+                            }
+                          });
                         }}
                         onMouseLeave={(e) => {
                           const video = e.currentTarget;
@@ -279,7 +293,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
                       fontFamily: "'Trajan Pro 3', serif",
                       fontSize: '1rem'
                     }}>
-                      {theme.name}
+                      {theme.id.startsWith('custom-') ? theme.name : t(`theme.${theme.id}.name` as any)}
                     </div>
 
                     {/* 选中标识 */}
@@ -296,7 +310,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
                         fontWeight: 'bold',
                         fontFamily: "'Trajan Pro 3', serif"
                       }}>
-                        ACTIVE
+                        {t('theme.status.active')}
                       </div>
                     )}
 
@@ -358,7 +372,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
                   }}
                 >
                   <div style={{ fontSize: '48px', marginBottom: '10px' }}>+</div>
-                  <div style={{ fontFamily: "'Trajan Pro 3', serif" }}>添加自定义主题</div>
+                  <div style={{ fontFamily: "'Trajan Pro 3', serif" }}>{t('theme.btn.add')}</div>
                 </div>
               </Col>
             </Row>
@@ -377,21 +391,21 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
             boxShadow: '0 -10px 30px rgba(0,0,0,0.5)'
           }}>
             <div style={{ flex: 1 }}>
-              <div style={{
+              <h4 style={{
                 color: '#d4af37',
                 fontSize: '1.5rem',
                 marginBottom: '8px',
                 fontFamily: "'Trajan Pro 3', serif",
-                textShadow: '0 2px 4px rgba(0,0,0,0.5)'
+                textShadow: '0 2px 4px rgba(0,0,0,0.8)'
               }}>
-                {displayTheme.name}
-              </div>
-              <div style={{ color: '#ccc', fontSize: '1rem', lineHeight: '1.5' }}>
-                {displayTheme.description}
-              </div>
+                {displayTheme.id.startsWith('custom-') ? displayTheme.name : t(`theme.${displayTheme.id}.name` as any)}
+              </h4>
+              <Text style={{ color: '#ccc', fontSize: '1rem', lineHeight: '1.5' }}>
+                {displayTheme.id.startsWith('custom-') ? displayTheme.description : t(`theme.${displayTheme.id}.desc` as any)}
+              </Text>
               {displayTheme.author && (
                 <div style={{ color: '#888', fontSize: '0.9rem', marginTop: '8px' }}>
-                  BY: {displayTheme.author}
+                  {t('theme.author.prefix') || 'BY:'} {displayTheme.author}
                 </div>
               )}
             </div>
@@ -417,7 +431,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
                   boxShadow: '0 4px 15px rgba(212, 175, 55, 0.4)'
                 }}
               >
-                应用主题
+                {t('theme.btn.apply')}
               </Button>
             </div>
           </div>

@@ -78,6 +78,7 @@ export interface ElectronAPI {
 
   getFullPackageStatus: (war3Path?: string) => Promise<boolean>;
   installFullPackage: (zipPath: string) => Promise<FullPackageInstallResult>;
+  syncAssets: () => Promise<void>;
 
   // 涂装系统
   applySkin: (unitId: string, changes: any[]) => Promise<boolean>;

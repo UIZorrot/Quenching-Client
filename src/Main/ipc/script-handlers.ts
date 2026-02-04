@@ -82,9 +82,11 @@ export function registerScriptHandlers() {
                     throw new Error(`脚本资源包不存在: ${zipPath}`);
                 }
 
-                // 解压到根目录，zip内部通常包含 _retail_/scripts 或类似结构
-                // 根据 AssetSyncService 的实现，它是解压缩到 war3Path
-                await extractZip(zipPath, war3Path);
+                // 解压到 scripts 目录
+                // zip内部通常包含直接的脚本文件 (如 blizzard.j) 或 scripts/ 目录
+                // 我们直接解压到 scriptsDir (已包含 baseDir/scripts)
+                await fs.ensureDir(scriptsDir);
+                await extractZip(zipPath, scriptsDir);
                 console.log('[Script] Extraction complete.');
             } else {
                 console.log('[Script] Disabling envRender... Removing scripts directory');

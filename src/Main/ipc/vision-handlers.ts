@@ -5,7 +5,7 @@ import { glob } from 'glob';
 import { promisify } from 'util';
 
 /**
- * 扫描 VisionMod 目录获取模型文件列表
+ * 扫描 VisionMod 目录获取模型及贴图文件列表
  */
 async function scanVisionMod(visionModPath: string) {
     const retailPath = path.join(visionModPath, '_retail_');
@@ -15,13 +15,11 @@ async function scanVisionMod(visionModPath: string) {
         throw new Error(`VisionMod 路径不正确，未找到 _retail_ 目录: ${retailPath}`);
     }
 
-    // 扫描 buildings, doodads, units 目录下的 mdx/mdl
-    // 使用大括号扩展语法以兼容旧版 glob
-    const pattern = '{buildings,doodads,units}/**/*.{mdx,mdl}';
+    // 扫描 buildings, doodads, units 目录下的 mdx/mdl 以及贴图 .dds
+    const pattern = '{buildings,doodads,units}/**/*.{mdx,mdl,dds}';
 
     console.log(`[Vision] Using glob pattern: ${pattern}`);
 
-    // 这里由于 glob 版本差异，我们统一处理
     let allFiles: string[] = [];
     try {
         let globFn: any;
@@ -37,12 +35,10 @@ async function scanVisionMod(visionModPath: string) {
             throw new Error('无法找到可用的 glob 函数');
         }
 
-        // 检测是否已经是 Promise (glob v9+)
         const result = globFn(pattern, { cwd: retailPath, posix: true });
         if (result && typeof result.then === 'function') {
             allFiles = await result;
         } else {
-            // 如果不是 Promise，说明是旧版 glob (v7/v8)，使用 promisify 包装
             allFiles = await promisify(globFn)(pattern, { cwd: retailPath, posix: true }) as string[];
         }
     } catch (e) {
@@ -52,10 +48,23 @@ async function scanVisionMod(visionModPath: string) {
 
     console.log(`[Vision] Found ${allFiles.length} files in VisionMod`);
 
-    const portraits = allFiles.filter(f => f.toLowerCase().endsWith('_portrait.mdx') || f.toLowerCase().endsWith('_portrait.mdl'));
-    const enhancements = allFiles.filter(f => !f.toLowerCase().endsWith('_portrait.mdx') && !f.toLowerCase().endsWith('_portrait.mdl'));
+    // 分类文件
+    const portraits: string[] = [];
+    const enhancements: string[] = [];
+    const textures: string[] = [];
 
-    return { portraits, enhancements };
+    for (const f of allFiles) {
+        const lower = f.toLowerCase();
+        if (lower.endsWith('.dds')) {
+            textures.push(f);
+        } else if (lower.endsWith('_portrait.mdx') || lower.endsWith('_portrait.mdl')) {
+            portraits.push(f);
+        } else {
+            enhancements.push(f);
+        }
+    }
+
+    return { portraits, enhancements, textures };
 }
 
 export function registerVisionHandlers() {
@@ -69,11 +78,14 @@ export function registerVisionHandlers() {
                 throw new Error('未设置或无效的 VisionMod 路径');
             }
 
-            const { portraits } = await scanVisionMod(visionModPath);
+            const { portraits, textures } = await scanVisionMod(visionModPath);
             const war3Retail = path.join(war3Path, '_retail_');
             const visionRetail = path.join(visionModPath, '_retail_');
 
-            for (const relPath of portraits) {
+            // 处理所有头像模型和所有贴图
+            const filesToProcess = [...portraits, ...textures];
+
+            for (const relPath of filesToProcess) {
                 const targetPath = path.join(war3Retail, relPath);
                 if (enabled) {
                     const sourcePath = path.join(visionRetail, relPath);
@@ -97,14 +109,17 @@ export function registerVisionHandlers() {
         console.log(`[Vision] Updating model enhance: ${enabled}`);
         try {
             if (!visionModPath || !(await fs.pathExists(visionModPath))) {
-                throw new Error('未设置或无效的 VisionMod 路径');
+                throw new Error('未设置或无效比 VisionMod 路径');
             }
 
-            const { enhancements } = await scanVisionMod(visionModPath);
+            const { enhancements, textures } = await scanVisionMod(visionModPath);
             const war3Retail = path.join(war3Path, '_retail_');
             const visionRetail = path.join(visionModPath, '_retail_');
 
-            for (const relPath of enhancements) {
+            // 处理所有增强模型和所有贴图
+            const filesToProcess = [...enhancements, ...textures];
+
+            for (const relPath of filesToProcess) {
                 const targetPath = path.join(war3Retail, relPath);
                 if (enabled) {
                     const sourcePath = path.join(visionRetail, relPath);
