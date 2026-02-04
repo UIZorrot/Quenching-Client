@@ -24,7 +24,7 @@ const schema = {
     },
     theme: {
         type: 'string',
-        default: 'quenching'
+        default: 'plaguelands'
     },
     antiHarmony: {
         type: 'boolean',

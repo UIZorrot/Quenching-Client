@@ -1,5 +1,6 @@
 {
 	"name": "quenching-electron-client",
+	"productName": "Quenching Mod Client",
 	"version": "3.0.0",
 	"main": "dist/main.js",
 	"scripts": {

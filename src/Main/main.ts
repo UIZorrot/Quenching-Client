@@ -91,9 +91,11 @@ function createWindow(): void {
 
 function createTray(): void {
   // 创建系统托盘图标
-  const trayIcon = nativeImage.createFromPath(
-    path.join(__dirname, '../assets/quenching/1.ico')
-  );
+  const iconPath = process.platform === 'win32'
+    ? path.join(__dirname, '../assets/quenching/1.ico')
+    : path.join(__dirname, '../assets/quenching/logo.png');
+
+  const trayIcon = nativeImage.createFromPath(iconPath);
 
   tray = new Tray(trayIcon.resize({ width: 16, height: 16 }));
 

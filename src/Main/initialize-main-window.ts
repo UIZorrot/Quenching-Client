@@ -38,7 +38,7 @@ export const initializeMainWindow = async (
 		center: true,
 		resizable: false,
 		frame: false, // 无边框窗口
-		icon: path.join(absAssetsPath, 'quenching/1.ico')
+		icon: path.join(absAssetsPath, process.platform === 'win32' ? 'quenching/1.ico' : 'quenching/logo.png')
 	};
 
 	options = _.merge({

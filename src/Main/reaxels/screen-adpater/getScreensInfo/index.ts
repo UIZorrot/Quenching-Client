@@ -4,6 +4,12 @@ import { reaxel_ElectronENV } from '#main/reaxels/runtime-paths';
 import path from 'node:path';
 
 export const getPyScreensInfo = async () => {
+	// 在非 Windows 平台上返回空数组，因为 screen_info.exe 只在 Windows 上可用
+	if (process.platform !== 'win32') {
+		console.log('[PyScreenInfo] Non-Windows platform detected, returning empty screen info');
+		return [];
+	}
+
 	const { absAssetsPath } = reaxel_ElectronENV();
 	return new Promise<PhysicalScreen[]>((resolve, reject) => {
 		const cp = spawn(path.join(absAssetsPath, 'py_screen_info/screen_info.exe'));

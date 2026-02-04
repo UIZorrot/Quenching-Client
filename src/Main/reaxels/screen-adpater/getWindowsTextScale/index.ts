@@ -1,4 +1,10 @@
 export const getTextScaleFactor = async (): Promise<number> => {
+	// 在非 Windows 平台上直接返回默认值
+	if (process.platform !== 'win32') {
+		console.log('[TextScale] Non-Windows platform detected, using default scale factor 1.0');
+		return 1.0;
+	}
+
 	// 尝试多种方法获取文本缩放因子，如果都失败则返回默认值1
 
 	try {

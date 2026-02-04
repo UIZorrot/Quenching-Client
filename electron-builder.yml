@@ -8,6 +8,7 @@ files:
   - dist/**/*
   - "!dist/statics/**/*"
   - "!dist/**/*.map"
+  - "!**/assets/**"  # 排除 assets，避免重复打包
   - package.json
 
 extraResources:
