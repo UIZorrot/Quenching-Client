@@ -577,6 +577,14 @@ export const reaxel_War3Settings = reaxel(() => {
       if (newSettings.half !== undefined) {
         console.log(`\n>>> [VISION-FRONTEND] Half Portrait change requested: ${newSettings.half}`);
         if (window.electronAPI?.updateHalfPortrait) {
+          if (!updatedSettings.visionModPath) {
+            console.warn('[useWar3Settings] VisionMod path not set, reverting half portrait setting');
+            setState({ modSettings: { ...updatedSettings, half: !newSettings.half } });
+            // 不抛出错误防止阻断其他逻辑，但显示错误消息
+            // throw new Error('请先设置 VisionMod 路径'); 
+            // 实际上这里的 throw 会被 catch 捕获并显示 toast，所以 throw 是合适的
+            throw new Error('请先设置 VisionMod 路径 / Please set VisionMod path first');
+          }
           await window.electronAPI.updateHalfPortrait(war3Path, updatedSettings.visionModPath, updatedSettings.half);
         }
       }
@@ -585,6 +593,11 @@ export const reaxel_War3Settings = reaxel(() => {
       if (newSettings.modelEnhance !== undefined) {
         console.log(`\n>>> [VISION-FRONTEND] Model Enhance change requested: ${newSettings.modelEnhance}`);
         if (window.electronAPI?.updateModelEnhance) {
+          if (!updatedSettings.visionModPath) {
+            console.warn('[useWar3Settings] VisionMod path not set, reverting model enhance setting');
+            setState({ modSettings: { ...updatedSettings, modelEnhance: !newSettings.modelEnhance } });
+            throw new Error('请先设置 VisionMod 路径 / Please set VisionMod path first');
+          }
           await window.electronAPI.updateModelEnhance(war3Path, updatedSettings.visionModPath, updatedSettings.modelEnhance);
         }
       }

@@ -3,6 +3,23 @@ import path from 'path';
 import yauzl from 'yauzl';
 import { app } from 'electron';
 import { configManager } from './config-manager';
+import crypto from 'crypto';
+
+// 文件指纹配置：用于验证资源版本
+const ASSET_FINGERPRINTS: Record<string, { file: string; expectedHash: string }> = {
+  'zip-shaders.zip': {
+    file: 'ps/hd.bls',
+    expectedHash: '' // 留空，首次运行时计算
+  },
+  'zip-environment.zip': {
+    file: 'foliage/foliage.txt',
+    expectedHash: ''
+  },
+  'zip-scripts.zip': {
+    file: 'blizzard.j',
+    expectedHash: ''
+  }
+};
 
 export class AssetSyncService {
   static async getAssetsDir(): Promise<string> {
@@ -11,10 +28,12 @@ export class AssetSyncService {
       const candidates = [
         path.join(process.cwd(), 'assets'),
         path.join(process.cwd(), 'public', 'assets'),
+        path.join(process.cwd(), 'QuenChing-Electron-Client', 'assets'),
         path.join(process.cwd(), 'projects', 'QuenChing-Mod-Client', 'assets'),
         path.join(appPath, 'assets'),
         path.join(appPath, 'projects', 'QuenChing-Mod-Client', 'assets'),
       ];
+      console.log(`[AssetSync] Searching for assets in:`, candidates);
       for (const p of candidates) {
         if (await fs.pathExists(p)) {
           console.log(`[AssetSync] Found local assets at: ${p}`);
@@ -83,6 +102,61 @@ export class AssetSyncService {
     });
   }
 
+  /**
+   * 计算文件的 MD5 哈希值
+   */
+  private static async calculateFileHash(filePath: string): Promise<string | null> {
+    try {
+      const content = await fs.readFile(filePath);
+      return crypto.createHash('md5').update(content).digest('hex');
+    } catch (error) {
+      console.warn(`[AssetSync] Failed to calculate hash for ${filePath}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
+   * 验证资源文件夹的版本指纹
+   */
+  private static async verifyAssetFingerprint(
+    zipName: string,
+    targetDir: string
+  ): Promise<boolean> {
+    const fingerprintConfig = ASSET_FINGERPRINTS[zipName];
+    if (!fingerprintConfig) {
+      // 没有配置指纹的资源，默认通过
+      return true;
+    }
+
+    const signatureFile = path.join(targetDir, fingerprintConfig.file);
+    if (!(await fs.pathExists(signatureFile))) {
+      console.log(`[AssetSync] Signature file not found: ${signatureFile}`);
+      return false;
+    }
+
+    const actualHash = await this.calculateFileHash(signatureFile);
+    if (!actualHash) {
+      return false;
+    }
+
+    // 如果没有设置期望的哈希值，记录当前哈希值
+    if (!fingerprintConfig.expectedHash) {
+      console.log(`[AssetSync] First run for ${zipName}, recording hash: ${actualHash}`);
+      console.log(`[AssetSync] Add this to ASSET_FINGERPRINTS: expectedHash: '${actualHash}'`);
+      return true;
+    }
+
+    if (actualHash !== fingerprintConfig.expectedHash) {
+      console.log(`[AssetSync] Version mismatch for ${zipName}!`);
+      console.log(`[AssetSync] Expected: ${fingerprintConfig.expectedHash}`);
+      console.log(`[AssetSync] Actual:   ${actualHash}`);
+      return false;
+    }
+
+    console.log(`[AssetSync] Version verified for ${zipName}`);
+    return true;
+  }
+
   static async syncAssetsBeforeLaunch(war3Path: string): Promise<void> {
     console.log('\n[AssetSync] ===== syncAssetsBeforeLaunch CALLED =====');
     console.log(`[AssetSync] Target War3 Path: ${war3Path}`);
@@ -137,14 +211,32 @@ export class AssetSyncService {
         if (!targetDir) return false;
         if (!(await fs.pathExists(targetDir))) return false;
         const files = await fs.readdir(targetDir);
-        return files.length > 0;
+        if (files.length === 0) return false;
+
+        // 验证文件指纹
+        const isValid = await this.verifyAssetFingerprint(name, targetDir);
+        if (!isValid) {
+          console.log(`[AssetSync] Outdated asset detected in ${targetDir}, will re-extract`);
+          await fs.remove(targetDir);
+          return false;
+        }
+        return true;
       })();
 
       const hasQmoff = await (async () => {
         if (!qmoffDir) return false;
         if (!(await fs.pathExists(qmoffDir))) return false;
         const files = await fs.readdir(qmoffDir);
-        return files.length > 0;
+        if (files.length === 0) return false;
+
+        // 验证备份文件夹的指纹
+        const isValid = await this.verifyAssetFingerprint(name, qmoffDir);
+        if (!isValid) {
+          console.log(`[AssetSync] Outdated backup asset detected in ${qmoffDir}, will re-extract`);
+          await fs.remove(qmoffDir);
+          return false;
+        }
+        return true;
       })();
 
       if (hasBase || hasQmoff) {
@@ -156,15 +248,47 @@ export class AssetSyncService {
       await this.extractZip(zipPath, targetDir);
     }
 
-    // --- 同步 WebUI 资源 ---
+    // --- 强制重新同步 WebUI 资源 (每次启动) ---
+    console.log('[AssetSync] Force re-extracting WebUI resources...');
     const targetWebUIDir = path.join(war3Path, '_retail_', 'webui');
+
+    // 1. 删除现有 webui 文件夹
+    try {
+      if (await fs.pathExists(targetWebUIDir)) {
+        console.log(`[AssetSync] Deleting existing webui folder: ${targetWebUIDir}`);
+        await fs.remove(targetWebUIDir);
+        console.log('[AssetSync] WebUI folder deleted successfully');
+      }
+    } catch (err) {
+      console.error('[AssetSync] Failed to delete webui folder:', err);
+    }
+
+    // 2. 重新创建 webui 文件夹
     await fs.ensureDir(targetWebUIDir);
 
-    // 1. 根据语言选择同步 QuenchingOn.png
+    // 3. 确保 UI 资源已就绪，并根据设置应用正确的 UI
+    const uiType = modSettings?.ui || 'quenching'; // 默认 quenching
+    console.log(`[AssetSync] Ensuring UI assets are ready. Selected UI type: ${uiType}`);
+
+    // 注意：所有 UI 变体 (classic, quenching, carnival) 现在都包含在 zip-ui.zip 中
+    // zip-ui.zip 解压后会提供 ui/ui-org, ui/ui-que, ui/ui-blz 等源目录
+    // 之前 loop 中的 coreZips 已经确保 zip-ui.zip 被解压
+
+    try {
+      // 调用 UIService 应用当前的 UI 设置
+      // 这会将对应的源文件夹内容复制到 active 的 ui 目录 (console, feedback, framedef)
+      const { UIService } = require('./ui-service');
+      await UIService.applyUISettings(war3Path, uiType);
+    } catch (err) {
+      console.error('[AssetSync] Failed to apply initial UI settings:', err);
+    }
+
+    // 4. 根据语言选择同步 QuenchingOn.png
     const language = configManager.get('language');
     const isChinese = language === 'zh-CN';
     const quenchingOnSource = path.join(quenchingDir, isChinese ? 'QuenchingOnCN.png' : 'QuenchingOnEN.png');
     const quenchingOnTarget = path.join(targetWebUIDir, 'QuenchingOn.png');
+
 
     if (await fs.pathExists(quenchingOnSource)) {
       try {

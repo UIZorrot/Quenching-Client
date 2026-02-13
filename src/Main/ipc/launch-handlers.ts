@@ -76,6 +76,15 @@ export function registerLaunchHandlers() {
             }
 
             if (isValid) {
+                // Additional validation: Check if _retail_ directory exists
+                const retailPath = path.join(selectedPath, '_retail_');
+                const hasRetailDir = await fs.pathExists(retailPath);
+
+                if (!hasRetailDir) {
+                    dialog.showErrorBox('路径无效', '所选目录中未找到 _retail_ 文件夹，请选择正确的魔兽争霸III安装目录。\n\n有效的目录应包含 _retail_ 子文件夹。');
+                    return null;
+                }
+
                 configManager.set('war3Path', selectedPath);
                 return selectedPath;
             } else {

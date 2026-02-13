@@ -1,5 +1,5 @@
 appId: com.quenching.mod.client
-productName: QM Client
+productName: QMClient
 
 directories:
   output: __Bin
@@ -8,7 +8,6 @@ files:
   - dist/**/*
   - "!dist/statics/**/*"
   - "!dist/**/*.map"
-  - "!**/assets/**"  # 排除 assets，避免重复打包
   - package.json
 
 extraResources:
@@ -30,9 +29,12 @@ nsis:
   shortcutName: QM
 
 mac:
-  icon: assets/quenching/logo.png
-  target:
-    - dir
+  icon: public/logo.png
   category: public.app-category.games
+  target: dir
+  electronLanguages: ['en', 'zh', 'zh_CN']
+
+# 禁用 FFMPEG 替换，使用 Electron 自带的库，避免库路径问题
+downloadAlternateFFmpeg: false
 
 asar: true

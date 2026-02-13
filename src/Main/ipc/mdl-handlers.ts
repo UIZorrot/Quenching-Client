@@ -200,7 +200,7 @@ async function processMdlFile(filePath: string, fileName: string, mode: string) 
     // Surface Standard: Amb -0.05, Int x1.0
     // Dungeon Standard: Amb -0.05, Int 5.5 (Unit) / 5.0 (Terrain) [Fixed]
 
-    let targetAmb = -0.14;
+    let targetAmb = -0.05;
     let targetIntMode: 'multiply' | 'fixed' = 'multiply';
     let targetIntVal = 1.0;
 
@@ -228,12 +228,12 @@ async function processMdlFile(filePath: string, fileName: string, mode: string) 
 
         // 模式修正 (基于乘数)
         if (mode === 'rpg') {
-            targetAmb = -0.18;
-            if (isUnit) targetIntVal = 1.15;
+            targetAmb = -0.12;
+            if (isUnit) targetIntVal = 1.1;
             else targetIntVal = 1;
         } else if (mode === 'battle') {
             targetAmb = 0;
-            targetIntVal = 1.1;
+            targetIntVal = 1.4;
         }
     }
 

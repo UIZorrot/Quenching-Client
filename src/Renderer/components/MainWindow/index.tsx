@@ -23,6 +23,7 @@ import { AboutModal } from './AboutModal';
 import { NewsPanel } from './NewsPanel';
 import { SkinModal } from './SkinModal';
 import { useGlobalLoading } from '../GlobalLoadingProvider';
+import { APP_VERSION } from '../../version';
 // import styles from './MainWindow.module.less';
 
 const { Content } = Layout;
@@ -432,12 +433,11 @@ export const MainWindow: React.FC = () => {
       let remoteVer = '';
 
       try {
-        const v = await window.electronAPI?.getAppVersion();
-        localVer = (v || '').trim();
+        const localVer = APP_VERSION;
         setAppVersion(localVer);
-        console.log('Local Version:', localVer);
+        console.log('Local Version (Manual):', localVer);
       } catch (err) {
-        console.error('Failed to get app version:', err);
+        console.error('Failed to set app version:', err);
       }
 
       try {
@@ -449,7 +449,7 @@ export const MainWindow: React.FC = () => {
         console.error('Failed to fetch remote version:', err);
       }
 
-      if (localVer && remoteVer && localVer !== remoteVer) {
+      if (APP_VERSION != remoteVer) {
         setUpdateAvailable(true);
       }
     };
@@ -724,7 +724,7 @@ export const MainWindow: React.FC = () => {
               </Title>
 
               <Text className={styles.versionText} style={{ fontSize: '24px', color: '#d4af37', textShadow: '0 0 15px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,1)', }}>
-                {remoteVersion || t('main.version.value')}
+                {appVersion || t('main.version.value')}
               </Text>
             </div>
 

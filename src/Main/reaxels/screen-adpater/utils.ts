@@ -1,14 +1,29 @@
 import { getTextScaleFactor } from './getWindowsTextScale';
-import { screen } from 'electron';
+import { screen, app } from 'electron';
 import type { Display, Size } from 'electron';
 import { reaxel_ElectronENV } from '#main/reaxels/runtime-paths';
 import { spawn } from 'child_process';
 import path from 'path';
 
-//windows文本缩放比例
-export const textScaleFactor = await getTextScaleFactor();
-//windows显示缩放比例
-export const displayScaleFactor = screen.getPrimaryDisplay().scaleFactor / textScaleFactor;
+// 延迟初始化的变量
+let textScaleFactor: number;
+let displayScaleFactor: number;
+
+// 初始化函数，确保在 app ready 后调用
+const initializeScaleFactors = async () => {
+	if (!app.isReady()) {
+		await new Promise<void>(resolve => app.whenReady().then(() => resolve()));
+	}
+	textScaleFactor = await getTextScaleFactor();
+	displayScaleFactor = screen.getPrimaryDisplay().scaleFactor / textScaleFactor;
+};
+
+// 导出获取函数而不是直接值
+export const getTextScaleFactorValue = () => textScaleFactor;
+export const getDisplayScaleFactorValue = () => displayScaleFactor;
+
+// 初始化
+initializeScaleFactors().catch(console.error);
 
 /**
  * 计算受dpr影响过的屏幕宽高
@@ -16,10 +31,18 @@ export const displayScaleFactor = screen.getPrimaryDisplay().scaleFactor / textS
  * display.size.width === realWithPx * displayScale * textScale 
  */
 export const calcDprEffectedRes = (display: Display) => {
-	return {
-		dprWidth: display.size.width / textScaleFactor,
-		dprHeight: display.size.height / textScaleFactor,
+	const currentTextScaleFactor = getTextScaleFactorValue();
+	if (!currentTextScaleFactor) {
+		console.warn('textScaleFactor not initialized yet, using default value 1');
+		return {
+			dprWidth: display.size.width,
+			dprHeight: display.size.height,
+		};
 	}
+	return {
+		dprWidth: display.size.width / currentTextScaleFactor,
+		dprHeight: display.size.height / currentTextScaleFactor,
+	};
 }
 
 /**
@@ -33,10 +56,30 @@ export const getShortSide = (display: Display) => {
 	}
 }
 
+import { platform } from 'node:os';
+
 /**
  * 获取屏幕的物理参数
  */
 export const getPhysicalScreens = () => {
+	// 检查操作系统，非 Windows 系统返回默认值
+	if (platform() !== 'win32') {
+		const defaultScreen = {
+			"x": 0,
+			"y": 0,
+			"width": 1920,
+			"height": 1080,
+			"width_mm": 508,
+			"height_mm": 286,
+			"name": 'Default Display',
+			"is_primary": true,
+			"ppi": 96,
+			"display_scale_factor": 1.0,
+			"text_scale_factor": 1.0,
+		} as PhysicalScreen;
+		return Promise.resolve([defaultScreen]);
+	}
+
 	const { absAssetsPath } = reaxel_ElectronENV();
 	const exePath = path.join(absAssetsPath, 'py_screen_info/screen_info.exe');
 	const cp = spawn(exePath);

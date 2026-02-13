@@ -67,7 +67,7 @@ export class NewsService {
 
                     if (res.statusCode !== 200) {
                         if (allowHttpFallback && targetUrl.startsWith('https://')) {
-                            const httpUrl = 'http://' + targetUrl.slice('https://'.length);
+                            const httpUrl = 'https://' + targetUrl.slice('https://'.length);
                             console.warn(`[NewsService] HTTP fallback to ${httpUrl}`);
                             return doRequest(httpUrl, false);
                         }
@@ -87,7 +87,7 @@ export class NewsService {
 
                 request.on('error', (err) => {
                     if (allowHttpFallback && targetUrl.startsWith('https://')) {
-                        const httpUrl = 'http://' + targetUrl.slice('https://'.length);
+                        const httpUrl = 'https://' + targetUrl.slice('https://'.length);
                         console.warn(`[NewsService] Error on https, fallback to ${httpUrl}`);
                         return doRequest(httpUrl, false);
                     }
@@ -98,7 +98,7 @@ export class NewsService {
                 request.on('timeout', () => {
                     request.destroy();
                     if (allowHttpFallback && targetUrl.startsWith('https://')) {
-                        const httpUrl = 'http://' + targetUrl.slice('https://'.length);
+                        const httpUrl = 'https://' + targetUrl.slice('https://'.length);
                         console.warn(`[NewsService] Timeout on https, fallback to ${httpUrl}`);
                         return doRequest(httpUrl, false);
                     }

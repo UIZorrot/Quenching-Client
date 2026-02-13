@@ -86,8 +86,8 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 			}
 
 			return convertActualSizeToScaleSize({
-				width: options.devtoolsWidth ? (baseAppBounds.width + options.devtoolsWidth) : baseAppBounds.width,
-				height: baseAppBounds.height,
+				width: (options.devtoolsWidth ? (baseAppBounds.width + options.devtoolsWidth) : baseAppBounds.width) * percent,
+				height: baseAppBounds.height * percent,
 			});
 		} catch (e) {
 			console.error(e);

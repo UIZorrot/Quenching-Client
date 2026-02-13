@@ -9,7 +9,11 @@
 		"pack": "tsx scripts/webpack.build production",
 		"build": "tsx scripts/webpack.build production",
 		"dist:win": "npm run build && electron-builder --win",
-		"dist:mac": "npm run build && electron-builder --mac",
+		"dist:mac": "npm run build && electron-builder --mac && npm run fix:mac && npm run sign:mac && npm run create:dmg",
+		"dist:dmg": "npm run build && electron-builder --mac --publish never && npm run fix:mac && npm run sign:mac && npm run create:dmg",
+		"fix:mac": "node scripts/fix-mac-app.js",
+		"sign:mac": "node scripts/sign-mac-app.js",
+		"create:dmg": "node scripts/create-dmg.js",
 		"dev": "concurrently \"npm run start\" \"npm run electron\"",
 		"postinstall": "patch-package"
 	},

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Typography, Button, Space, Row, Col, message, Spin } from 'antd';
+import { Typography, Button, Space, Row, Col, message, Spin, Modal } from 'antd';
 import { useTranslation } from '../../utils/i18n';
 import { OverlayModal } from './OverlayModal';
 import { useWar3Settings } from '../../hooks/useWar3Settings';
@@ -20,7 +20,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
   const { currentInstallation, detectInstallations } = useWar3Detector();
   const { playSmall, playHover } = useSound();
   const { showLoading, hideLoading } = useGlobalLoading();
-  const [selectedCategory, setSelectedCategory] = useState<'graphics' | 'game'>('graphics');
+  const [selectedCategory, setSelectedCategory] = useState<'graphics' | 'game' | 'basic'>('graphics');
   const [previewInfo, setPreviewInfo] = useState<{ title: string; desc: string; image: string | null }>({
     title: '',
     desc: t('settings.preview.default'),
@@ -29,8 +29,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
 
   const categories = [
     { id: 'game', name: t('settings.category.game') },
-    { id: 'graphics', name: t('settings.category.graphics') }
+    { id: 'graphics', name: t('settings.category.graphics') },
+    { id: 'basic', name: t('settings.basic.title') }
   ];
+
+  const handleResetRendering = () => {
+    if (!currentInstallation?.path) return;
+    Modal.confirm({
+      title: t('settings.basic.resetRendering'),
+      content: t('settings.basic.resetRendering.confirm'),
+      onOk: async () => {
+        try {
+          showLoading(t('progress.hint'));
+          await window.electronAPI?.resetRenderingComponents(currentInstallation.path);
+          message.success(t('settings.basic.resetRendering.success'));
+        } catch (e: any) {
+          message.error(e.message || 'Error');
+        } finally {
+          hideLoading();
+        }
+      }
+    });
+  };
+
+  const handleDeleteMod = async () => {
+    if (!currentInstallation?.path) return;
+    try {
+      showLoading(t('progress.hint'));
+      await window.electronAPI?.deleteMod(currentInstallation.path);
+      message.success(t('settings.basic.deleteMod.success'));
+      // Reload settings after delete
+      detectInstallations();
+    } catch (e: any) {
+      message.error(e.message || 'Error');
+    } finally {
+      hideLoading();
+    }
+  };
 
   const handleSettingChange = async (key: string, value: any) => {
     console.log('[SettingsModal] handleSettingChange called:', key, value);
@@ -61,12 +96,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
 
   const handleSelectVisionModPath = async () => {
     playSmall();
-    const path = await window.electronAPI?.selectDirectory(t('setup.visionmod.path'));
+    const path = await (window as any).electronAPI?.selectDirectory(t('setup.visionmod.path'));
     if (path) {
       // 验证目录
-      const valid_1 = await window.electronAPI?.pathExists(`${path}/Install Guide.txt`);
-      const valid_2 = await window.electronAPI?.pathExists(`${path}/visionmod.txt.txt`);
-      const valid_3 = await window.electronAPI?.pathExists(`${path}/visionmod.txt`);
+      const valid_1 = await (window as any).electronAPI?.pathExists(`${path}/Install Guide.txt`);
+      const valid_2 = await (window as any).electronAPI?.pathExists(`${path}/visionmod.txt.txt`);
+      const valid_3 = await (window as any).electronAPI?.pathExists(`${path}/visionmod.txt`);
 
       if (valid_1 || valid_2 || valid_3) {
         await handleSettingChange('visionModPath', path);
@@ -229,7 +264,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
             disabled={isLoading}
             onClick={async () => {
               playSmall();
-              const path = await window.electronAPI?.selectGamePath();
+              const path = await (window as any).electronAPI?.selectGamePath();
               if (path) {
                 message.success(t('msg.war3.path.set'));
                 // 强制触发一次检测
@@ -248,8 +283,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
         <Col span={24}>
           <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.ui.style')}</h3>
           <Space wrap>
-            {renderSettingButton(t('settings.ui.quenching'), modSettings.ui, 'quenching', () => handleSettingChange('ui', 'quenching'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.quenching.desc'), image: './assets/quenching/ui1.png' }))}
-            {renderSettingButton(t('settings.ui.classic'), modSettings.ui, 'classic', () => handleSettingChange('ui', 'classic'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.classic.desc'), image: './assets/quenching/ui2.png' }))}
+            {renderSettingButton(t('settings.ui.classic'), modSettings.ui, 'classic', () => handleSettingChange('ui', 'classic'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.classic.desc'), image: './assets/quenching/ui1.png' }))}
+            {renderSettingButton(t('settings.ui.quenching'), modSettings.ui, 'quenching', () => handleSettingChange('ui', 'quenching'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.quenching.desc'), image: './assets/quenching/ui2.png' }))}
             {renderSettingButton(t('settings.ui.blizzard'), modSettings.ui, 'carnival', () => handleSettingChange('ui', 'carnival'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.blizzard.desc'), image: './assets/quenching/ui3.png' }))}
           </Space>
         </Col>
@@ -278,6 +313,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
           </Space>
         </Col>
       </Row>
+    </div>
+  );
+
+  const renderBasicSettings = () => (
+    <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+      <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <h3 style={{ color: '#ff4d4f', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.basic.deleteMod')}</h3>
+          <Space direction="vertical">
+            <div style={{ color: '#888' }}>{t('settings.basic.deleteMod.desc')}</div>
+            <Button
+              danger
+              onClick={() => {
+                playSmall();
+                handleDeleteMod();
+              }}
+              onMouseEnter={() => playHover()}
+            >
+              {t('settings.basic.deleteMod')}
+            </Button>
+          </Space>
+        </div>
+
+        <div style={{ marginTop: '20px' }}>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.basic.resetRendering')}</h3>
+          <Space direction="vertical">
+            <div style={{ color: '#888' }}>{t('settings.basic.resetRendering.desc')}</div>
+            <Button
+              onClick={() => {
+                playSmall();
+                handleResetRendering();
+              }}
+              onMouseEnter={() => playHover()}
+              style={{ borderColor: '#d4af37', color: '#d4af37' }}
+            >
+              {t('settings.basic.resetRendering')}
+            </Button>
+          </Space>
+        </div>
+      </Space>
     </div>
   );
 
@@ -364,6 +439,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose }) =
           <div style={{ flex: 1, padding: '30px', overflowY: 'auto' }}>
             {selectedCategory === 'graphics' && renderGraphicsSettings()}
             {selectedCategory === 'game' && renderGameSettings()}
+            {selectedCategory === 'basic' && renderBasicSettings()}
           </div>
 
           {/* 底部说明区 - 悬浮设计，解决太靠下的问题 */}

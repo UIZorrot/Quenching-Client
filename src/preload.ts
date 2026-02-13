@@ -104,6 +104,10 @@ const electronAPI = {
   fetchVersion: () => ipcRenderer.invoke('version:fetch'),
   // 树木设置
   updateTreeSettings: (war3Path: string, treeMode: string) => ipcRenderer.invoke('tree:update-settings', war3Path, treeMode),
+
+  // Mod Management
+  deleteMod: (war3Path: string) => ipcRenderer.invoke('mod:delete', war3Path),
+  resetRenderingComponents: (war3Path: string) => ipcRenderer.invoke('mod:reset-rendering', war3Path),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

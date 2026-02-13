@@ -1,6 +1,6 @@
 // Electron API类型定义
 
-export interface ElectronAPI {
+interface ElectronAPI {
   // 文件操作
   readFile: (filePath: string) => Promise<string>;
   writeFile: (filePath: string, content: string) => Promise<boolean>;
@@ -80,6 +80,11 @@ export interface ElectronAPI {
   installFullPackage: (zipPath: string) => Promise<FullPackageInstallResult>;
   syncAssets: () => Promise<void>;
 
+  // Mod Management
+  deleteMod: (war3Path: string) => Promise<{ success: boolean }>;
+  resetRenderingComponents: (war3Path: string) => Promise<{ success: boolean }>;
+
+
   // 涂装系统
   applySkin: (unitId: string, changes: any[]) => Promise<boolean>;
   applyBatchSkin: (batchChanges: any[]) => Promise<boolean>;
@@ -92,7 +97,7 @@ export interface ElectronAPI {
   fetchVersion: () => Promise<string>;
 }
 
-export interface FileStats {
+interface FileStats {
   size: number;
   isFile: boolean;
   isDirectory: boolean;
@@ -100,7 +105,7 @@ export interface FileStats {
   ctime: Date;
 }
 
-export interface DirectoryItem {
+interface DirectoryItem {
   name: string;
   path: string;
   isFile: boolean;
@@ -109,13 +114,13 @@ export interface DirectoryItem {
   mtime: Date;
 }
 
-export interface RegistryValue {
+interface RegistryValue {
   name: string;
   type: string;
   value: string;
 }
 
-export interface WindowState {
+interface WindowState {
   isMaximized: boolean;
   isMinimized: boolean;
   isVisible: boolean;
@@ -128,7 +133,7 @@ export interface WindowState {
   };
 }
 
-export interface SystemInfo {
+interface SystemInfo {
   platform: string;
   arch: string;
   version: string;
@@ -155,7 +160,7 @@ export interface SystemInfo {
   };
 }
 
-export interface Display {
+interface Display {
   id: number;
   bounds: {
     x: number;
@@ -174,22 +179,21 @@ export interface Display {
   internal: boolean;
 }
 
-export interface FullPackageStatus {
+interface FullPackageStatus {
   hasZip: boolean;
   alreadyInstalled: boolean;
   zipPath: string | null;
   installTarget: string | null;
 }
 
-export interface FullPackageInstallResult {
+interface FullPackageInstallResult {
   success: boolean;
   skipped?: boolean;
   error?: string;
 }
 
 // 全局类型声明
-declare global {
-  interface Window {
-    electronAPI: ElectronAPI;
-  }
+
+interface Window {
+  electronAPI: ElectronAPI;
 }

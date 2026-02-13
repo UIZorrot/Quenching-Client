@@ -96,7 +96,11 @@ const electronAPI: ElectronAPI = {
 
   getFullPackageStatus: (war3Path?: string) => ipcRenderer.invoke('mod:get-full-package-status', war3Path),
   installFullPackage: (zipPath: string) => ipcRenderer.invoke('mod:install-full-package', zipPath),
-  syncAssets: () => ipcRenderer.invoke('mod:sync-assets')
+  syncAssets: () => ipcRenderer.invoke('mod:sync-assets'),
+
+  // Mod Management
+  deleteMod: (war3Path: string) => ipcRenderer.invoke('mod:delete', war3Path),
+  resetRenderingComponents: (war3Path: string) => ipcRenderer.invoke('mod:reset-rendering', war3Path)
 };
 
 // 通过contextBridge安全地暴露API

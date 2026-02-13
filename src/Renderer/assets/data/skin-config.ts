@@ -1056,7 +1056,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '泰兰德(不骑马)',
             preview: 'cosh_n8.png',
             config: [
-              { field: 'file:hd', value: 'Units\\NightElf\\Tyrande\\Tyrande_NoMount' },
+              { field: 'file:hd', value: 'cos\\TyrandeDismounted\\TyrandeMountless.mdx' },
               { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNTyrande.blp' },
               { field: 'unitSound', value: 'Tyrande' },
               { field: 'modelScale:hd', value: '1.1' }
@@ -1114,34 +1114,23 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
           {
             id: 'n15_1',
             name: '原版',
-            preview: 'cosh_n7.png',
+            preview: 'cosh_n10.png',
             config: [
-              { field: 'file:hd', value: 'Units\\NightElf\\HeroDemonHunter\\HeroDemonHunter' },
-              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNDemonHunter.blp' },
+              { field: 'file:hd', value: 'Units\\NightElf\\Illidan\\Illidan' },
+              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNIllidan.blp' },
               { field: 'unitSound', value: 'HeroDemonHunter' },
-              { field: 'modelScale:hd', value: '1.1' }
+              { field: 'modelScale:hd', value: '1.05' }
             ]
           },
           {
             id: 'n15_2',
             name: '伊利丹',
-            preview: 'cosh_n6.png',
-            config: [
-              { field: 'file:hd', value: 'Units\\NightElf\\Illidan\\Illidan' },
-              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNIllidan.blp' },
-              { field: 'unitSound', value: 'Illidan' },
-              { field: 'modelScale:hd', value: '1.1' }
-            ]
-          },
-          {
-            id: 'n15_3',
-            name: '恶魔伊利丹',
-            preview: 'cosh_n5.png',
+            preview: 'cosh_n1.png',
             config: [
               { field: 'file:hd', value: 'Units\\NightElf\\IllidanEvil\\IllidanEvil' },
               { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNEvilIllidan.blp' },
-              { field: 'unitSound', value: 'Illidan' },
-              { field: 'modelScale:hd', value: '1.1' }
+              { field: 'unitSound', value: 'EvilIllidan' },
+              { field: 'modelScale:hd', value: '1.12' }
             ]
           }
         ]
@@ -1238,7 +1227,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
               { field: 'file', value: 'Units\\Creeps\\HeroDarkRanger\\HeroDarkRanger' },
               { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroDarkRanger.blp' },
               { field: 'unitSound', value: 'HeroDarkRanger' },
-              { field: 'modelScale:hd', value: '1.12' }
+              { field: 'modelScale:hd', value: '1.15' }
             ]
           },
           {
@@ -1246,10 +1235,10 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '希尔瓦娜斯(邪恶)',
             preview: 'cosh_t14.png',
             config: [
-              { field: 'file', value: 'units\\undead\\Sylvanas\\Sylvanas' },
-              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNSylvanasEvil.blp' },
-              { field: 'unitSound', value: 'Sylvanas' },
-              { field: 'modelScale:hd', value: '1.1' }
+              { field: 'file', value: 'Units\\Undead\\EvilSylvanas\\EvilSylvanas' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNSylvanas.blp' },
+              { field: 'unitSound', value: 'EvilSylvanas' },
+              { field: 'modelScale:hd', value: '1.2' }
             ]
           },
           {
@@ -1257,10 +1246,10 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '希尔瓦娜斯(游侠)',
             preview: 'cosh_t12.png',
             config: [
-              { field: 'file', value: 'Units\\Human\\Sylvanas\\Sylvanas' },
-              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNSylvanas.blp' },
-              { field: 'unitSound', value: 'Sylvanas' },
-              { field: 'modelScale:hd', value: '1.1' }
+              { field: 'file', value: 'units\\creeps\\SylvanusWindrunner\\SylvanusWindrunner' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNSylvanusWindrunner.blp' },
+              { field: 'unitSound', value: 'Sylvanus' },
+              { field: 'modelScale:hd', value: '1.2' }
             ]
           },
           {
@@ -1268,10 +1257,10 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '珍娜拉·蒂姆斯普林',
             preview: 'cosh_t11.png',
             config: [
-              { field: 'file', value: 'cos\\janara.mdx' },
-              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNjanara.blp' },
-              { field: 'unitSound', value: 'HeroDarkRanger' },
-              { field: 'modelScale:hd', value: '1.1' }
+              { field: 'file', value: 'units\\Other\\JennallaDeemspring\\JennallaDeemspring' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNJennallaDeemspring.blp' },
+              { field: 'unitSound', value: 'Sylvanus' },
+              { field: 'modelScale:hd', value: '1.2' }
             ]
           }
         ]
@@ -1453,7 +1442,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
           {
             id: 't24_3',
             name: '阿兹加洛',
-            preview: 'cosh_t6.png',
+            preview: 'cosh_t5.png',
             config: [
               { field: 'file', value: 'units\\demon\\PitLord\\PitLord' },
               { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNAzgalor.blp' },
@@ -1464,7 +1453,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
           {
             id: 't24_4',
             name: '玛诺洛斯',
-            preview: 'cosh_t5.png',
+            preview: 'cosh_t6.png',
             config: [
               { field: 'file', value: 'units\\demon\\Mannoroth\\Mannoroth' },
               { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNMannoroth.blp' },

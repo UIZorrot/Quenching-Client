@@ -464,6 +464,17 @@ const translations = {
     'setup.btn.change': '更换目录',
     'setup.btn.install_full': '点击安装完整包',
 
+    // 基础设置 (New)
+    'settings.basic.title': '基础',
+    'settings.basic.deleteMod': '彻底删除 MOD',
+    'settings.basic.deleteMod.desc': '删除所有 MOD 文件并将设置重置为默认值',
+    'settings.basic.deleteMod.confirm': '确定要删除所有 MOD 文件吗？此操作不可恢复。',
+    'settings.basic.deleteMod.success': 'MOD 已成功删除',
+    'settings.basic.resetRendering': '重置渲染组件',
+    'settings.basic.resetRendering.desc': '当遇到画面错误时，可尝试删除并重新解压核心渲染文件',
+    'settings.basic.resetRendering.confirm': '确定要重置渲染组件吗？',
+    'settings.basic.resetRendering.success': '渲染组件已重置',
+
     // 新闻面板
     'news.title': '最新动态',
     'news.loading': '正在抓取最新情报...',
@@ -612,6 +623,17 @@ const translations = {
     'settings.terrain.vintage': 'Vintage Terrain',
     'settings.terrain.custom': 'Custom Scale',
     'settings.water.title': 'Water Effects',
+
+    // Basic Settings (New)
+    'settings.basic.title': 'Basic',
+    'settings.basic.deleteMod': 'Delete MOD',
+    'settings.basic.deleteMod.desc': 'Delete all MOD files and reset settings to defaults',
+    'settings.basic.deleteMod.confirm': 'Are you sure you want to delete all MOD files?',
+    'settings.basic.deleteMod.success': 'MOD deleted successfully',
+    'settings.basic.resetRendering': 'Reset Rendering',
+    'settings.basic.resetRendering.desc': 'Delete and re-extract core rendering files if you encounter visual issues',
+    'settings.basic.resetRendering.confirm': 'Are you sure you want to reset rendering components?',
+    'settings.basic.resetRendering.success': 'Rendering components reset successfully',
     'msg.checking.assets': 'Checking core assets...',
 
     // Theme
