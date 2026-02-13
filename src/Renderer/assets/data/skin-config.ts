@@ -1127,7 +1127,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '伊利丹',
             preview: 'cosh_n1.png',
             config: [
-              { field: 'file:hd', value: 'Units\\NightElf\\IllidanEvil\\IllidanEvil' },
+              { field: 'file:hd', value: 'units\\nightelf\\EvilIllidan\\IllidanEvil' },
               { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNEvilIllidan.blp' },
               { field: 'unitSound', value: 'EvilIllidan' },
               { field: 'modelScale:hd', value: '1.12' }

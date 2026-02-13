@@ -100,7 +100,12 @@ const electronAPI: ElectronAPI = {
 
   // Mod Management
   deleteMod: (war3Path: string) => ipcRenderer.invoke('mod:delete', war3Path),
-  resetRenderingComponents: (war3Path: string) => ipcRenderer.invoke('mod:reset-rendering', war3Path)
+  resetRenderingComponents: (war3Path: string) => ipcRenderer.invoke('mod:reset-rendering', war3Path),
+  toggleClassicMode: (war3Path: string, enable: boolean) => ipcRenderer.invoke('mod:toggle-classic-mode', war3Path, enable),
+
+  // Classic Mode Skin System
+  applyClassicSkin: (war3Path: string, change: any) => ipcRenderer.invoke('classic-skin:apply', war3Path, change),
+  getClassicSupportedHeroes: (war3Path: string) => ipcRenderer.invoke('classic-skin:get-supported-heroes', war3Path)
 };
 
 // 通过contextBridge安全地暴露API

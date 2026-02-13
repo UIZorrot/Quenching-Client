@@ -4,17 +4,24 @@ import { useTranslation } from '../../utils/i18n';
 import { OverlayModal } from './OverlayModal';
 import { SKIN_CONFIG, HeroSkinConfig, CUSTOM_SKIN_CONFIG } from '../../assets/data/skin-config';
 import { useSound } from '../../hooks/useSound';
+import { useWar3Settings } from '../../hooks/useWar3Settings';
+import { useWar3Detector } from '../../hooks/useWar3Detector';
 
 const { Text } = Typography;
 
 interface SkinModalProps {
     open: boolean;
     onClose: () => void;
+    isFullPackageInstalled?: boolean;
 }
 
-export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
+export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPackageInstalled = false }) => {
     const { t } = useTranslation();
     const { playSmall, playHover } = useSound();
+    const { modSettings } = useWar3Settings();
+    const { currentInstallation } = useWar3Detector();
+    const isClassicMode = modSettings?.classicMode || false;
+    const war3Path = currentInstallation?.path || '';
     const [selectedRace, setSelectedRace] = useState<string>('hum');
     const [selectedCategory, setSelectedCategory] = useState<string>('hero');
     const [selectedHeroId, setSelectedHeroId] = useState<string>('');
@@ -47,9 +54,26 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
     React.useEffect(() => {
         if (selectedCategory === 'hero') {
             if (currentHeroes.length > 0) {
-                setSelectedHeroId(currentHeroes[0].id);
+                // Keep selectedHeroId if possible, otherwise first one
+                if (!currentHeroes.find(h => h.id === selectedHeroId)) {
+                    setSelectedHeroId(currentHeroes[0].id);
+                    setSelectedSkinId('');
+                } else {
+                    // If switching back to hero category, we might want to keep selection or clear skin
+                    // But usually this effect runs when *category* changes or *race* changes.
+                    // If race changes, currentHeroes changes, so we enter the first condition.
+                    // If category changes to 'hero', we might keep hero?
+                    // The original code was:
+                    /*
+                       if (currentHeroes.length > 0) {
+                           setSelectedHeroId(currentHeroes[0].id);
+                       }
+                       setSelectedSkinId('');
+                    */
+                }
+            } else {
+                setSelectedSkinId('');
             }
-            setSelectedSkinId('');
         } else {
             // 如果当前已经是自定义模式，切换种族时不重置为 warband
             if (selectedHeroId !== 'custom') {
@@ -57,7 +81,10 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
             }
 
             if (selectedHeroId === 'warband' && currentWarbands.length > 0) {
-                setSelectedSkinId(currentWarbands[0].id);
+                // Check if current selection is valid for warband
+                if (!currentWarbands.find(w => w.id === selectedSkinId)) {
+                    setSelectedSkinId(currentWarbands[0].id);
+                }
             } else if (selectedHeroId === 'custom') {
                 // 切换种族后，如果当前选中的自定义单位不在新种族的列表中，则取消选中
                 const raceUnits = CUSTOM_SKIN_CONFIG[selectedRace]?.units || [];
@@ -66,17 +93,63 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                 }
             }
         }
-    }, [selectedRace, selectedCategory, currentHeroes, currentWarbands]);
+    }, [selectedRace, selectedCategory, currentHeroes, currentWarbands]); // This dependency array seems missing 'selectedHeroId' in original code but using it inside?
 
+    // Original effect had dependencies: [selectedRace, selectedCategory, currentHeroes, currentWarbands]
+    // My modification above was trying to be smarter but let's stick to adding the NEW effects separately to avoid breaking existing behavior unless necessary.
+    // Actually, looking at original code:
+    /*
+    React.useEffect(() => {
+        if (selectedCategory === 'hero') {
+            if (currentHeroes.length > 0) {
+                setSelectedHeroId(currentHeroes[0].id);
+            }
+            setSelectedSkinId('');
+        }
+        ...
+    */
+    // This resets hero selection EVERY key press of race/category.
+
+    // New effects for restrictions:
     // 获取当前选中的英雄数据
     const currentHero = useMemo(() => {
         return currentHeroes.find(h => h.id === selectedHeroId);
     }, [currentHeroes, selectedHeroId]);
 
+    // Calculate available skins based on restrictions
+    const availableSkins = useMemo(() => {
+        if (!currentHero) return [];
+        let skins = currentHero.skins;
+
+        if (isClassicMode) {
+            skins = skins.slice(0, 2);
+        }
+
+        if (!isFullPackageInstalled) {
+            skins = skins.filter(skin =>
+                !skin.config.some(c => typeof c.value === 'string' && c.value.toLowerCase().includes('cos'))
+            );
+        }
+
+        return skins;
+    }, [currentHero, isClassicMode, isFullPackageInstalled]);
+
     // 获取当前选中的战团数据
     const currentWarband = useMemo(() => {
         return currentWarbands.find(w => w.id === selectedSkinId);
     }, [currentWarbands, selectedSkinId]);
+
+    React.useEffect(() => {
+        if (selectedCategory === 'unit') {
+            if (isClassicMode || !isFullPackageInstalled) {
+                setSelectedCategory('hero');
+                setSelectedSkinId('');
+            }
+        }
+    }, [isClassicMode, isFullPackageInstalled, selectedCategory]);
+
+    // Removed the aggressive reset effect for selectedSkinId to fix "no resident effect" issue.
+    // Logic was: if (selectedCategory === 'hero' && selectedSkinId && !availableSkins.find(...)) setSelectedSkinId('');
 
     const handleSelectModel = async (unitId: string) => {
         try {
@@ -94,9 +167,14 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
     };
 
     const handleApplySkin = async (targetId: string, skinId: string) => {
-        console.log('[SkinModal] handleApplySkin called:', { targetId, skinId, selectedCategory, selectedHeroId });
+        console.log('[SkinModal] handleApplySkin called:', { targetId, skinId, selectedCategory, selectedHeroId, isClassicMode });
         if (!skinId) {
             message.warning(t('skin.select.prompt'));
+            return;
+        }
+
+        if (!war3Path) {
+            message.error('War3 path not detected');
             return;
         }
 
@@ -104,15 +182,47 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
 
         try {
             if (selectedCategory === 'hero') {
-                const skin = currentHero?.skins.find(s => s.id === skinId);
-                console.log('[SkinModal] Hero skin selection:', { currentHero, skin });
+                const skin = availableSkins?.find(s => s.id === skinId);
+                console.log('[SkinModal] Hero skin selection:', { currentHero, skin, isClassicMode });
                 if (!skin || !currentHero) {
                     console.error('[SkinModal] Missing hero or skin definition');
                     return;
                 }
-                await (window as any).electronAPI.applySkin(currentHero.unitId, skin.config);
+
+                // Classic mode: use classic skin API
+                if (isClassicMode) {
+                    // Convert skin config to classic format
+                    const classicSkinData: any = {};
+                    for (const change of skin.config) {
+                        if (change.field === 'file') {
+                            classicSkinData.file = change.value;
+                        } else if (change.field === 'modelScale:hd') {
+                            classicSkinData.modelScale = change.value;
+                        } else if (change.field === 'Art') {
+                            classicSkinData.art = change.value;
+                        } else if (change.field === 'unitSound') {
+                            classicSkinData.unitSound = change.value;
+                        }
+                    }
+
+                    console.log('[SkinModal] Applying classic skin:', { heroId: currentHero.unitId, skinData: classicSkinData });
+                    await (window as any).electronAPI.applyClassicSkin(war3Path, {
+                        heroId: currentHero.unitId,
+                        skinData: classicSkinData
+                    });
+                } else {
+                    // Reforged mode: use regular skin API
+                    await (window as any).electronAPI.applySkin(currentHero.unitId, skin.config);
+                }
+
                 message.success({ content: t('skin.apply.success'), key: 'applySkin' });
             } else if (selectedHeroId === 'custom') {
+                // Custom skins not available in classic mode
+                if (isClassicMode) {
+                    message.error({ content: 'Custom skins are not available in classic mode', key: 'applySkin' });
+                    return;
+                }
+
                 const filePath = customSkins[skinId];
                 console.log('[SkinModal] Custom skin selection:', { skinId, filePath });
                 if (!filePath) {
@@ -122,6 +232,12 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                 await (window as any).electronAPI.applySkin(skinId, [{ field: 'file', value: filePath }]);
                 message.success({ content: t('skin.apply.success'), key: 'applySkin' });
             } else {
+                // Warband skins not available in classic mode
+                if (isClassicMode) {
+                    message.error({ content: 'Warband skins are not available in classic mode', key: 'applySkin' });
+                    return;
+                }
+
                 const warband = currentWarbands.find(w => w.id === skinId);
                 console.log('[SkinModal] Warband skin selection:', warband);
                 if (!warband) return;
@@ -152,7 +268,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
 
     return (
         <OverlayModal
-            title={t('skin.title')}
+            title={isClassicMode ? `${t('skin.title')} (${t('settings.ui.classic')})` : t('skin.title')}
             open={open}
             onClose={onClose}
         >
@@ -215,24 +331,27 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                         >
                             {t('skin.category.hero')}
                         </Button>
-                        <Button
-                            type={selectedCategory === 'unit' ? "primary" : "default"}
-                            onClick={() => {
-                                playSmall();
-                                setSelectedCategory('unit');
-                            }}
-                            onMouseEnter={() => playHover()}
-                            style={{
-                                background: selectedCategory === 'unit' ? '#d4af37' : 'transparent',
-                                borderColor: '#d4af37',
-                                color: selectedCategory === 'unit' ? '#000' : '#d4af37',
-                                height: '40px',
-                                padding: '0 30px',
-                                fontSize: '16px'
-                            }}
-                        >
-                            {t('skin.category.unit')}
-                        </Button>
+                        {/* Hide warband/unit category in classic mode OR if full package is not installed */}
+                        {!isClassicMode && isFullPackageInstalled && (
+                            <Button
+                                type={selectedCategory === 'unit' ? "primary" : "default"}
+                                onClick={() => {
+                                    playSmall();
+                                    setSelectedCategory('unit');
+                                }}
+                                onMouseEnter={() => playHover()}
+                                style={{
+                                    background: selectedCategory === 'unit' ? '#d4af37' : 'transparent',
+                                    borderColor: '#d4af37',
+                                    color: selectedCategory === 'unit' ? '#000' : '#d4af37',
+                                    height: '40px',
+                                    padding: '0 30px',
+                                    fontSize: '16px'
+                                }}
+                            >
+                                {t('skin.category.unit')}
+                            </Button>
+                        )}
                     </Space>
                 </div>
 
@@ -344,7 +463,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose }) => {
                             gap: '20px'
                         }}>
                             {selectedCategory === 'hero' ? (
-                                currentHero?.skins.map((skin) => (
+                                availableSkins?.map((skin) => (
                                     <div
                                         key={skin.id}
                                         onClick={() => {

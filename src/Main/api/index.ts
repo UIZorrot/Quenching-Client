@@ -20,6 +20,7 @@ import { registerScriptHandlers } from '../ipc/script-handlers';
 import { registerGlowHandlers } from '../ipc/glow-handlers';
 import { registerVisionHandlers } from '../ipc/vision-handlers';
 import { registerModManagementHandlers } from '../ipc/mod-management-handlers';
+import { registerClassicSkinHandlers } from '../ipc/classic-skin-handlers';
 
 // 注册所有API
 export function registerAllAPIs() {
@@ -46,6 +47,7 @@ export function registerAllAPIs() {
   registerGlowHandlers();
   registerVisionHandlers();
   registerModManagementHandlers();
+  registerClassicSkinHandlers();
 }
 
 export {

@@ -35,6 +35,7 @@ export interface ModSettings {
   modelEnhance: boolean; // 模型加强
   visionModPath: string; // VisionMod目录
   modEnabled: boolean;   // MOD总开关
+  classicMode: boolean;  // 经典版锁定
 }
 
 export interface War3SettingsState {
@@ -57,17 +58,17 @@ export const reaxel_War3Settings = reaxel(() => {
       objectShader: true,
       postProcessing: true,
       volumetricFog: true,
-      water: 'realistic' as const,
+      water: 'transparent' as const,
       foliage: true,
       lighting: 'standard' as const,
       half: false,
-      ui: 'quenching' as const,
+      ui: 'classic' as const,
       cam: false,
       glow: false,
-      terrain: 'original' as const,
-      tree: 'original' as const,
+      terrain: 'latest' as const,
+      tree: 'tall' as const,
       envRender: true,
-      modelEnhance: true,
+      modelEnhance: false,
       visionModPath: '',
       modEnabled: true
     } as ModSettings,
@@ -816,6 +817,8 @@ export const useWar3Settings = () => {
     toggleGameMode: settings.toggleGameMode,
     setResolution: settings.setResolution,
     saveModSettings: settings.saveModSettings,
-    saveCameraSettings: settings.saveCameraSettings
+    loadModSettings: settings.loadModSettings,
+    saveCameraSettings: settings.saveCameraSettings,
+    loadCameraSettings: settings.loadCameraSettings
   };
 };

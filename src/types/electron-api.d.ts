@@ -83,6 +83,21 @@ interface ElectronAPI {
   // Mod Management
   deleteMod: (war3Path: string) => Promise<{ success: boolean }>;
   resetRenderingComponents: (war3Path: string) => Promise<{ success: boolean }>;
+  toggleClassicMode: (war3Path: string, enable: boolean) => Promise<{ success: boolean; classicMode: boolean }>;
+
+  // Classic Mode Skin System
+  applyClassicSkin: (war3Path: string, change: {
+    heroId: string;
+    skinData: {
+      file?: string;
+      modelScale?: string;
+      modelScaleSD?: string;
+      art?: string;
+      unitSound?: string;
+    };
+  }) => Promise<{ success: boolean }>;
+  getClassicSupportedHeroes: (war3Path: string) => Promise<string[]>;
+
 
 
   // 涂装系统

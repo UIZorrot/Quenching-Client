@@ -184,7 +184,16 @@ export class AssetSyncService {
       'zip-ui.zip',
     ];
 
-    for (const name of coreZips) {
+    const uiType = modSettings?.ui || 'quenching'; // 默认 quenching
+
+    // 如果选择了原版 UI (classic)，则跳过对 zip-ui.zip 的检查和解压
+    const coreZipsToSync = uiType === 'classic'
+      ? coreZips.filter(name => name !== 'zip-ui.zip')
+      : coreZips;
+
+    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, Skipping UI sync: ${uiType === 'classic'})`);
+
+    for (const name of coreZipsToSync) {
       const zipPath = path.join(quenchingDir, name);
       if (!(await fs.pathExists(zipPath))) {
         console.warn(`[AssetSync] Zip not found: ${zipPath}`);
@@ -248,47 +257,16 @@ export class AssetSyncService {
       await this.extractZip(zipPath, targetDir);
     }
 
-    // --- 强制重新同步 WebUI 资源 (每次启动) ---
-    console.log('[AssetSync] Force re-extracting WebUI resources...');
+    // --- WebUI 资源同步 (任何情况下都执行，从不重置) ---
     const targetWebUIDir = path.join(war3Path, '_retail_', 'webui');
-
-    // 1. 删除现有 webui 文件夹
-    try {
-      if (await fs.pathExists(targetWebUIDir)) {
-        console.log(`[AssetSync] Deleting existing webui folder: ${targetWebUIDir}`);
-        await fs.remove(targetWebUIDir);
-        console.log('[AssetSync] WebUI folder deleted successfully');
-      }
-    } catch (err) {
-      console.error('[AssetSync] Failed to delete webui folder:', err);
-    }
-
-    // 2. 重新创建 webui 文件夹
+    // 1. 确保 webui 文件夹存在 (不删除现有文件夹，只确保存在)
     await fs.ensureDir(targetWebUIDir);
 
-    // 3. 确保 UI 资源已就绪，并根据设置应用正确的 UI
-    const uiType = modSettings?.ui || 'quenching'; // 默认 quenching
-    console.log(`[AssetSync] Ensuring UI assets are ready. Selected UI type: ${uiType}`);
-
-    // 注意：所有 UI 变体 (classic, quenching, carnival) 现在都包含在 zip-ui.zip 中
-    // zip-ui.zip 解压后会提供 ui/ui-org, ui/ui-que, ui/ui-blz 等源目录
-    // 之前 loop 中的 coreZips 已经确保 zip-ui.zip 被解压
-
-    try {
-      // 调用 UIService 应用当前的 UI 设置
-      // 这会将对应的源文件夹内容复制到 active 的 ui 目录 (console, feedback, framedef)
-      const { UIService } = require('./ui-service');
-      await UIService.applyUISettings(war3Path, uiType);
-    } catch (err) {
-      console.error('[AssetSync] Failed to apply initial UI settings:', err);
-    }
-
-    // 4. 根据语言选择同步 QuenchingOn.png
+    // 2. 根据语言选择同步 QuenchingOn.png
     const language = configManager.get('language');
     const isChinese = language === 'zh-CN';
     const quenchingOnSource = path.join(quenchingDir, isChinese ? 'QuenchingOnCN.png' : 'QuenchingOnEN.png');
     const quenchingOnTarget = path.join(targetWebUIDir, 'QuenchingOn.png');
-
 
     if (await fs.pathExists(quenchingOnSource)) {
       try {
@@ -301,7 +279,7 @@ export class AssetSyncService {
       console.warn(`[AssetSync] WebUI source image not found: ${quenchingOnSource}`);
     }
 
-    // 2. 同步其他 WebUI 文件 (如 index.html)
+    // 3. 同步其他 WebUI 文件 (如 index.html)
     const otherWebUIFiles = ['index.html'];
     for (const file of otherWebUIFiles) {
       const sourceFile = path.join(quenchingDir, file);
@@ -314,6 +292,20 @@ export class AssetSyncService {
           console.error(`[AssetSync] Failed to copy WebUI file ${file}:`, err);
         }
       }
+    }
+
+    // --- UI 资源配置 (仅在非 Classic 模式下) ---
+    if (uiType !== 'classic') {
+      console.log(`[AssetSync] Ensuring UI assets are ready. Selected UI type: ${uiType}`);
+      try {
+        // 调用 UIService 应用当前的 UI 设置
+        const { UIService } = require('./ui-service');
+        await UIService.applyUISettings(war3Path, uiType);
+      } catch (err) {
+        console.error('[AssetSync] Failed to apply initial UI settings:', err);
+      }
+    } else {
+      console.log('[AssetSync] UI type is classic. Skipping UI settings application.');
     }
   }
 }

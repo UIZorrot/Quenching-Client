@@ -235,6 +235,12 @@ export const MainWindow: React.FC = () => {
       return;
     }
 
+    // 经典模式下禁止切换MOD
+    if (modSettings?.classicMode) {
+      message.warning('经典版模式下无法开关 MOD，请先在设置中取消锁定经典版');
+      return;
+    }
+
     setIsModToggling(true);
 
     console.log('[ModToggle] Toggle requested, current modEnabledUI =', modEnabledUI);
@@ -406,6 +412,11 @@ export const MainWindow: React.FC = () => {
         message.error(t('msg.mod.engine.required'));
         return;
       }
+    }
+
+    if (modalType === 'skin' && modSettings?.classicMode) {
+      message.warning(t('settings.basic.classicMode.restrict'));
+      return;
     }
 
     if (modalType === 'setup' && !currentInstallation) {
@@ -653,6 +664,27 @@ export const MainWindow: React.FC = () => {
               display: 'inline-block'
             }}
           >
+            {/* 经典版指示器 */}
+            {modSettings?.classicMode && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-40px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  color: '#d4af37',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  textShadow: '0 0 10px rgba(0,0,0,0.8), 2px 2px 4px rgba(0,0,0,1)',
+                  zIndex: 10,
+                  fontFamily: "'Trajan Pro 3', serif",
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                [{t('settings.ui.classic')}]
+              </div>
+            )}
+
             {/* Logo - 在下层，可点击 */}
             <div
               onClick={handleModToggle}
@@ -923,6 +955,8 @@ export const MainWindow: React.FC = () => {
       <SettingsModal
         open={activeModal === 'settings'}
         onClose={closeModal}
+        isFullPackageInstalled={isFullPackageInstalled}
+        onModDeleted={() => refreshFullPackageStatus()}
       />
 
       <ThemeModal
@@ -939,6 +973,7 @@ export const MainWindow: React.FC = () => {
       <SkinModal
         open={activeModal === 'skin'}
         onClose={closeModal}
+        isFullPackageInstalled={isFullPackageInstalled}
       />
     </Layout >
   );

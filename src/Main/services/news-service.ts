@@ -10,6 +10,7 @@ export interface NewsItem {
     date: string;
     type: 'update' | 'announcement' | 'feature' | 'bugfix';
     author?: string;
+    tags?: string[];
 }
 
 export class NewsService {
@@ -115,69 +116,26 @@ export class NewsService {
         if (!md) return items;
 
         const cleanMd = md.replace(/^\uFEFF/, '');
-        const h1Match = cleanMd.match(/(?:^|\r?\n)#\s+([^\r\n]+)/);
-        const pageTitle = h1Match ? h1Match[1].trim() : '';
 
-        // 移除H1行，避免干扰后续分割
-        const contentBody = cleanMd.replace(/(?:^|\r?\n)#\s+[^\r\n]+/, '');
+        // 1. 尝试按 H1 (#) 分割
+        // split results: [pre-text, title1, body1, title2, body2, ...]
+        const h1Splits = cleanMd.split(/(?:^|\r?\n)#\s+([^\r\n]+)/);
 
-        // 使用正则分割，匹配以 ## 开头的行，且排除 #### (即 ## 后面必须跟空格或行尾，且不能是 #)
-        const sections = contentBody.split(/(?:\r?\n|^)##\s+(?!#)/);
-
-        console.log(`[NewsService] Total raw sections: ${sections.length}`);
-
-        for (let i = 0; i < sections.length; i++) {
-            const section = sections[i].trim();
-            if (!section) continue;
-
-            const lines = section.split(/\r?\n/);
-            const firstLine = lines[0].trim();
-
-            // 检查第一行是否有日期
-            const dateMatch = firstLine.match(/(\d{4}-\d{2}-\d{2})/);
-
-            // 如果没有日期，视为无效段落（除非是兜底逻辑，但这里我们要求严格些）
-            if (!dateMatch) {
-                console.log(`[NewsService] Skipping section without date: ${firstLine}`);
-                continue;
+        if (h1Splits.length >= 3) {
+            // 存在至少一个 H1 标题
+            for (let i = 1; i < h1Splits.length; i += 2) {
+                const title = h1Splits[i].trim();
+                const body = h1Splits[i + 1];
+                this.parseSection(title, body, items);
             }
-
-            const date = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-            let title = pageTitle || firstLine.replace(date, '').replace(/[#\[\]\(\)]/g, '').trim();
-            let content = '';
-
-            const contentLines = lines.slice(1);
-            const h4Index = contentLines.findIndex(l => l.trim().startsWith('####'));
-            const h3Index = contentLines.findIndex(l => l.trim().startsWith('###'));
-            const useIndex = h4Index !== -1 ? h4Index : h3Index;
-            let sectionLabel: string | undefined;
-
-            if (useIndex !== -1) {
-                const headerLine = contentLines[useIndex];
-                const headerTitle = headerLine.replace(/^####\s+/, '').replace(/^###\s+/, '').trim();
-                sectionLabel = headerTitle || undefined;
-                content = contentLines.slice(useIndex + 1).join('\n').trim();
-            } else {
-                content = contentLines.join('\n').trim();
-            }
-
-            if (!title) title = `更新公告 ${date}`;
-
-            // 仅仅作为内部标识，UI不显示这个Type Tag
-            let type: NewsItem['type'] = 'update';
-
-            items.push({
-                id: `news-${date}-${i}`,
-                title: title,
-                content: content,
-                date: date,
-                type: type,
-                // author 字段移除或留空
-                tags: sectionLabel ? [sectionLabel] : []
-            });
+        } else {
+            // 没有 H1 标题，或者格式只有纯文本/H2
+            // 尝试提取页面标题（仅作兼容，实际上可能不存在）
+            this.parseSection('', cleanMd, items);
         }
 
         console.log(`[NewsService] Successfully parsed ${items.length} news items`);
+
         if (items.length === 0) {
             // 回退：尝试从全文提取第一处日期，如果没有则使用今天
             const globalDate = cleanMd.match(/(\d{4}-\d{2}-\d{2})/);
@@ -189,12 +147,104 @@ export class NewsService {
                 content: fallbackContent,
                 date,
                 type: 'announcement',
-                author: 'Official'
             });
             console.log('[NewsService] Applied fallback news item due to empty parse');
         }
+
         // 按日期排序 (最新的在前)
         return items.sort((a, b) => b.date.localeCompare(a.date));
+    }
+
+    private parseSection(defaultTitle: string, contentBody: string, items: NewsItem[]) {
+        // 使用正则分割，匹配以 ## 开头的行
+        // 注意：split 会保留分隔符前面的内容在前一个数组元素，分隔符本身如果没捕获则消失
+        // 这里我们主要找 ## Date 这样的结构
+
+        // 如果内容里包含 ##，则尝试分割
+        const sections = contentBody.split(/(?:\r?\n|^)##\s+(?!#)/);
+
+        // 如果分割出多段（意味着有 ##），或者虽然只有一段但这一段以 ## 开头（被split吃掉了? 不，split behaviour）
+        // split /(?:^|\n)## / on "## Date\nContent" -> ["", "Date\nContent"]
+
+        let foundSubItems = false;
+
+        for (let i = 0; i < sections.length; i++) {
+            const section = sections[i].trim();
+            if (!section) continue;
+
+            const lines = section.split(/\r?\n/);
+            const firstLine = lines[0].trim();
+
+            // 检查第一行是否有日期 (这是识别 ## Date 结构的关键)
+            const dateMatch = firstLine.match(/(\d{4}-\d{2}-\d{2})/);
+
+            if (dateMatch) {
+                const date = dateMatch[1];
+                // 如果有 defaultTitle (来自 H1)，优先使用 H1，否则构造标题
+                let title = defaultTitle;
+
+                // 如果 defaultTitle 为空（旧格式），或者我们想把日期从标题移除
+                // 旧逻辑里 title 是去掉日期后的 firstLine
+                // 但在新格式 (# Ver -> ## Date) 里，title 应该是 Ver。
+                // firstLine 只是日期。
+
+                const restOfLine = firstLine.replace(date, '').trim();
+                if (!title) {
+                    title = restOfLine || `更新公告 ${date}`;
+                }
+
+                // 内容去掉第一行（日期行）
+                let content = lines.slice(1).join('\n').trim();
+
+                // 提取 tag (#### / ###)
+                const { processedContent, tag } = this.extractTag(content);
+
+                items.push({
+                    id: `news-${date}-${items.length}`,
+                    title: title,
+                    content: processedContent,
+                    date: date,
+                    type: 'update',
+                    tags: tag ? [tag] : []
+                });
+                foundSubItems = true;
+            }
+        }
+
+        // 如果在这个块里没有找到任何以 ## Date 开头的子项，
+        // 那么这整个块就是一个单独的新闻（例如 H1 是标题，内容里没有 ## 日期，或者日期写在正文里）
+        if (!foundSubItems && defaultTitle && contentBody.trim()) {
+            // 尝试从内容里找第一个日期
+            const dateMatch = contentBody.match(/(\d{4}-\d{2}-\d{2})/);
+            const date = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+
+            const { processedContent, tag } = this.extractTag(contentBody.trim());
+
+            items.push({
+                id: `news-${date}-${items.length}`,
+                title: defaultTitle,
+                content: processedContent,
+                date: date,
+                type: 'update',
+                tags: tag ? [tag] : []
+            });
+        }
+    }
+
+    private extractTag(content: string): { processedContent: string, tag?: string } {
+        const lines = content.split(/\r?\n/);
+        const h4Index = lines.findIndex(l => l.trim().startsWith('####'));
+        const h3Index = lines.findIndex(l => l.trim().startsWith('###'));
+        const useIndex = h4Index !== -1 ? h4Index : h3Index;
+
+        if (useIndex !== -1) {
+            const headerLine = lines[useIndex];
+            const headerTitle = headerLine.replace(/^####\s+/, '').replace(/^###\s+/, '').trim();
+            const newContent = lines.slice(useIndex + 1).join('\n').trim();
+            return { processedContent: newContent, tag: headerTitle || undefined };
+        }
+
+        return { processedContent: content, tag: undefined };
     }
 
     private async saveToCache(lang: string, items: NewsItem[]) {

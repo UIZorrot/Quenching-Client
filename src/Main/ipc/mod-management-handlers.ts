@@ -104,4 +104,109 @@ export function registerModManagementHandlers() {
 
         return { success: true };
     });
+
+    // 切换经典模式
+    ipcMain.handle('mod:toggle-classic-mode', async (event, war3Path: string, enable: boolean) => {
+        console.log(`[ModManagement] Toggling classic mode: ${enable ? 'ON' : 'OFF'}`);
+        const errors: string[] = [];
+
+        const baseDir = path.join(war3Path, '_retail_');
+        const qmoffDir = path.join(baseDir, 'QMoff');
+
+        // 需要移动的文件夹（除了 ui, scripts, webui, cos）
+        // cos 文件夹保留，因为它包含自定义皮肤模型
+        const foldersToMove = [
+            'environment',
+            'buildings',
+            'campaign',
+            'doodads',
+            'fonts',
+            'patch',
+            'replaceabletextures',
+            'shaders',
+            'splats',
+            'terrainart',
+            'textures',
+            'units'
+        ];
+
+        try {
+            if (enable) {
+                // 开启经典模式：移动文件夹到 QMoff
+                console.log('[ClassicMode] Moving folders to QMoff...');
+
+                // 确保 QMoff 目录存在
+                await fs.ensureDir(qmoffDir);
+
+                // 移动文件夹
+                for (const folder of foldersToMove) {
+                    const source = path.join(baseDir, folder);
+                    const target = path.join(qmoffDir, folder);
+
+                    try {
+                        if (await fs.pathExists(source)) {
+                            // 如果目标已存在，先删除
+                            if (await fs.pathExists(target)) {
+                                await fs.remove(target);
+                            }
+                            await fs.move(source, target);
+                            console.log(`[ClassicMode] Moved ${folder} to QMoff`);
+                        }
+                    } catch (err) {
+                        console.error(`[ClassicMode] Failed to move ${folder}:`, err);
+                        errors.push(`${folder}: ${err.message}`);
+                    }
+                }
+
+                // 更新配置
+                const currentSettings = configManager.get('modSettings') || {};
+                configManager.set('modSettings', {
+                    ...currentSettings,
+                    classicMode: true
+                });
+
+            } else {
+                // 关闭经典模式：还原文件夹
+                console.log('[ClassicMode] Restoring folders from QMoff...');
+
+                // 从 QMoff 还原文件夹
+                for (const folder of foldersToMove) {
+                    const source = path.join(qmoffDir, folder);
+                    const target = path.join(baseDir, folder);
+
+                    try {
+                        if (await fs.pathExists(source)) {
+                            // 如果目标已存在，先删除
+                            if (await fs.pathExists(target)) {
+                                await fs.remove(target);
+                            }
+                            await fs.move(source, target);
+                            console.log(`[ClassicMode] Restored ${folder} from QMoff`);
+                        }
+                    } catch (err) {
+                        console.error(`[ClassicMode] Failed to restore ${folder}:`, err);
+                        errors.push(`${folder}: ${err.message}`);
+                    }
+                }
+
+                // 更新配置
+                const currentSettings = configManager.get('modSettings') || {};
+                configManager.set('modSettings', {
+                    ...currentSettings,
+                    classicMode: false
+                });
+            }
+
+            if (errors.length > 0) {
+                throw new Error(`经典模式切换部分失败: ${errors.join(', ')}`);
+            }
+
+            console.log(`[ClassicMode] Classic mode ${enable ? 'enabled' : 'disabled'} successfully`);
+            return { success: true, classicMode: enable };
+
+        } catch (error) {
+            console.error('[ClassicMode] Failed to toggle classic mode:', error);
+            throw error;
+        }
+    });
 }
