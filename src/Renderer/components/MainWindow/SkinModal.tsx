@@ -157,8 +157,8 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
             if (filePath) {
                 setCustomSkins(prev => ({ ...prev, [unitId]: filePath }));
                 setSelectedSkinId(unitId);
-                // 选择模型后立即应用
-                await handleApplySkin('custom', unitId);
+                // 选择模型后立即应用，传入 filePath 避免状态更新延迟导致的问题
+                await handleApplySkin('custom', unitId, filePath);
             }
         } catch (error) {
             console.error('Failed to select model file:', error);
@@ -166,7 +166,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
         }
     };
 
-    const handleApplySkin = async (targetId: string, skinId: string) => {
+    const handleApplySkin = async (targetId: string, skinId: string, customFilePath?: string) => {
         console.log('[SkinModal] handleApplySkin called:', { targetId, skinId, selectedCategory, selectedHeroId, isClassicMode });
         if (!skinId) {
             message.warning(t('skin.select.prompt'));
@@ -223,7 +223,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                     return;
                 }
 
-                const filePath = customSkins[skinId];
+                const filePath = customFilePath || customSkins[skinId];
                 console.log('[SkinModal] Custom skin selection:', { skinId, filePath });
                 if (!filePath) {
                     message.error({ content: t('skin.model.select'), key: 'applySkin' });

@@ -96,14 +96,11 @@ export function registerWaterHandlers() {
                 await fs.remove(shoreline2);
                 console.log(`[Water] Removed if existed: ${shoreline1}, ${shoreline2}`);
 
-                // 3. 覆盖 SLK 为反射版
-                console.log(`[Water] Updating SLK (Realistic) from: ${waterRelSlkSrc}`);
-                if (await fs.pathExists(waterRelSlkSrc)) {
-                    await fs.ensureDir(path.dirname(waterSlk));
-                    await fs.copy(waterRelSlkSrc, waterSlk, { overwrite: true });
-                    console.log(`[Water] SUCCESS: Copied to ${waterSlk}`);
-                } else {
-                    console.error(`[Water] ERROR: Source SLK NOT FOUND: ${waterRelSlkSrc}`);
+                // 3. 删除 SLK (其他水面不需要 water.slk)
+                console.log(`[Water] Removing SLK for non-transparent mode...`);
+                if (await fs.pathExists(waterSlk)) {
+                    await fs.remove(waterSlk);
+                    console.log(`[Water] SUCCESS: Removed ${waterSlk}`);
                 }
             }
 

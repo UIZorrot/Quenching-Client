@@ -6625,7 +6625,7 @@ modelScale:hd=1.04
 
 [Udea]
 Art=ReplaceableTextures\CommandButtons\BTNHeroDeathKnight.blp
-Art=ReplaceableTextures\CommandButtons\BTNArthasEvil.blp
+Art:hd=ReplaceableTextures\CommandButtons\BTNArthasEvil.blp
 skinType=unit
 heroAbilSkinList=AUdc,AUdp,AUau,AUan
 abilSkinList=AInv
@@ -6752,7 +6752,7 @@ modelScale:hd=1.15
 // lich
 [Ulic]
 Art=ReplaceableTextures\CommandButtons\BTNLichVersion2.blp
-Art=ReplaceableTextures\CommandButtons\BTNHeroLich.blp
+Art:hd=ReplaceableTextures\CommandButtons\BTNHeroLich.blp
 skinType=unit
 heroAbilSkinList=AUfn,AUfu,AUdr,AUdd
 abilSkinList=AInv
@@ -9061,6 +9061,7 @@ occH=0
 
 [Nalc]
 Art=ReplaceableTextures\CommandButtons\BTNHeroAlchemist.blp
+Art:hd=ReplaceableTextures\\CommandButtons\\BTNHeroAlchemist.blp
 skinType=unit
 heroAbilSkinList=ANhs,ANab,ANcr,ANtm
 abilSkinList=AInv
@@ -9802,6 +9803,7 @@ occH=0
 // firelord
 [Nfir]
 Art=ReplaceableTextures\CommandButtons\BTNHeroAvatarOfFlame.blp
+Art:hd=ReplaceableTextures\\CommandButtons\\BTNHeroAvatarOfFlame.blp
 skinType=unit
 heroAbilSkinList=ANia,ANso,ANlm,ANvc
 heroAbilSkinList:custom,V1=ANic,ANso,ANlm,ANvc
@@ -34130,7 +34132,7 @@ occH=0
 // malfurion
 [Emfr]
 Art=ReplaceableTextures\CommandButtons\BTNFurion.blp
-Art=ReplaceableTextures\CommandButtons\BTNMalFurionWithoutStag.blp
+Art:hd=ReplaceableTextures\CommandButtons\BTNMalFurionWithoutStag.blp
 skinType=unit
 heroAbilSkinList=AEer,AEfn,AEah,AEtq
 abilSkinList=AInv,Ault
@@ -34184,7 +34186,7 @@ occH=0
 // malfurionnostag
 [Emns]
 Art=ReplaceableTextures\CommandButtons\BTNFurion.blp
-Art=ReplaceableTextures\CommandButtons\BTNMalFurionWithoutStag.blp
+Art:hd=ReplaceableTextures\CommandButtons\BTNMalFurionWithoutStag.blp
 skinType=unit
 heroAbilSkinList=AEer,AEfn,AEah,AEtq
 abilSkinList=AInv,Ault

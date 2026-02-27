@@ -235,12 +235,6 @@ export const MainWindow: React.FC = () => {
       return;
     }
 
-    // 经典模式下禁止切换MOD
-    if (modSettings?.classicMode) {
-      message.warning('经典版模式下无法开关 MOD，请先在设置中取消锁定经典版');
-      return;
-    }
-
     setIsModToggling(true);
 
     console.log('[ModToggle] Toggle requested, current modEnabledUI =', modEnabledUI);
@@ -287,10 +281,20 @@ export const MainWindow: React.FC = () => {
           'units'
         ];
 
+        let dirsToMove = allDirs;
+        // 如果开启了经典版，不要移动经典版控制的文件夹（例如 units，其中可能有经典版的 unitskin.txt），防止冲突或误覆盖
+        if (modSettings?.classicMode) {
+          const classicFolders = [
+            'environment', 'buildings', 'campaign', 'doodads', 'fonts', 'patch',
+            'replaceabletextures', 'shaders', 'splats', 'terrainart', 'textures', 'units'
+          ];
+          dirsToMove = allDirs.filter(d => !classicFolders.includes(d));
+        }
+
         const moveAll = async (fromBase: string, toBase: string) => {
-          const total = allDirs.length;
+          const total = dirsToMove.length;
           for (let i = 0; i < total; i++) {
-            const dirName = allDirs[i];
+            const dirName = dirsToMove[i];
             const source = `${fromBase}/${dirName}`;
             const target = `${toBase}/${dirName}`;
 

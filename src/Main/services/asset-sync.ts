@@ -180,18 +180,18 @@ export class AssetSyncService {
     const coreZips = [
       'zip-environment.zip',
       'zip-scripts.zip',
-      'zip-shaders.zip',
-      'zip-ui.zip',
+      'zip-shaders.zip'
     ];
 
     const uiType = modSettings?.ui || 'quenching'; // 默认 quenching
 
-    // 如果选择了原版 UI (classic)，则跳过对 zip-ui.zip 的检查和解压
-    const coreZipsToSync = uiType === 'classic'
-      ? coreZips.filter(name => name !== 'zip-ui.zip')
-      : coreZips;
+    let coreZipsToSync = coreZips;
 
-    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, Skipping UI sync: ${uiType === 'classic'})`);
+    if (modSettings?.envRender === false) {
+      coreZipsToSync = coreZipsToSync.filter(name => name !== 'zip-scripts.zip');
+    }
+
+    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, EnvRender: ${modSettings?.envRender !== false})`);
 
     for (const name of coreZipsToSync) {
       const zipPath = path.join(quenchingDir, name);
@@ -211,9 +211,6 @@ export class AssetSyncService {
       } else if (name === 'zip-shaders.zip') {
         targetDir = path.join(war3Path, '_retail_', 'shaders');
         qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'shaders');
-      } else if (name === 'zip-ui.zip') {
-        targetDir = path.join(war3Path, '_retail_', 'ui');
-        qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'ui');
       }
 
       const hasBase = await (async () => {
@@ -294,18 +291,5 @@ export class AssetSyncService {
       }
     }
 
-    // --- UI 资源配置 (仅在非 Classic 模式下) ---
-    if (uiType !== 'classic') {
-      console.log(`[AssetSync] Ensuring UI assets are ready. Selected UI type: ${uiType}`);
-      try {
-        // 调用 UIService 应用当前的 UI 设置
-        const { UIService } = require('./ui-service');
-        await UIService.applyUISettings(war3Path, uiType);
-      } catch (err) {
-        console.error('[AssetSync] Failed to apply initial UI settings:', err);
-      }
-    } else {
-      console.log('[AssetSync] UI type is classic. Skipping UI settings application.');
-    }
   }
 }

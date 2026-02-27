@@ -166,7 +166,7 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 	});
 
 	obsReaction(async () => {
-		const { mainWindow } = reaxel_MainProcessHub.store;
+		const mainWindow = reaxel_MainProcessHub?.store?.mainWindow;
 		if (mainWindow) {
 			mainWindow.on('moved', async () => {
 				console.log('main-window moved');
@@ -175,7 +175,7 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 			});
 		}
 
-	}, () => [reaxel_MainProcessHub.store.mainWindow]);
+	}, () => [reaxel_MainProcessHub?.store?.mainWindow]);
 
 	let rtn = {
 		calcActualAppSize,

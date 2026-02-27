@@ -56,8 +56,8 @@ export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSki
       { unitId: 'hdhw', name: '龙鹰骑士', icon: 'btndragonhawkriderv1.png' },
       { unitId: 'hmpr', name: '牧师', icon: 'btnpriest.png' },
       { unitId: 'hsor', name: '女巫', icon: 'btnsorceress.png' },
-      { unitId: 'hmtp', name: '攻城坦克', icon: 'btnseigeengine.png' },
-      { unitId: 'hsbe', name: '破法者', icon: 'btnspellbreaker.png' },
+      { unitId: 'hmtt', name: '攻城坦克', icon: 'btnseigeengine.png' },
+      { unitId: 'hspt', name: '破法者', icon: 'btnspellbreaker.png' },
       { unitId: 'Hamg', name: '大法师', icon: 'btnheroarchmage.png' },
       { unitId: 'Hpal', name: '圣骑士', icon: 'btnheropaladin.png' },
       { unitId: 'Hmkg', name: '山丘之王', icon: 'btnheromountainking.png' },
@@ -71,10 +71,10 @@ export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSki
       { unitId: 'ogru', name: '步兵', icon: 'btngrunt.png' },
       { unitId: 'ohun', name: '巨魔猎头者', icon: 'btnheadhunter.png' },
       { unitId: 'ocat', name: '粉碎者', icon: 'btndemolisher.png' },
-      { unitId: 'ora2', name: '掠夺者', icon: 'btnraider.png' },
-      { unitId: 'okot', name: '科多兽', icon: 'btnkotobeast.png' },
+      { unitId: 'orai', name: '掠夺者', icon: 'btnraider.png' },
+      { unitId: 'okod', name: '科多兽', icon: 'btnkotobeast.png' },
       { unitId: 'owyv', name: '风骑士', icon: 'btnwyvernrider.png' },
-      { unitId: 'obat', name: '巨魔蝙蝠骑士', icon: 'btntrollbatrider.png' },
+      { unitId: 'otbr', name: '巨魔蝙蝠骑士', icon: 'btntrollbatrider.png' },
       { unitId: 'ospw', name: '灵魂行者', icon: 'btnspiritwalker.png' },
       { unitId: 'otau', name: '牛头人', icon: 'btntauren.png' },
       { unitId: 'oshm', name: '萨满祭司', icon: 'btnshaman.png' },
@@ -101,7 +101,7 @@ export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSki
       { unitId: 'ubsp', name: '毁灭者', icon: 'btndestroyer.png' },
       { unitId: 'uske', name: '骷髅战士', icon: 'btnskeletonwarrior.png' },
       { unitId: 'Udea', name: '死亡骑士', icon: 'btnherodeathknight.png' },
-      { unitId: 'Udlr', name: '恐惧魔王', icon: 'btnherodreadlord.png' },
+      { unitId: 'Udre', name: '恐惧魔王', icon: 'btnherodreadlord.png' },
       { unitId: 'Ulic', name: '巫妖', icon: 'btnherolich.png' },
       { unitId: 'Ucrl', name: '地穴领主', icon: 'btnherocryptlord.png' },
     ]
@@ -111,7 +111,7 @@ export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSki
     units: [
       { unitId: 'ewsp', name: '小精灵', icon: 'btnwisp.png' },
       { unitId: 'earc', name: '弓箭手', icon: 'btnarcher.png' },
-      { unitId: 'ehun', name: '女猎手', icon: 'btnhuntress.png' },
+      { unitId: 'esen', name: '女猎手', icon: 'btnhuntress.png' },
       { unitId: 'ebal', name: '弩车', icon: 'btnglaivethrower.png' },
       { unitId: 'edry', name: '树妖', icon: 'btndryad.png' },
       { unitId: 'edoc', name: '利爪德鲁伊', icon: 'btndruidoftheclaw.png' },
@@ -122,7 +122,7 @@ export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSki
       { unitId: 'edot', name: '猛禽德鲁伊', icon: 'btndruidofthetalon.png' },
       { unitId: 'echm', name: '奇美拉', icon: 'btnchimaera.png' },
       { unitId: 'Edem', name: '恶魔猎手', icon: 'btnherodemonhunter.png' },
-      { unitId: 'Epot', name: '月之女祭司', icon: 'btnheromoonpriestess.png' },
+      { unitId: 'Emoo', name: '月之女祭司', icon: 'btnheromoonpriestess.png' },
       { unitId: 'Ekee', name: '丛林守护者', icon: 'btnkeeperofthegrove.png' },
       { unitId: 'Ewar', name: '守望者', icon: 'btnherowarden.png' },
     ]
@@ -133,11 +133,11 @@ export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSki
       { unitId: 'Nbst', name: '兽王', icon: 'p01.png' },
       { unitId: 'Nbrn', name: '黑暗游侠', icon: 'p02.png' },
       { unitId: 'Nngs', name: '娜迦海妖', icon: 'btnnagaseawitch.png' },
-      { unitId: 'Nalch', name: '炼金术士', icon: 'p15.png' },
-      { unitId: 'Npan', name: '熊猫酒仙', icon: 'p056.png' },
-      { unitId: 'Nflm', name: '火焰领主', icon: 'p055.png' },
+      { unitId: 'Nalc', name: '炼金术士', icon: 'p15.png' },
+      { unitId: 'Npbm', name: '熊猫酒仙', icon: 'p056.png' },
+      { unitId: 'Nfir', name: '火焰领主', icon: 'p055.png' },
       { unitId: 'Ntin', name: '修补匠', icon: 'p054.png' },
-      { unitId: 'Npit', name: '深渊领主', icon: 'p053.png' },
+      { unitId: 'Nplh', name: '深渊领主', icon: 'p053.png' },
     ]
   }
 };
@@ -227,8 +227,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
               { field: 'file', value: 'units\\human\\Jaina\\Jaina' },
               { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNJaina.blp' },
               { field: 'unitSound', value: 'Jaina' },
-              { field: 'modelScale:hd', value: '1.35' },
-              { field: 'modelScale:hd', value: '1.1' } // lines[60] in WPF
+              { field: 'modelScale:hd', value: '1.15' }
             ]
           },
           {
@@ -269,7 +268,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
               { field: 'file', value: 'units\\human\\HeroPaladin\\HeroPaladin' },
               { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroPaladin.blp' },
               { field: 'unitSound', value: 'HeroPaladin' },
-              { field: 'modelScale:hd', value: '1.3' }
+              { field: 'modelScale:hd', value: '1.2' }
             ]
           },
           {
@@ -762,6 +761,8 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
           { unitId: 'unec', field: 'file', value: 'cos\\ud1\\revenantfrost' },
           { unitId: 'unec', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNFrostRevenant.blp' },
           { unitId: 'unec', field: 'modelScale:hd', value: '1.05' },
+          { unitId: 'ugho', field: 'file', value: 'units\\undead\\Ghoul\\Ghoul' },
+          { unitId: 'ugho', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNGhoul.blp' },
           { unitId: 'uske', field: 'unitSound', value: 'Skeleton' },
           { unitId: 'uskm', field: 'unitSound', value: 'Skeleton' },
         ]
@@ -874,7 +875,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
       },
       {
         id: 'dreadlord',
-        unitId: 'Udlr',
+        unitId: 'Udre',
         name: '恐惧魔王',
         icon: 'btnherodreadlord.png',
         skins: [
@@ -980,7 +981,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             preview: 'cosh_u2.png',
             config: [
               { field: 'file', value: 'units\\undead\\Anubarak\\Anubarak' },
-              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNAnubarak.blp' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNAnubarak.blp' },
               { field: 'unitSound', value: 'HeroCryptLord' },
               { field: 'modelScale:hd', value: '1.04' }
             ]
@@ -1025,7 +1026,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
     heroes: [
       {
         id: 'priestessofthemoon',
-        unitId: 'Epot',
+        unitId: 'Emoo',
         name: '月之女祭司',
         icon: 'btnheromoonpriestess.png',
         skins: [
@@ -1034,9 +1035,9 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '原版',
             preview: 'cosh_n11.png',
             config: [
-              { field: 'file:hd', value: 'Units\\NightElf\\HeroPriestessOfTheMoon\\HeroPriestessOfTheMoon' },
-              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNPriestessOfTheMoon.blp' },
-              { field: 'unitSound', value: 'HeroPriestessOfTheMoon' },
+              { field: 'file', value: 'units\\nightelf\\HeroMoonPriestess\\HeroMoonPriestess' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNPriestessOfTheMoon.blp' },
+              { field: 'unitSound', value: 'HeroMoonPriestess' },
               { field: 'modelScale:hd', value: '1.1' }
             ]
           },
@@ -1045,8 +1046,8 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '泰兰德',
             preview: 'cosh_n9.png',
             config: [
-              { field: 'file:hd', value: 'Units\\NightElf\\Tyrande\\Tyrande' },
-              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNTyrande.blp' },
+              { field: 'file', value: 'Units\\NightElf\\Tyrande\\Tyrande' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNTyrande.blp' },
               { field: 'unitSound', value: 'Tyrande' },
               { field: 'modelScale:hd', value: '1.1' }
             ]
@@ -1056,8 +1057,8 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '泰兰德(不骑马)',
             preview: 'cosh_n8.png',
             config: [
-              { field: 'file:hd', value: 'cos\\TyrandeDismounted\\TyrandeMountless.mdx' },
-              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNTyrande.blp' },
+              { field: 'file', value: 'cos\\TyrandeDismounted\\TyrandeMountless.mdx' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNTyrande.blp' },
               { field: 'unitSound', value: 'Tyrande' },
               { field: 'modelScale:hd', value: '1.1' }
             ]
@@ -1297,7 +1298,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
       },
       {
         id: 'goblin-alchemist',
-        unitId: 'Nalch',
+        unitId: 'Nalc',
         name: '炼金术士',
         icon: 'p15.png',
         skins: [
@@ -1307,7 +1308,8 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             preview: 'cosh_t10.png',
             config: [
               { field: 'file', value: 'Units\\Creeps\\HeroGoblinAlchemist\\HeroGoblinAlchemist' },
-              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroGoblinAlchemist.blp' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroAlchemist.blp' },
+              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroAlchemist.blp' },
               { field: 'unitSound', value: 'HeroGoblinAlchemist' }
             ]
           },
@@ -1317,7 +1319,8 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             preview: 'cosh_t9.png',
             config: [
               { field: 'file', value: 'cos\\GAOrigin\\HeroGoblinAlchemist' },
-              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroGoblinAlchemist.blp' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroAlchemist.blp' },
+              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroAlchemist.blp' },
               { field: 'unitSound', value: 'HeroGoblinAlchemist' }
             ]
           }
@@ -1325,7 +1328,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
       },
       {
         id: 'pandarenbrewmaster',
-        unitId: 'Npan',
+        unitId: 'Npbm',
         name: '熊猫酒仙',
         icon: 'p056.png',
         skins: [
@@ -1355,7 +1358,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
       },
       {
         id: 'firelord',
-        unitId: 'Nflm',
+        unitId: 'Nfir',
         name: '火焰领主',
         icon: 'p055.png',
         skins: [
@@ -1365,7 +1368,8 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             preview: 'cosh_t16.png',
             config: [
               { field: 'file', value: 'units\\Creeps\\HeroFlameLord\\HeroFlameLord' },
-              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroFlameLord.blp' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroAvatarOfFlame.blp' },
+              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroAvatarOfFlame.blp' },
               { field: 'unitSound', value: 'HeroFlameLord' }
             ]
           },
@@ -1375,7 +1379,8 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             preview: 'cosh_t15.png',
             config: [
               { field: 'file', value: 'cos/volcanus.mdx' },
-              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroFlameLord.blp' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroAvatarOfFlame.blp' },
+              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroAvatarOfFlame.blp' },
               { field: 'unitSound', value: 'HeroFlameLord' }
             ]
           }
@@ -1413,7 +1418,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
       },
       {
         id: 'pitlord',
-        unitId: 'Npit',
+        unitId: 'Nplh',
         name: '深渊领主',
         icon: 'p053.png',
         skins: [

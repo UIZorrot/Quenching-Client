@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ElectronAPI } from '../types/electron-api';
 
 // 暴露安全的API给渲染进程
 const electronAPI: ElectronAPI = {

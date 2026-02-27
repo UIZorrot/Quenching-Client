@@ -10,8 +10,8 @@ export type Preset = {
 	zoomFactor: number;
 }
 function currentDisplayBounds() {
-	const { mainWindow } = reaxel_MainProcessHub.store;
-	return screen.getDisplayMatching(mainWindow.getBounds()).bounds;
+	const mainWindow = reaxel_MainProcessHub?.store?.mainWindow;
+	return mainWindow ? screen.getDisplayMatching(mainWindow.getBounds()).bounds : screen.getPrimaryDisplay().bounds;
 }
 export const mainWindowResolutionPresets = {
 	get auto(): Preset {
@@ -26,8 +26,8 @@ export const mainWindowResolutionPresets = {
 		}
 	},
 	get _480P(): Preset {
-		const { mainWindow } = reaxel_MainProcessHub.store;
-		mainWindow.webContents.setZoomFactor(.35);
+		const mainWindow = reaxel_MainProcessHub?.store?.mainWindow;
+		mainWindow?.webContents.setZoomFactor(.35);
 		return {
 			size: useScaleConverter({
 				width: 480 * 0.9,

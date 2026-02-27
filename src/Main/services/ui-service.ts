@@ -40,10 +40,22 @@ export class UIService {
 
             // 1. 清理目标目录 (删除旧的 UI 组件)
             // 对应: DelectDir(dir_root + "ui/console"); etc.
-            const dirsToDelete = ['console', 'feedback', 'framedef'];
+            const dirsToDelete = ['console', 'feedback', 'framedef', 'ui-org', 'ui-que', 'ui-blz'];
             for (const dir of dirsToDelete) {
                 const targetDir = path.join(uiPath, dir);
                 await fs.remove(targetDir).catch(err => console.warn(`Failed to remove ${targetDir}:`, err));
+            }
+
+            // [NEW] 1.5 解压纯净的 zip-ui.zip 到 _retail_/ui
+            const { AssetSyncService } = require('./asset-sync');
+            const assetsDir = await AssetSyncService.getAssetsDir();
+            const zipPath = path.join(assetsDir, 'quenching', 'zip-ui.zip');
+            if (await fs.pathExists(zipPath)) {
+                console.log('[UIService] Extracting clean zip-ui.zip...');
+                await AssetSyncService.extractZip(zipPath, uiPath);
+                console.log('[UIService] zip-ui.zip extracted.');
+            } else {
+                console.warn(`[UIService] zip-ui.zip not found at ${zipPath}`);
             }
 
             // 2. 复制新文件
