@@ -23,6 +23,7 @@ import { AboutModal } from './AboutModal';
 import { NewsPanel } from './NewsPanel';
 import { SkinModal } from './SkinModal';
 import { useGlobalLoading } from '../GlobalLoadingProvider';
+import { APP_VERSION } from '../../version';
 // import styles from './MainWindow.module.less';
 
 const { Content } = Layout;
@@ -280,10 +281,20 @@ export const MainWindow: React.FC = () => {
           'units'
         ];
 
+        let dirsToMove = allDirs;
+        // 如果开启了经典版，不要移动经典版控制的文件夹（例如 units，其中可能有经典版的 unitskin.txt），防止冲突或误覆盖
+        if (modSettings?.classicMode) {
+          const classicFolders = [
+            'environment', 'buildings', 'campaign', 'doodads', 'fonts', 'patch',
+            'replaceabletextures', 'shaders', 'splats', 'terrainart', 'textures', 'units'
+          ];
+          dirsToMove = allDirs.filter(d => !classicFolders.includes(d));
+        }
+
         const moveAll = async (fromBase: string, toBase: string) => {
-          const total = allDirs.length;
+          const total = dirsToMove.length;
           for (let i = 0; i < total; i++) {
-            const dirName = allDirs[i];
+            const dirName = dirsToMove[i];
             const source = `${fromBase}/${dirName}`;
             const target = `${toBase}/${dirName}`;
 
@@ -407,6 +418,11 @@ export const MainWindow: React.FC = () => {
       }
     }
 
+    if (modalType === 'skin' && modSettings?.classicMode) {
+      message.warning(t('settings.basic.classicMode.restrict'));
+      return;
+    }
+
     if (modalType === 'setup' && !currentInstallation) {
       message.warning(t('install.not_found'));
       detectInstallations();
@@ -432,12 +448,11 @@ export const MainWindow: React.FC = () => {
       let remoteVer = '';
 
       try {
-        const v = await window.electronAPI?.getAppVersion();
-        localVer = (v || '').trim();
+        const localVer = APP_VERSION;
         setAppVersion(localVer);
-        console.log('Local Version:', localVer);
+        console.log('Local Version (Manual):', localVer);
       } catch (err) {
-        console.error('Failed to get app version:', err);
+        console.error('Failed to set app version:', err);
       }
 
       try {
@@ -449,7 +464,7 @@ export const MainWindow: React.FC = () => {
         console.error('Failed to fetch remote version:', err);
       }
 
-      if (localVer && remoteVer && localVer !== remoteVer) {
+      if (APP_VERSION != remoteVer) {
         setUpdateAvailable(true);
       }
     };
@@ -653,6 +668,27 @@ export const MainWindow: React.FC = () => {
               display: 'inline-block'
             }}
           >
+            {/* 经典版指示器 */}
+            {modSettings?.classicMode && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-40px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  color: '#d4af37',
+                  fontSize: '24px',
+                  fontWeight: 'bold',
+                  textShadow: '0 0 10px rgba(0,0,0,0.8), 2px 2px 4px rgba(0,0,0,1)',
+                  zIndex: 10,
+                  fontFamily: "'Trajan Pro 3', serif",
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                [{t('settings.ui.classic')}]
+              </div>
+            )}
+
             {/* Logo - 在下层，可点击 */}
             <div
               onClick={handleModToggle}
@@ -724,7 +760,7 @@ export const MainWindow: React.FC = () => {
               </Title>
 
               <Text className={styles.versionText} style={{ fontSize: '24px', color: '#d4af37', textShadow: '0 0 15px rgba(0,0,0,0.9), 2px 2px 4px rgba(0,0,0,1)', }}>
-                {remoteVersion || t('main.version.value')}
+                {appVersion || t('main.version.value')}
               </Text>
             </div>
 
@@ -923,6 +959,8 @@ export const MainWindow: React.FC = () => {
       <SettingsModal
         open={activeModal === 'settings'}
         onClose={closeModal}
+        isFullPackageInstalled={isFullPackageInstalled}
+        onModDeleted={() => refreshFullPackageStatus()}
       />
 
       <ThemeModal
@@ -939,6 +977,7 @@ export const MainWindow: React.FC = () => {
       <SkinModal
         open={activeModal === 'skin'}
         onClose={closeModal}
+        isFullPackageInstalled={isFullPackageInstalled}
       />
     </Layout >
   );

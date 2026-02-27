@@ -62,6 +62,15 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 		}
 	) => {
 		try {
+			// Windows平台下使用固定大小，避免因物理屏幕检测导致的窗口大小异常
+			if (process.platform === 'win32') {
+				const fixedScale = 0.75; // 约 1440x1012
+				return {
+					width: Math.round((options.devtoolsWidth ? (baseAppBounds.width + options.devtoolsWidth) : baseAppBounds.width) * fixedScale),
+					height: Math.round(baseAppBounds.height * fixedScale),
+				};
+			}
+
 			const currentPhysicalScreen = (await HoFCachedGetPhysicalScreens({ store, setState })()).find((itm, index, arr) => {
 				if (arr.length === 1) return true;
 				if (itm.is_primary) {
@@ -86,8 +95,8 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 			}
 
 			return convertActualSizeToScaleSize({
-				width: options.devtoolsWidth ? (baseAppBounds.width + options.devtoolsWidth) : baseAppBounds.width,
-				height: baseAppBounds.height,
+				width: (options.devtoolsWidth ? (baseAppBounds.width + options.devtoolsWidth) : baseAppBounds.width) * percent,
+				height: baseAppBounds.height * percent,
 			});
 		} catch (e) {
 			console.error(e);
@@ -157,7 +166,7 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 	});
 
 	obsReaction(async () => {
-		const { mainWindow } = reaxel_MainProcessHub.store;
+		const mainWindow = reaxel_MainProcessHub?.store?.mainWindow;
 		if (mainWindow) {
 			mainWindow.on('moved', async () => {
 				console.log('main-window moved');
@@ -166,7 +175,7 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 			});
 		}
 
-	}, () => [reaxel_MainProcessHub.store.mainWindow]);
+	}, () => [reaxel_MainProcessHub?.store?.mainWindow]);
 
 	let rtn = {
 		calcActualAppSize,

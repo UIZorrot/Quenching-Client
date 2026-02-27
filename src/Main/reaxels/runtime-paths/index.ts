@@ -4,7 +4,8 @@
 export let reaxel_ElectronENV: () => Reaxel_ENV;
 
 if (main()) {
-	const { app } = await import('electron');
+	// @ts-ignore
+	const { app } = require('electron');
 	reaxel_ElectronENV = reaxel(() => {
 		/**
 		 * 可以将renderer和main的api整合在一起,但是初始化必须是空值,当在main或者renderer第一次使用时

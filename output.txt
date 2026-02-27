@@ -1,0 +1,8 @@
+Section: Nalc
+  Art=ReplaceableTextures\CommandButtons\BTNHeroAlchemist.blp
+  file=units\Creeps\HeroGoblinAlchemist\HeroGoblinAlchemist
+  fileVerFlags=0
+Section: Nfir
+  Art=ReplaceableTextures\CommandButtons\BTNHeroAvatarOfFlame.blp
+  file=units\Creeps\HeroFlameLord\HeroFlameLord
+  fileVerFlags=0

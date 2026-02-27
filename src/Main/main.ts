@@ -147,39 +147,12 @@ function createTray(): void {
 }
 
 // 应用准备就绪
-app.whenReady().then(async () => {
+app.whenReady().then(() => {
   // 注册所有API
   registerAllAPIs();
 
-  console.log('\n==================== [AssetSync] Startup Check Begin ====================');
-  try {
-    const war3Path = configManager.get('war3Path');
-    console.log(`[Main] Current War3Path from config: ${war3Path}`);
-
-    if (war3Path) {
-      console.log('[Main] War3Path detected, starting asset synchronization...');
-      await AssetSyncService.syncAssetsBeforeLaunch(war3Path);
-      console.log('[Main] Asset synchronization completed.');
-
-      // 启动时清理已禁用的着色器文件
-      const modSettings = configManager.get('modSettings');
-      if (modSettings) {
-        await cleanupShadersOnStartup(war3Path, modSettings);
-        await cleanupScriptsOnStartup(war3Path, modSettings);
-      }
-    } else {
-      console.warn('[Main] War3Path not configured. Skipping asset synchronization.');
-      console.warn('[Main] Please configure the Warcraft III path in settings to enable asset sync.');
-    }
-  } catch (error) {
-    console.error('[Main] Failed to sync core assets on startup:', error);
-  }
-  console.log('==================== [AssetSync] Startup Check Complete ====================\n');
-
-  // 创建窗口
+  // 尽早创建窗口和托盘，保证以最快速度展示主页，不被资源检查等过程阻塞
   createWindow();
-
-  // 创建系统托盘
   createTray();
 
   // macOS 下点击 Dock 图标重新创建窗口
@@ -190,6 +163,34 @@ app.whenReady().then(async () => {
       mainWindow.show();
     }
   });
+
+  // 后台异步执行资源检查，避免阻塞主线程显示窗口
+  setTimeout(async () => {
+    console.log('\n==================== [AssetSync] Startup Check Begin ====================');
+    try {
+      const war3Path = configManager.get('war3Path');
+      console.log(`[Main] Current War3Path from config: ${war3Path}`);
+
+      if (war3Path) {
+        console.log('[Main] War3Path detected, starting asset synchronization...');
+        await AssetSyncService.syncAssetsBeforeLaunch(war3Path);
+        console.log('[Main] Asset synchronization completed.');
+
+        // 启动时清理已禁用的着色器文件
+        const modSettings = configManager.get('modSettings');
+        if (modSettings) {
+          await cleanupShadersOnStartup(war3Path, modSettings);
+          await cleanupScriptsOnStartup(war3Path, modSettings);
+        }
+      } else {
+        console.warn('[Main] War3Path not configured. Skipping asset synchronization.');
+        console.warn('[Main] Please configure the Warcraft III path in settings to enable asset sync.');
+      }
+    } catch (error) {
+      console.error('[Main] Failed to sync core assets on startup:', error);
+    }
+    console.log('==================== [AssetSync] Startup Check Complete ====================\n');
+  }, 100);
 });
 
 // 所有窗口关闭时退出应用（除了 macOS）

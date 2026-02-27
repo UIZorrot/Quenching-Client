@@ -84,7 +84,6 @@ export function registerVersionHandlers() {
   ipcMain.handle('version:fetch', async () => {
     // 主URL和备用URL
     const urls = [
-      'https://tianxiazhengyi.net/version.que',
       'https://www.tianxiazhengyi.net/version.que'
     ];
 
