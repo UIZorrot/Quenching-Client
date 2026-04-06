@@ -59,6 +59,7 @@ interface ElectronAPI {
 
   // 游戏启动
   launchGame: (executablePath?: string) => Promise<boolean>;
+  launchMap: (mapPath: string, difficulty: number) => Promise<boolean>;
   selectGamePath: () => Promise<string | null>;
   getConfig: (key: string) => Promise<any>;
   setConfig: (key: string, value: any) => Promise<void>;

@@ -464,7 +464,7 @@ export const MainWindow: React.FC = () => {
         console.error('Failed to fetch remote version:', err);
       }
 
-      if (APP_VERSION != remoteVer) {
+      if (APP_VERSION.toLowerCase() !== remoteVer.toLowerCase()) {
         setUpdateAvailable(true);
       }
     };

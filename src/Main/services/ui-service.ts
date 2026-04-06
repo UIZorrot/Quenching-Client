@@ -58,26 +58,23 @@ export class UIService {
                 console.warn(`[UIService] zip-ui.zip not found at ${zipPath}`);
             }
 
-            // 2. 复制新文件
-            // 根据旧代码逻辑：
-            // Classic: 只复制 feedback
-            // Quenching/Carnival: 复制 feedback, console, framedef
-            const copyDir = async (srcSubDir: string, destSubDir: string) => {
-                const src = path.join(uiPath, sourceDirName, srcSubDir);
-                const dest = path.join(uiPath, destSubDir);
+            // 2. 复制新文件 (从子目录如 ui-que/ 覆盖到 ui/ 根部)
+            const subFolders = ['feedback', 'console', 'framedef', 'webui'];
+            for (const folder of subFolders) {
+                const src = path.join(uiPath, sourceDirName, folder);
+                const dest = path.join(uiPath, folder);
+
                 if (await fs.pathExists(src)) {
+                    console.log(`[UIService] Copying ${folder} from ${sourceDirName} to root...`);
                     await fs.copy(src, dest, { overwrite: true });
                 } else {
-                    console.warn(`Source directory not found: ${src}`);
+                    // 如果源文件夹里没有这个组件 (通常是 Classic 模式下没有 console/framedef)，
+                    // 我们要确保删除顶层对应目录，防止 zip 根目录中自带的 Quenching 文件残留。
+                    if (await fs.pathExists(dest)) {
+                        console.log(`[UIService] Component ${folder} not in ${sourceDirName}, removing from root to restore original.`);
+                        await fs.remove(dest).catch(() => { });
+                    }
                 }
-            };
-
-            if (uiMode === 'classic') {
-                await copyDir('feedback', 'feedback');
-            } else {
-                await copyDir('feedback', 'feedback');
-                await copyDir('console', 'console');
-                await copyDir('framedef', 'framedef');
             }
 
             console.log(`[UIService] Successfully updated UI to ${uiMode}`);

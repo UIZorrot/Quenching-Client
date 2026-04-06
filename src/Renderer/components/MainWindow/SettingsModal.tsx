@@ -28,6 +28,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     desc: t('settings.preview.default'),
     image: null
   });
+  const [selectedMap, setSelectedMap] = useState<string>('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<number>(0);
 
   const isClassicMode = modSettings?.classicMode || false;
 
@@ -415,6 +417,93 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
   const renderBasicSettings = () => (
     <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div>
+          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>
+            {t('settings.basic.launchMap.title')}
+          </h3>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <div style={{ color: '#888' }}>
+              {t('settings.basic.launchMap.desc')}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
+              <div style={{
+                flex: 1,
+                padding: '8px 12px',
+                background: 'rgba(0, 0, 0, 0.3)',
+                border: '1px solid rgba(212, 175, 55, 0.2)',
+                borderRadius: '4px',
+                color: '#aaa',
+                fontSize: '13px',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {selectedMap || t('settings.basic.launchMap.selectMap')}
+              </div>
+              <Button
+                type="primary"
+                ghost
+                size="small"
+                onClick={async () => {
+                  playSmall();
+                  const path = await window.electronAPI?.selectFile({
+                    title: t('settings.basic.launchMap.selectMap'),
+                    filters: [{ name: 'Warcraft III Map', extensions: ['w3x', 'w3m'] }]
+                  });
+                  if (path) {
+                    setSelectedMap(path);
+                  }
+                }}
+                onMouseEnter={() => playHover()}
+                style={{ borderColor: '#d4af37', color: '#d4af37' }}
+              >
+                {t('setup.btn.change')}
+              </Button>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <div style={{ color: '#d4af37', marginBottom: '5px', fontSize: '14px' }}>
+                {t('settings.basic.launchMap.difficulty')}
+              </div>
+              <Space wrap>
+                {renderSettingButton(t('settings.basic.launchMap.easy'), selectedDifficulty, 0, () => setSelectedDifficulty(0))}
+                {renderSettingButton(t('settings.basic.launchMap.normal'), selectedDifficulty, 1, () => setSelectedDifficulty(1))}
+                {renderSettingButton(t('settings.basic.launchMap.hard'), selectedDifficulty, 2, () => setSelectedDifficulty(2))}
+              </Space>
+            </div>
+
+            <Button
+              type="primary"
+              disabled={!selectedMap || isLoading}
+              onClick={async () => {
+                playSmall();
+                if (!selectedMap) return;
+                try {
+                  showLoading(t('msg.launching'));
+                  await window.electronAPI?.launchMap(selectedMap, selectedDifficulty);
+                  message.success(t('msg.launch.success'));
+                } catch (e: any) {
+                  message.error(e.message || '启动失败');
+                } finally {
+                  hideLoading();
+                }
+              }}
+              onMouseEnter={() => playHover()}
+              style={{
+                background: selectedMap ? 'linear-gradient(135deg, #d4af37 0%, #a67c00 100%)' : 'rgba(212, 175, 55, 0.1)',
+                borderColor: '#d4af37',
+                color: selectedMap ? '#000' : '#d4af37',
+                fontWeight: 'bold',
+                height: '36px',
+                width: '120px'
+              }}
+            >
+              {t('settings.basic.launchMap.btn')}
+            </Button>
+          </Space>
+        </div>
+
         {/* 经典版模式切换 */}
         <div>
           <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>
@@ -460,8 +549,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             {isClassicMode && <div style={{ color: '#ff4d4f', fontSize: '12px' }}>{t('settings.basic.classicMode.restrict')}</div>}
           </Space>
         </div>
-      </Space>
-    </div>
+      </Space >
+    </div >
   );
 
   return (

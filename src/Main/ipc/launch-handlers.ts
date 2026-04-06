@@ -42,6 +42,15 @@ export function registerLaunchHandlers() {
         }
     });
 
+    ipcMain.handle('game:launch-map', async (event, mapPath: string, difficulty: number) => {
+        try {
+            return await GameLauncher.launchMap(mapPath, difficulty);
+        } catch (e: any) {
+            console.error(e);
+            throw e;
+        }
+    });
+
     ipcMain.handle('game:select-path', async () => {
         const isMac = process.platform === 'darwin';
         const result = await dialog.showOpenDialog({

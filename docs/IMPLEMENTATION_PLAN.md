@@ -19,7 +19,7 @@
 ## Issue 2: Version Check Always Shows "New Version Available"
 
 ### Problem:
-- Current version is v3.0, but system still shows update available
+- Current version is v3.1, but system still shows update available
 - Version comparison logic may be incorrect
 
 ### Solution:

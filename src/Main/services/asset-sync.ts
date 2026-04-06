@@ -252,6 +252,20 @@ export class AssetSyncService {
 
       console.log(`[AssetSync] Missing core assets for ${name}, extracting to ${targetDir}...`);
       await this.extractZip(zipPath, targetDir);
+
+      // 【修复】zip-environment.zip 解压后，需要检查用户的植被配置
+      // 如果用户关闭了植被（foliage=false），这里要将解压出来的 foliage 目录删除
+      // 避免类如“关闭植被后重启又显示开启”的状态不一致问题
+      if (name === 'zip-environment.zip') {
+        const foliageEnabled = modSettings?.foliage !== false; // default true
+        if (!foliageEnabled) {
+          const foliageDir = path.join(targetDir, 'foliage');
+          if (await fs.pathExists(foliageDir)) {
+            console.log(`[AssetSync] foliage=false in config, removing foliage dir after extraction: ${foliageDir}`);
+            await fs.remove(foliageDir);
+          }
+        }
+      }
     }
 
     // --- WebUI 资源同步 (任何情况下都执行，从不重置) ---

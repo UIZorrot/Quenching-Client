@@ -22,7 +22,7 @@
 1. Find version check logic (search for "new version" or "version available")
 2. Current version in package.json is 3.0
 3. Check version comparison logic
-4. Logs show: `[Version] Successfully fetched version: v3.0` but still shows update
+4. Logs show: `[Version] Successfully fetched version: v3.1` but still shows update
 
 ### Files to Check:
 - Search for version service/component

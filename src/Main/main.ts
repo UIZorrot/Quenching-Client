@@ -3,9 +3,31 @@ import path from 'path';
 import { registerAllAPIs } from './api';
 import { cleanupShadersOnStartup } from './ipc/shader-handlers';
 import { cleanupScriptsOnStartup } from './ipc/script-handlers';
+import { cleanupFoliageOnStartup } from './ipc/foliage-handlers';
 import { AssetSyncService } from './services/asset-sync';
 import { configManager } from './services/config-manager';
 
+// =====================================================================
+// 【修复】搜狗输入法/中文输入法兼容性 & 单实例锁（必须在 app.whenReady 之前执行）
+// 搜狗输入法等第三方中文 IME 在 Windows 上与 Electron 的 GPU 沙箱存在冲突，
+// 导致渲染进程崩溃，窗口无法显示（白屏/不弹出）。
+// 添加以下 Chromium 命令行参数可规避此问题。
+// =====================================================================
+
+// 【单实例锁】必须在 app.whenReady() 之前调用，避免竞态条件
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  // 已有实例在运行，直接退出当前进程
+  app.quit();
+  process.exit(0);
+}
+
+// 【IME 兼容】禁用 GPU 沙箱 - 修复搜狗输入法等导致渲染进程直接崩溃的问题
+app.commandLine.appendSwitch('no-sandbox');
+// 【IME 兼容】禁用硬件加速 GPU 合成 - 避免搜狗注入 DLL 导致 GPU 进程崩溃
+app.commandLine.appendSwitch('disable-gpu-compositing');
+// 【IME 兼容】忽略 GPU 黑名单 - 防止搜狗 IME 驱动版本导致 GPU 被禁用
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
 // 忽略 SSL 证书错误 (解决开发环境下的自签名证书问题)
 app.commandLine.appendSwitch('ignore-certificate-errors');
 
@@ -176,11 +198,12 @@ app.whenReady().then(() => {
         await AssetSyncService.syncAssetsBeforeLaunch(war3Path);
         console.log('[Main] Asset synchronization completed.');
 
-        // 启动时清理已禁用的着色器文件
+        // 启动时清理已禁用的着色器/脚本/植被文件（根据配置）
         const modSettings = configManager.get('modSettings');
         if (modSettings) {
           await cleanupShadersOnStartup(war3Path, modSettings);
           await cleanupScriptsOnStartup(war3Path, modSettings);
+          await cleanupFoliageOnStartup(war3Path, modSettings);
         }
       } else {
         console.warn('[Main] War3Path not configured. Skipping asset synchronization.');
@@ -231,22 +254,17 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.quenching.modclient');
 }
 
-// 单实例应用
-const gotTheLock = app.requestSingleInstanceLock();
-
-if (!gotTheLock) {
-  app.quit();
-} else {
-  app.on('second-instance', () => {
-    // 当运行第二个实例时，将焦点放在主窗口上
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) {
-        mainWindow.restore();
-      }
-      mainWindow.focus();
+// 【单实例锁已在文件顶部处理】
+// 第二个实例启动时，聚焦到已有主窗口
+app.on('second-instance', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
     }
-  });
-}
+    mainWindow.show();
+    mainWindow.focus();
+  }
+});
 
 // 导出主窗口引用（用于其他模块）
 export { mainWindow };

@@ -14,6 +14,7 @@ const electronAPI: ElectronAPI = {
 
   // 游戏启动
   launchGame: (executablePath?: string) => ipcRenderer.invoke('game:launch', executablePath),
+  launchMap: (mapPath: string, difficulty: number) => ipcRenderer.invoke('game:launch-map', mapPath, difficulty),
   selectGamePath: () => ipcRenderer.invoke('game:select-path'),
   getConfig: (key: string) => ipcRenderer.invoke('config:get', key),
   setConfig: (key: string, value: any) => ipcRenderer.invoke('config:set', key, value),
