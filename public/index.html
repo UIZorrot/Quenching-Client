@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://www.tianxiazhengyi.net https://tianxiazhengyi.net; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: file:; font-src 'self' data: https://fonts.gstatic.com;">
+    <title>淬火试炼 - Quenching Mod Client</title>
+    
+    <!-- 预加载字体 -->
+    <link rel="preload" href="./assets/quenching/TrajanPro3-Regular.otf" as="font" type="font/otf" crossorigin>
+    
+    <!-- 图标 -->
+    <link rel="icon" type="image/x-icon" href="./assets/quenching/1.ico">
+    
+    <style>
+        /* 初始加载样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #fff;
+            font-family: 'Trajan Pro 3', 'Microsoft YaHei UI Light', sans-serif;
+            overflow: hidden;
+        }
+        
+        #react-app-root {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        /* 加载动画 */
+        .loading-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-logo {
+            width: 120px;
+            height: 124px;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.3));
+        }
+        
+        .loading-title {
+            font-size: 28px;
+            color: transparent;
+            background: linear-gradient(180deg, #FFFFEA58 0%, #FFFFCD00 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            text-shadow: 0 0 15px #FCDB04;
+            margin-bottom: 10px;
+            font-family: 'Trajan Pro 3', serif;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 215, 0, 0.3);
+            border-top: 3px solid #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-top: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            margin-top: 15px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* 隐藏加载画面 */
+        .loading-container.hidden {
+            opacity: 0;
+            transition: opacity 0.5s ease-out;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载画面 -->
+    <div id="loading-screen" class="loading-container">
+        <img src="./assets/quenching/logo.png" alt="Quenching Logo" class="loading-logo" onerror="this.style.display='none'">
+        <div class="loading-title">淬火试炼</div>
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在启动...</div>
+    </div>
+    
+    <!-- React应用根节点 -->
+    <div id="react-app-root"></div>
+    
+    <script>
+        // 隐藏加载画面
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+                setTimeout(() => {
+                    loadingScreen.remove();
+                }, 500);
+            }
+        }
+        
+        // 当React应用加载完成后隐藏加载画面
+        window.addEventListener('load', () => {
+            // 给React一些时间来渲染
+            setTimeout(hideLoadingScreen, 1000);
+        });
+        
+        // 错误处理
+        window.addEventListener('error', (event) => {
+            console.error('Global error:', event.error);
+            const loadingText = document.querySelector('.loading-text');
+            if (loadingText) {
+                loadingText.textContent = '加载出错，请重试...';
+                loadingText.style.color = '#ff4d4f';
+            }
+        });
+        
+        // 防止右键菜单（生产环境）
+        if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+            document.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+            });
+            
+            // 防止拖拽文件
+            document.addEventListener('dragover', (e) => {
+                e.preventDefault();
+            });
+            
+            document.addEventListener('drop', (e) => {
+                e.preventDefault();
+            });
+        }
+    </script>
+</body>
+</html>

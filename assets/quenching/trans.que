@@ -1,0 +1,172 @@
+[cos-orc-unit-1]部落荣耀
+[cos-orc-unit-1-dis]五位兽人战士将获得更加强力的外观\n来帮助部落征战南北
+[cos-hum-unit-1]联盟精英
+[cos-hum-unit-1-dis]更换五位不同的联盟士兵模型\n整装待发准备出击
+[cos-disable]未解锁
+[cos-disable-dis]这个战团涂装暂时无法使用\n请选择其他
+[set-unit]单位变化
+[set-unit-dis]对单位模型的各种调整变化\n关闭之后涂装将不可使用
+[set-tree]环境变换
+[set-tree-dis]重新制作了更加精致贴图和模型\n你可以选择不同版本的资源
+[set-vio]国际服画面
+[set-vio-dis]部分地区会屏蔽部分成人特效\n解锁体验完整的重制版画面效果
+[set-water]水面
+[set-water-dis]在两种不同的水面直接切换\n扭曲透视或者泛光效果
+[set-foli]植被
+[set-foli-dis]华丽的植被可能带来卡顿\n您可以根据硬件选择适合的植被
+[set-shader]高级着色器
+[set-shader-dis]通过大量画面调整算法\n获得更完美的画面效果
+[set-light]全局光照
+[set-light-dis]大幅优化游戏内的环境光\n使得画面明暗鲜明
+[set-ld]光源方向
+[set-ld-dis]光源会影响阴影和昼夜变换效果\n可选固定或者旋转
+[set-tile]地形环境
+[set-tile-dis]综合性的改变纹理和光效\n带来全新的画面表现
+[set-ui-1]原版UI
+[set-ui-1-dis]更大的图标和小地图\n兼容所有RPG地图
+[set-ui-3]淬火UI
+[set-ui-3-dis]更宽阔的视野\n简洁的界面设计\n操作变化较少
+[set-ui-2]嘉年华UI
+[set-ui-2-dis]更少的视线遮挡\n特殊的头像风格\n操作变化较大
+[set-glow]英雄光晕
+[set-glow-dis]精简后的英雄光晕较小\n更加适合RPG地图的风格
+[set-half]半身像
+[set-half-dis]嘉年华风格的头像文件\n不适合原版UI
+[cos-hum]人族
+[cos-orc]兽族
+[cos-ud]不死
+[cos-ne]暗夜
+[cos-na]中立
+[cos-none]未制作
+[cos-hum-mage-1]吉安娜
+[cos-hum-mage-2]安东尼达斯
+[cos-hum-pa-2]阿尔塞斯
+[cos-hum-pa-4]白银之手
+[cos-orc-bm-2]地狱咆哮
+[cos-orc-fs-2]盲眼先知
+[cos-ud-dl-1]提克尼奥斯
+[cos-na-pl-3]玛诺洛斯
+[cos-na-pl-1]玛瑟里顿
+[cos-ne-kog-1]塞纳留斯
+[cos-orc-bm-4]混沌剑圣
+[cos-hum-mage-3]精灵大法师
+[cos-ud-dk-2]黑暗冠军
+[cos-ud-dl-3]玛法理瑟斯
+[cos-ne-pom-2]步行泰兰德
+[cos-na-ga-1]原生食人魔
+[cos-na-dr-2]游侠
+[cos-hum-pa-1]乌瑟尔
+[cos-hum-mk-1]穆拉丁
+[cos-hum-bm-1]凯尔
+[cos-orc-bm-1]萨穆罗
+[cos-orc-fs-1]萨尔
+[cos-orc-tc-1]凯恩·血蹄
+[cos-orc-sh-1]洛克汗
+[cos-hum-pa-3]堕落王子
+[cos-ud-lich-1]克尔苏加德
+[cos-ud-dl-2]德洛赛克
+[cos-ud-cl-1]阿努巴拉克
+[cos-ne-kog-2]玛法里奥
+[cos-ne-pom-1]泰兰德
+[cos-ne-dh-1]伊利丹
+[cos-ne-wd-1]玛维
+[cos-na-sw-1]法斯琪女士
+[cos-na-tk-1]工程师加兹劳
+[cos-na-pl-2]阿兹加洛
+[cos-na-bm-1]雷克萨
+[cos-na-pa-1]陈·烈酒风暴
+[cos-na-dr-1]希尔瓦娜斯
+[main-hint-checkupdate]检查更新中
+[main-hint-good]网络已连接
+[main-hint-bad]网络未连接
+[main-hint-checkfile]检查文件
+[main-hint-fileneedupdate]需要更新文件
+[main-hint-latest]当前为最新版本 
+[main-hint-download]下载文件
+[main-hint-networkerror]网络连接错误
+[main-pro-copyfile]复制文件
+[main-pro-vio]应用反和谐
+[main-pro-skin]应用皮肤
+[main-pro-unit]应用单位辨识
+[main-pro-tile]应用环境
+[main-pro-camp]应用战役
+[main-pro-unzip]解压文件
+[main-pro-off]关闭状态
+[main-pro-fix]修正用户设置
+[main-pro-noturnoff]文件更新中请勿关闭
+[main-pro-apply]应用设置
+[main-hint-noinstall]还未安装MOD
+[main-hint-needupdate]官网有新版本
+[main-hint-success]已成功安装
+[main-hint-hint]提示
+[main-hint-notwar3]这不是一个有效的魔兽争霸3重制版根目录, 请重新确定您的魔兽争霸版本以及安装的位置.
+[main-btn-del]删除MOD
+[main-btn-turnoff]关闭MOD
+[main-btn-page1]第 1 页
+[main-btn-w3c]兼容W3C
+[main-btn-now3c]不兼容W3C
+[main-btn-clientlatest]客户端的版本是最新的
+[thx-1]- 暴雪经典组 -\n他们贡献了大部分代码\n没有它们MOD是无法完成的\n\n- 网易暴雪 -\n在比赛中的使用和转播\n\n- Back2Warcraft -\n使用MOD转播国外比赛\n同时非常感谢他的慷慨捐赠\n\n- 玉米Yumiko -\n使用MOD进行实机游戏\n最早支持我们的主播\n\n- 桥林 -\n使用MOD进行赛事转播\n帮助推荐以及传播\n
+[thx-2]- 霜冻公爵 -\n提供反和谐方式,\n提供客户端测试工具\n\n- CodeXL -\n提供着色器编辑所需资料\n\n- Reteras\Magos -\n提供了精简模型工具\n\n- Blender -\n通过Blender软件我们能进一步修改模型\n\n- Tasyen -\n给出了许多关于fdf修改的教程\n\n- WardenIO -\n提供HD模块的代码解析
+[thx-3]- Ladik -\n提供Casc文件的破解方式\n\n- Nvtt -\n提供DDS图片的处理软件\n\n- Wanderbraun -\n向俄罗斯的朋友推荐我们的MOD\n\n- Rey Gaming -\n在Youtube持续提供MOD比赛视频\n\n- Warglaive -\n向西班牙语社区持续提供MOD视频\n\n- Daniel Sadowski -\n为我们提供音乐
+[thx-4]- 官方论坛 -\nSaido, taichi, pat, dingo\n在官方论坛持续更新我们的动态\n\n- 群管理人员 -\n呜喵王, 大叔, 白羽, hahatgj, 逆鳞, 大哥\n提供持续的社群管理\n\n- 中文推广 -\n星星哥/格瓦斯劳斯基/依瑞斯/斯美拉琪海露\n战术TNT/WRY魔兽联盟/平川电竞/冰糖解说\n\n- Kam -\n国外社区KOL引荐交流
+[thx-5]- wTc -\n提供Reddit论坛推广\n\n- Hiveworkshop -\n提供素材以及网站合作\n\n- 英文战役合作 -\nCSW Team/InsaneMonster/Tomoraider\n\n- 中文战役合作 -\n记忆/鬼画桃符\n蓝蓝子/淬火粉丝/织星人\n\n- 魔坛情报局 -\n提供MOD报道以及组织比赛
+[thx-6]- Vulfat -\n提供英雄以及战团皮肤\n\n- Andreiki -\n俄语翻译\n\n- 战役代码 -\n幻想的仪式/杰克川\n\n- 测试 -\n安林喵/是甜食哇/无可救药的废萌\n暗夜鱼人艾琳/Scream放点盐/成都第二菜包子\n\n- Wfz -\n提供MOD系列战役攻略
+[thx-7]- Coding.net -\n提供云服务\n\n- Fenix Gaming -\n在西班牙语社区提供MOD直播\n\n- Ralle -\n提供Hive的专区支持\n\n- 俄语推广 -\nArrow's Path/PavellGameChannel\n\n- 其它模型 -\nMystic/Xyrohn21/Malmgreva\n\n*名单遗漏请尽快联系我们*
+[cos-hint-noclassic]这个皮肤在经典版是无效的
+[cos-hint-nounit]关闭[单位变化]后不可使用皮肤功能
+[main-hint-turnon]打开
+[main-hint-turnoff]关闭
+[main-hint-qmdelask]确定移除淬火MOD内容?
+[main-hint-qmset]是否需要移除配置文件?
+[main-hint-qmdel]淬火试炼MOD已经成功被删除
+[main-hint-choosecamp]请选择淬火战役文件
+[main-hint-nogoodcamp]这不是一个有效的淬火战役文件
+[main-hint-qminstalled]安装成功
+[main-hint-cn]中文
+[main-hint-en]ENG 
+[cos-fail]替换皮肤失败, 请使用管理员模式
+[main-hint-noclassic]这个选项不可在经典版使用
+[main-hint-modeclassic]经 典 核 心 版
+[main-hint-modeqm]重 制 完 全 版
+[main-hint-updateask]检查到客户端有新版本, 是否需要升级
+[main-hint-chooseinstallzip]请选择淬火试炼安装/补丁文件
+[main-hint-unavailable]不可用
+[main-hint-vioinstall]反和谐安装之后是不能关闭的, 确定安装?
+[main-hint-turnoffwar3]请关闭魔兽争霸以及相关软件, 然后再试
+[main-hint-delandinstall]你已经安装了淬火试炼MOD, 你可以先使用 [删除MOD] 再安装 
+[main-hint-turnoffwar3]- 涂装经典版 -
+[main-hint-turnoffwar3]- 涂装 -
+[main-hint-restart]这个设置需要重新启动游戏之后生效
+[cos-hum-pa-6]圣骑士 I
+[cos-hum-pa-7]圣骑士 II
+[cos-hum-pa-8]守护者
+[cos-hum-pa-9]海军上将
+[cos-hum-pa-5]灰烬使者
+[cos-orc-bm-3]混沌地狱咆哮
+[cos-orc-bm-5]阿卡玛
+[cos-ud-unit-1]冰冠护卫
+[cos-ud-unit-1-dis]来自诺森德的五位强大死灵\n帮助你主宰战场
+[cos-na-fl-1]上古之神
+[cos-hum-mk-2]黑铁氏族
+[cos-orc-bm-6]卡加斯
+[cos-orc-fs-3]古尔丹
+[cos-ne-unit-1]近卫军团
+[cos-ne-unit-1-dis]暗夜精灵中的五位精锐\n以月神的名义击倒敌人
+[cos-ud-lich-2]女妖
+[cos-na-dr-3]游骑兵
+[cos-hum-unit-2]血精灵
+[cos-hum-unit-2-dis]高贵的精灵兼具战斗机巧\n优雅的打击敌人
+[cos-orc-unit-2]混乱兽人
+[cos-orc-unit-2-dis]饮用恶魔血液\n使兽人战士更加野蛮
+[cos-ud-unit-2]诅咒教派
+[cos-ud-unit-2-dis]将大地上的一切\n都变成行尸走肉
+[cos-orc-sh-2]沃金
+[main-hint-dash]----------------------------
+[cos-ud-dk-2]巫妖王
+[cos-ne-wd-2]暗夜孤星
+[cos-ud-dl-4]巴纳扎尔
+[cos-ud-dl-5]达文格尔
+[cos-ud-dl-6]麦尔盖尼斯
+[set-fog]初始迷雾
+[set-fog-dis]让地图具备天空盒子和大气雾效果\n黑色阴影区域也会得到染色

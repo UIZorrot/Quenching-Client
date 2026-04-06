@@ -1,0 +1,40 @@
+appId: com.quenching.mod.client
+productName: QMClient
+
+directories:
+  output: __Bin
+
+files:
+  - dist/**/*
+  - "!dist/statics/**/*"
+  - "!dist/**/*.map"
+  - package.json
+
+extraResources:
+  - from: dist/statics
+    to: statics
+  - from: assets
+    to: assets
+
+win:
+  icon: assets/quenching/1.ico
+  target:
+    - target: dir
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: QM
+
+mac:
+  icon: public/logo.png
+  category: public.app-category.games
+  target: dir
+  electronLanguages: ['en', 'zh', 'zh_CN']
+
+# 禁用 FFMPEG 替换，使用 Electron 自带的库，避免库路径问题
+downloadAlternateFFmpeg: false
+
+asar: true

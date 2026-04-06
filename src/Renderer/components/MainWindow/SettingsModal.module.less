@@ -1,0 +1,177 @@
+/* 设置模态框样式 - 基于原版XAML设计 */
+.settingsModal {
+  background: rgba(168, 0, 0, 0.65) !important;
+}
+
+.settingsContainer {
+  background: rgba(168, 0, 0, 0.65);
+  min-height: 500px;
+  padding: 20px;
+  color: white;
+}
+
+.settingsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  height: 100%;
+}
+
+.settingRow {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.settingGroup {
+  margin-bottom: 20px;
+}
+
+.settingTitle {
+  color: #A8FFFFFF !important;
+  font-size: 18px !important;
+  font-weight: normal !important;
+  margin-bottom: 8px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settingButton {
+  background: transparent !important;
+  border: 1px solid #C7C7C7 !important;
+  color: #C9C9C9 !important;
+  font-size: 10px !important;
+  height: 16px !important;
+  padding: 0 8px !important;
+  min-width: 52px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: #FFFFFF !important;
+  }
+
+  &.selected {
+    background: #C9C9C9 !important;
+    color: #383838 !important;
+    border-color: #C7C7C7 !important;
+  }
+}
+
+.previewArea {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 300px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+
+  &.visible {
+    opacity: 1;
+  }
+}
+
+.previewImage {
+  width: 250px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.66);
+  margin-bottom: 15px;
+}
+
+.previewText {
+  text-align: right;
+}
+
+.previewTitle {
+  color: white !important;
+  font-size: 20px !important;
+  font-weight: normal !important;
+  margin-bottom: 8px !important;
+  display: block;
+}
+
+.previewDescription {
+  color: #A8FFFFFF !important;
+  font-size: 15px !important;
+  line-height: 1.4;
+  text-align: right;
+}
+
+/* 特定设置项样式 */
+.waterButtons .settingButton {
+  min-width: 54px;
+}
+
+.treeButtons .settingButton {
+  min-width: 52px;
+}
+
+.lightingButtons .settingButton {
+  min-width: 54px;
+}
+
+.uiButtons .settingButton {
+  min-width: 75px;
+}
+
+/* 响应式调整 */
+@media (max-width: 1200px) {
+  .settingsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .previewArea {
+    position: static;
+    transform: none;
+    margin-top: 20px;
+    width: 100%;
+  }
+}
+
+/* 模态框覆盖样式 */
+:global(.ant-modal-content) {
+  background: rgba(168, 0, 0, 0.65) !important;
+  border: 2px solid #d4af37 !important;
+  border-radius: 12px !important;
+}
+
+:global(.ant-modal-header) {
+  background: transparent !important;
+  border-bottom: 1px solid #d4af37 !important;
+}
+
+:global(.ant-modal-title) {
+  color: white !important;
+  font-size: 36px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+:global(.ant-modal-close-x) {
+  color: #C9C9C9 !important;
+}
+
+:global(.ant-modal-footer) {
+  background: transparent !important;
+  border-top: 1px solid #d4af37 !important;
+}
+
+:global(.ant-btn-primary) {
+  background: #d4af37 !important;
+  border-color: #d4af37 !important;
+  color: #000 !important;
+}
+
+:global(.ant-btn-default) {
+  background: transparent !important;
+  border-color: #C7C7C7 !important;
+  color: #C9C9C9 !important;
+}
