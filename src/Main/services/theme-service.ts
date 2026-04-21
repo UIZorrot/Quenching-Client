@@ -24,7 +24,13 @@ export class ThemeService {
             await fs.ensureDir(webmsDir);
 
             // 定义目标文件
-            const targets = ['mainmenu.webm', 'mainmenu_1.webm', 'mainmenu_tft.webm'];
+            const targets = [
+                'mainmenu.webm', 
+                'mainmenu_1.webm', 
+                'mainmenu_sd.webm',
+                'mainmenu_tft.webm',
+                'mainmenu_tft_sd.webm'
+            ];
 
             // 获取源文件路径
             const appPath = app.getAppPath();
