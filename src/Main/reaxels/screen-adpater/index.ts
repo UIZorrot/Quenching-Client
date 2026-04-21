@@ -56,12 +56,16 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 	};
 
 	const calcActualAppSize = async (
-		display: Display = screen.getPrimaryDisplay(),
+		display?: Display,
 		options = {
 			devtoolsWidth: null as number,
 		}
 	) => {
 		try {
+			// 在函数内部获取 display，避免在默认参数中使用 screen
+			const targetDisplay = display || screen.getPrimaryDisplay();
+
+
 			// Windows平台下使用固定大小，避免因物理屏幕检测导致的窗口大小异常
 			if (process.platform === 'win32') {
 				const fixedScale = 0.75; // 约 1440x1012
@@ -81,12 +85,12 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 					debugger;
 				}
 			});
-			const { shortSide, value } = getShortSide(display);
+			const { shortSide, value } = getShortSide(targetDisplay);
 			let percent = .9;
 
 			//近距离使用大屏幕无缩放的场景
 			if (
-				getWindowsDisplayScale(display) < 1.2 &&
+				getWindowsDisplayScale(targetDisplay) < 1.2 &&
 				currentPhysicalScreen.ppi < 103 &&
 				currentPhysicalScreen.width * currentPhysicalScreen.height >= 3840 * 2160 &&
 				(currentPhysicalScreen.width_mm > 950 || currentPhysicalScreen.height_mm > 534)
@@ -104,9 +108,10 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 		}
 	};
 
-	const resetMainWindowBounds = async (display = screen.getPrimaryDisplay()) => {
+	const resetMainWindowBounds = async (display?: Display) => {
+		const targetDisplay = display || screen.getPrimaryDisplay();
 		const { height, width } = await calcActualAppSize();
-		const physicalScreen = await getCurrentPhysicalScreen(display);
+		const physicalScreen = await getCurrentPhysicalScreen(targetDisplay);
 		if (!physicalScreen) {
 			return;
 		}
@@ -131,11 +136,12 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 		}
 	}
 
-	const centralWindowBounds = async (display = screen.getPrimaryDisplay()) => {
-		const { width, height } = await calcActualAppSize(display);
+	const centralWindowBounds = async (display?: Display) => {
+		const targetDisplay = display || screen.getPrimaryDisplay();
+		const { width, height } = await calcActualAppSize(targetDisplay);
 		reaxel_MainProcessHub().mainWindow?.setPosition(
-			(display.size.width - width) / 2,
-			(display.size.height - height) / 2,
+			(targetDisplay.size.width - width) / 2,
+			(targetDisplay.size.height - height) / 2,
 		)
 	}
 	// obsReaction( () => {
@@ -180,7 +186,9 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 	let rtn = {
 		calcActualAppSize,
 		windowsTextScale,
-		windowsDisplayScale: getWindowsDisplayScale()
+		get windowsDisplayScale() {
+			return getWindowsDisplayScale();
+		}
 	};
 	return Object.assign(() => rtn, {
 		store,

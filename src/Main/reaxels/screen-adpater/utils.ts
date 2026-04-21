@@ -8,22 +8,37 @@ import path from 'path';
 // 延迟初始化的变量
 let textScaleFactor: number;
 let displayScaleFactor: number;
+let initialized = false;
 
 // 初始化函数，确保在 app ready 后调用
 const initializeScaleFactors = async () => {
+	if (initialized) return;
+	
 	if (!app.isReady()) {
 		await new Promise<void>(resolve => app.whenReady().then(() => resolve()));
 	}
-	textScaleFactor = await getTextScaleFactor();
-	displayScaleFactor = screen.getPrimaryDisplay().scaleFactor / textScaleFactor;
+	
+	try {
+		textScaleFactor = await getTextScaleFactor();
+		displayScaleFactor = screen.getPrimaryDisplay().scaleFactor / textScaleFactor;
+		initialized = true;
+	} catch (error) {
+		console.warn('Failed to initialize scale factors:', error);
+		textScaleFactor = 1;
+		displayScaleFactor = 1;
+	}
 };
 
 // 导出获取函数而不是直接值
-export const getTextScaleFactorValue = () => textScaleFactor;
-export const getDisplayScaleFactorValue = () => displayScaleFactor;
+export const getTextScaleFactorValue = () => textScaleFactor || 1;
+export const getDisplayScaleFactorValue = () => displayScaleFactor || 1;
 
-// 初始化
-initializeScaleFactors().catch(console.error);
+// 延迟初始化，在 app ready 后执行
+if (app.isReady()) {
+	initializeScaleFactors().catch(console.error);
+} else {
+	app.whenReady().then(() => initializeScaleFactors().catch(console.error));
+}
 
 /**
  * 计算受dpr影响过的屏幕宽高
