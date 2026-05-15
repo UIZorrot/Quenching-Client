@@ -60,11 +60,32 @@ interface ElectronAPI {
   // 游戏启动
   launchGame: (executablePath?: string) => Promise<boolean>;
   launchMap: (mapPath: string, difficulty: number) => Promise<boolean>;
+  extractCampaignW3n: (w3nPath: string) => Promise<{
+    success: boolean;
+    outputDir: string;
+    maps: string[];
+  }>;
+  listInstalledCampaigns: () => Promise<{
+    campaigns: Array<{
+      id: string;
+      path: string;
+      mapCount: number;
+      title?: string;
+      difficulty?: string;
+      author?: string;
+      description?: string;
+      maps?: Array<{
+        path: string;
+        chapter?: string;
+        title?: string;
+      }>;
+    }>;
+  }>;
   selectGamePath: () => Promise<string | null>;
   getConfig: (key: string) => Promise<any>;
   setConfig: (key: string, value: any) => Promise<void>;
   applyTheme: (themeId: string) => Promise<boolean>;
-  updateMdlLighting: (war3Path: string, lightingMode: string) => Promise<boolean>;
+  updateMdlLighting: (war3Path: string, lightingMode: string, lightingBrightness?: number) => Promise<boolean>;
   updateUISettings: (war3Path: string, uiMode: string) => Promise<boolean>;
   updateTerrainSettings: (war3Path: string, terrainMode: string) => Promise<boolean>;
   updateTreeSettings: (war3Path: string, treeMode: string) => Promise<boolean>;
@@ -72,6 +93,8 @@ interface ElectronAPI {
   updateFoliageSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateObjectShader: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updatePostProcessing: (war3Path: string, enabled: boolean) => Promise<boolean>;
+  updateLegacyWar3Shader: (war3Path: string, enabled: boolean) => Promise<boolean>;
+  updateIntelAmdShaderFix: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateEnvRenderSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateGlowSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateHalfPortrait: (war3Path: string, visionModPath: string, enabled: boolean) => Promise<boolean>;

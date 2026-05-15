@@ -2,6 +2,7 @@ import { ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs-extra';
 import { AssetSyncService } from '../services/asset-sync';
+import { configManager } from '../services/config-manager';
 
 const OBJECT_SHADER_FILES = [
     'cliffblightmiscterrain.bls',
@@ -17,6 +18,64 @@ const POST_PROCESSING_FILES = [
     'fog.bls',
     'bloomextract.bls'
 ];
+
+const LEGACY_SHADER_ZIP_DEFAULT = 'shaders2.03.zip';
+const LEGACY_SHADER_ZIP_OLD = 'shaders2.02.zip';
+const INTEL_AMD_BLOOM_FILE = 'bloomextract.bls';
+
+async function applyLegacyShaderVersion(war3Path: string, useLegacyWar3Shaders: boolean): Promise<boolean> {
+    const retailPath = path.join(war3Path, '_retail_');
+    const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
+    const shadersDir = path.join(baseDir, 'shaders');
+    const assetsDir = await AssetSyncService.getAssetsDir();
+    const zipName = useLegacyWar3Shaders ? LEGACY_SHADER_ZIP_OLD : LEGACY_SHADER_ZIP_DEFAULT;
+    const zipPath = path.join(assetsDir, 'quenching', zipName);
+
+    if (!(await fs.pathExists(zipPath))) {
+        console.warn(`[Shader] Legacy shader zip not found: ${zipPath}`);
+        return false;
+    }
+
+    // 旧版本与默认版本互切时，先清空 shaders 防止遗留
+    await fs.remove(shadersDir).catch(() => { });
+    await fs.ensureDir(shadersDir);
+
+    await extractSpecificFiles(zipPath, shadersDir, [...OBJECT_SHADER_FILES, ...POST_PROCESSING_FILES]);
+    return true;
+}
+
+async function applyIntelAmdBloomFix(war3Path: string, enabled: boolean): Promise<boolean> {
+    const retailPath = path.join(war3Path, '_retail_');
+    const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
+    const psDir = path.join(baseDir, 'shaders', 'ps');
+    const bloomPath = path.join(psDir, INTEL_AMD_BLOOM_FILE);
+    const assetsDir = await AssetSyncService.getAssetsDir();
+
+    await fs.ensureDir(psDir);
+
+    if (enabled) {
+        const source = path.join(assetsDir, 'quenching', INTEL_AMD_BLOOM_FILE);
+        if (!(await fs.pathExists(source))) {
+            console.warn(`[Shader] Intel/AMD bloom fix file not found: ${source}`);
+            return false;
+        }
+        await fs.copy(source, bloomPath, { overwrite: true });
+        return true;
+    }
+
+    // 关闭修复时，回退到当前版本对应的 zip 里的 bloomextract.bls
+    const modSettings = configManager.get('modSettings') || {};
+    const useLegacyWar3Shaders = modSettings.useLegacyWar3Shaders === true;
+    const zipName = useLegacyWar3Shaders ? LEGACY_SHADER_ZIP_OLD : LEGACY_SHADER_ZIP_DEFAULT;
+    const zipPath = path.join(assetsDir, 'quenching', zipName);
+    if (!(await fs.pathExists(zipPath))) {
+        console.warn(`[Shader] Cannot restore bloomextract, zip not found: ${zipPath}`);
+        return false;
+    }
+
+    await extractSpecificFiles(zipPath, path.join(baseDir, 'shaders'), [INTEL_AMD_BLOOM_FILE]);
+    return true;
+}
 
 async function extractSpecificFiles(zipPath: string, outputDir: string, filesToExtract: string[]) {
     const yauzl = require('yauzl');
@@ -111,6 +170,16 @@ export function registerShaderHandlers() {
             }
             return true;
         }
+    });
+
+    ipcMain.handle('shader:update-legacy-war3', async (event, war3Path: string, enabled: boolean) => {
+        console.log(`[Shader] Updating legacy shader version: ${enabled ? '2.02' : '2.03'}`);
+        return applyLegacyShaderVersion(war3Path, enabled);
+    });
+
+    ipcMain.handle('shader:update-intel-amd', async (event, war3Path: string, enabled: boolean) => {
+        console.log(`[Shader] Updating Intel/AMD bloom fix: ${enabled}`);
+        return applyIntelAmdBloomFix(war3Path, enabled);
     });
 }
 

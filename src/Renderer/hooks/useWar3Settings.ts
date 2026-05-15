@@ -25,6 +25,8 @@ export interface ModSettings {
   water: 'transparent' | 'realistic' | 'off'; // 水面效果
   foliage: boolean;      // 植被效果
   lighting: 'standard' | 'enhanced' | 'battle' | 'rpg'; // 光照效果
+  /** 直射光亮度等级 1–5，对应 ×0.7 / ×0.9 / ×1.1 / ×1.3 / ×1.5（不含 Amb） */
+  lightingBrightness: 1 | 2 | 3 | 4 | 5;
   half: boolean;         // 半透明效果
   ui: 'classic' | 'quenching' | 'carnival'; // UI风格
   cam: boolean;          // 自定义相机
@@ -33,6 +35,8 @@ export interface ModSettings {
   tree: 'original' | 'tall' | 'short' | 'retro' | 'v16' | 'v18'; // 树木
   envRender: boolean;    // 环境渲染
   modelEnhance: boolean; // 模型加强
+  useLegacyWar3Shaders: boolean; // 使用 2.02 shaders（否则 2.03）
+  useIntelAmdShaderFix: boolean; // Intel/AMD bloomextract 修复
   visionModPath: string; // VisionMod目录
   modEnabled: boolean;   // MOD总开关
   classicMode: boolean;  // 经典版锁定
@@ -61,6 +65,7 @@ export const reaxel_War3Settings = reaxel(() => {
       water: 'transparent' as const,
       foliage: true,
       lighting: 'standard' as const,
+      lightingBrightness: 3 as const,
       half: false,
       ui: 'classic' as const,
       cam: false,
@@ -69,6 +74,8 @@ export const reaxel_War3Settings = reaxel(() => {
       tree: 'tall' as const,
       envRender: true,
       modelEnhance: false,
+      useLegacyWar3Shaders: false,
+      useIntelAmdShaderFix: false,
       visionModPath: '',
       modEnabled: true
     } as ModSettings,
@@ -228,6 +235,10 @@ export const reaxel_War3Settings = reaxel(() => {
           // 迁移: 如果是旧的 'enhanced' (淬火) 模式，自动切换回 'standard' (普通)
           if (loadedSettings.lighting === 'enhanced') {
             loadedSettings.lighting = 'standard';
+          }
+          const lb = loadedSettings.lightingBrightness as number | undefined;
+          if (typeof lb !== 'number' || lb < 1 || lb > 5 || !Number.isInteger(lb)) {
+            loadedSettings.lightingBrightness = 3;
           }
         }
       }
@@ -401,15 +412,15 @@ export const reaxel_War3Settings = reaxel(() => {
       }
 
       // 优化触发逻辑：
-      // 1. 只有当明确修改了 lighting 时才触发
+      // 1. 当修改了 lighting 或 lightingBrightness 时触发
       // 2. 如果当前正在切换 MOD 开关 (modEnabled)，则跳过更新，因为 MOD 开关本身会移动整个目录，避免冲突
       // 3. 只有在 MOD 处于开启状态时，才去修改 _retail_ 下的 MDL 文件
       if (
-        newSettings.lighting !== undefined &&
+        (newSettings.lighting !== undefined || newSettings.lightingBrightness !== undefined) &&
         newSettings.modEnabled === undefined &&
         updatedSettings.modEnabled
       ) {
-        console.log('[useWar3Settings] Lighting setting changed, updating MDL files...');
+        console.log('[useWar3Settings] Lighting / brightness changed, updating MDL files...');
         // 确保调用正确的 API 名称
         if (window.electronAPI?.updateMdlLighting) {
           // 人为延迟以显示Loading效果，提升用户体验
@@ -420,7 +431,8 @@ export const reaxel_War3Settings = reaxel(() => {
           // 增加超时保护，防止 IPC 调用卡死导致 loading 无法消失
           const updatePromise = window.electronAPI.updateMdlLighting(
             war3Path,
-            updatedSettings.lighting
+            updatedSettings.lighting,
+            updatedSettings.lightingBrightness
           );
 
           // 15秒超时
@@ -434,7 +446,7 @@ export const reaxel_War3Settings = reaxel(() => {
           console.warn('[useWar3Settings] window.electronAPI.updateMdlLighting is undefined');
         }
       } else {
-        console.log('[useWar3Settings] No lighting/modEnabled change detected, skipping updateMdlLighting');
+        console.log('[useWar3Settings] No lighting/brightness/modEnabled change detected, skipping updateMdlLighting');
       }
 
       // 如果修改了 UI 设置，执行 UI 资源替换和 unitskinMode 切换
@@ -554,6 +566,22 @@ export const reaxel_War3Settings = reaxel(() => {
         }
       }
 
+      // 如果修改了“使用旧版魔兽”兼容设置，切换 shaders 版本
+      if (newSettings.useLegacyWar3Shaders !== undefined) {
+        console.log(`\n>>> [SHADER-FRONTEND] Legacy shader version change requested: ${newSettings.useLegacyWar3Shaders}`);
+        if (window.electronAPI?.updateLegacyWar3Shader) {
+          await window.electronAPI.updateLegacyWar3Shader(war3Path, updatedSettings.useLegacyWar3Shaders);
+        }
+      }
+
+      // 如果修改了 Intel/AMD 修复设置，替换 bloomextract.bls
+      if (newSettings.useIntelAmdShaderFix !== undefined) {
+        console.log(`\n>>> [SHADER-FRONTEND] Intel/AMD shader fix change requested: ${newSettings.useIntelAmdShaderFix}`);
+        if (window.electronAPI?.updateIntelAmdShaderFix) {
+          await window.electronAPI.updateIntelAmdShaderFix(war3Path, updatedSettings.useIntelAmdShaderFix);
+        }
+      }
+
       // 如果修改了环境渲染设置，执行更新
       if (newSettings.envRender !== undefined) {
         console.log(`\n>>> [SCRIPT-FRONTEND] Env Render change requested: ${newSettings.envRender}`);
@@ -621,6 +649,7 @@ volumetricFog=${settings.volumetricFog ? '1' : '0'}
 water=${settings.water === 'realistic' ? '1' : settings.water === 'transparent' ? '2' : '0'}
 foliage=${settings.foliage ? '1' : '0'}
 lighting=${settings.lighting === 'enhanced' ? '1' : settings.lighting === 'battle' ? '2' : settings.lighting === 'rpg' ? '3' : '0'}
+lightingBrightness=${settings.lightingBrightness ?? 3}
 half=${settings.half ? '1' : '0'}
 ui=${settings.ui}
 cam=${settings.cam ? '1' : '0'}
@@ -628,6 +657,8 @@ glow=${settings.glow ? '1' : '0'}
 terrain=${settings.terrain}
 tree=${settings.tree}
 envRender=${settings.envRender ? '1' : '0'}
+useLegacyWar3Shaders=${settings.useLegacyWar3Shaders ? '1' : '0'}
+useIntelAmdShaderFix=${settings.useIntelAmdShaderFix ? '1' : '0'}
     modelEnhance=${settings.modelEnhance ? '1' : '0'}
     visionModPath=${settings.visionModPath}
     modEnabled=${settings.modEnabled ? '1' : '0'}

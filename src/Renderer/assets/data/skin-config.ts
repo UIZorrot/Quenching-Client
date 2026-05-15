@@ -762,7 +762,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
           { unitId: 'unec', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNFrostRevenant.blp' },
           { unitId: 'unec', field: 'modelScale:hd', value: '1.05' },
           { unitId: 'ugho', field: 'file', value: 'units\\undead\\Ghoul\\Ghoul' },
-          { unitId: 'ugho', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNGhoul.blp' },
+          { unitId: 'ugho', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNZombie.blp' },
           { unitId: 'uske', field: 'unitSound', value: 'Skeleton' },
           { unitId: 'uskm', field: 'unitSound', value: 'Skeleton' },
         ]

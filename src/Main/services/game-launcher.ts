@@ -7,6 +7,26 @@ import { AssetSyncService } from './asset-sync';
 export class GameLauncher {
 
     /**
+     * Custom .w3n campaigns keep war3campImported / music / sound next to the archive;
+     * Reforged resolves them from _retail_. Mirrors legacy client copy step after per-map merge.
+     */
+    private static async syncCampaignAssetFoldersToRetail(campaignRoot: string, gamePath: string): Promise<void> {
+        const retailPath = path.join(gamePath, '_retail_');
+        if (!(await fs.pathExists(retailPath))) {
+            console.warn('[GameLauncher] _retail_ not found; skip campaign folder sync');
+            return;
+        }
+        for (const folderName of ['war3campImported', 'music', 'sound'] as const) {
+            const src = path.join(campaignRoot, folderName);
+            const dest = path.join(retailPath, folderName);
+            if (await fs.pathExists(src)) {
+                await fs.remove(dest).catch(() => { });
+                await fs.copy(src, dest, { overwrite: true });
+            }
+        }
+    }
+
+    /**
      * Launch Warcraft III with arguments
      */
     static async launchGame(executablePath?: string): Promise<boolean> {
@@ -141,6 +161,15 @@ export class GameLauncher {
 
         await AssetSyncService.syncAssetsBeforeLaunch(rootGameDir);
         console.log(`Launching map from: ${exePath} with map: ${mapPath}`);
+
+        const mapDir = path.dirname(mapPath);
+        if (path.basename(mapDir) === '_merged') {
+            const campaignRoot = path.dirname(mapDir);
+            const w3f = path.join(campaignRoot, 'war3campaign.w3f');
+            if (await fs.pathExists(w3f)) {
+                await GameLauncher.syncCampaignAssetFoldersToRetail(campaignRoot, gamePath);
+            }
+        }
 
         try {
             const args = [

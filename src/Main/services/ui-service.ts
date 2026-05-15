@@ -3,86 +3,87 @@ import fs from 'fs-extra';
 
 export class UIService {
     /**
-     * 更新 UI 风格设置
-     * @param war3Path 魔兽争霸III 安装路径
+     * Update UI style settings.
+     * @param war3Path Warcraft III install path
      * @param uiMode 'classic' | 'quenching' | 'carnival'
      */
     static async applyUISettings(war3Path: string, uiMode: string): Promise<boolean> {
+        let stagingPath = '';
+
         try {
             console.log(`[UIService] Updating UI to mode: ${uiMode}`);
             if (!war3Path) {
-                throw new Error('未提供魔兽争霸III路径');
+                throw new Error('Warcraft III path is required');
             }
 
-            // 标准化路径分隔符
             const normalizedPath = path.normalize(war3Path);
-
-            // 检查 _retail_ 目录 (Reforged 结构)
             const retailPath = path.join(normalizedPath, '_retail_');
-            let baseDir = normalizedPath;
-            if (await fs.pathExists(retailPath)) {
-                baseDir = retailPath;
-            }
-
+            const baseDir = await fs.pathExists(retailPath) ? retailPath : normalizedPath;
             const uiPath = path.join(baseDir, 'ui');
 
-            // 映射 UI 模式到对应的资源目录名
             const sourceMap: Record<string, string> = {
-                'classic': 'ui-org',
-                'quenching': 'ui-que',
-                'carnival': 'ui-blz'
+                classic: 'ui-org',
+                quenching: 'ui-que',
+                carnival: 'ui-blz'
             };
 
             const sourceDirName = sourceMap[uiMode];
             if (!sourceDirName) {
-                throw new Error(`未知的 UI 模式: ${uiMode}`);
+                throw new Error(`Unknown UI mode: ${uiMode}`);
             }
 
-            // 1. 清理目标目录 (删除旧的 UI 组件)
-            // 对应: DelectDir(dir_root + "ui/console"); etc.
-            const dirsToDelete = ['console', 'feedback', 'framedef', 'ui-org', 'ui-que', 'ui-blz'];
-            for (const dir of dirsToDelete) {
+            const { AssetSyncService } = require('./asset-sync');
+            const assetsDir = await AssetSyncService.getAssetsDir();
+            const zipPath = path.join(assetsDir, 'quenching', 'zip-ui.zip');
+
+            if (!(await fs.pathExists(zipPath))) {
+                throw new Error(`zip-ui.zip not found at ${zipPath}`);
+            }
+
+            await fs.ensureDir(baseDir);
+            stagingPath = await fs.mkdtemp(path.join(baseDir, '.ui-staging-'));
+
+            console.log(`[UIService] Extracting clean zip-ui.zip from ${zipPath} to staging...`);
+            await AssetSyncService.extractZip(zipPath, stagingPath);
+
+            const sourceRoot = path.join(stagingPath, sourceDirName);
+            if (!(await fs.pathExists(sourceRoot))) {
+                throw new Error(`UI source folder ${sourceDirName} not found in zip-ui.zip`);
+            }
+
+            const subFolders = ['feedback', 'console', 'framedef', 'webui'];
+            for (const folder of subFolders) {
+                const src = path.join(sourceRoot, folder);
+                const dest = path.join(stagingPath, folder);
+
+                await fs.remove(dest).catch(err => console.warn(`Failed to reset staging ${dest}:`, err));
+
+                if (await fs.pathExists(src)) {
+                    console.log(`[UIService] Preparing ${folder} from ${sourceDirName}...`);
+                    await fs.copy(src, dest, { overwrite: true });
+                } else {
+                    console.log(`[UIService] Component ${folder} not in ${sourceDirName}; removing root component.`);
+                }
+            }
+
+            const dirsToReplace = ['console', 'feedback', 'framedef', 'webui', 'ui-org', 'ui-que', 'ui-blz'];
+            await fs.ensureDir(uiPath);
+            for (const dir of dirsToReplace) {
                 const targetDir = path.join(uiPath, dir);
                 await fs.remove(targetDir).catch(err => console.warn(`Failed to remove ${targetDir}:`, err));
             }
 
-            // [NEW] 1.5 解压纯净的 zip-ui.zip 到 _retail_/ui
-            const { AssetSyncService } = require('./asset-sync');
-            const assetsDir = await AssetSyncService.getAssetsDir();
-            const zipPath = path.join(assetsDir, 'quenching', 'zip-ui.zip');
-            if (await fs.pathExists(zipPath)) {
-                console.log('[UIService] Extracting clean zip-ui.zip...');
-                await AssetSyncService.extractZip(zipPath, uiPath);
-                console.log('[UIService] zip-ui.zip extracted.');
-            } else {
-                console.warn(`[UIService] zip-ui.zip not found at ${zipPath}`);
-            }
-
-            // 2. 复制新文件 (从子目录如 ui-que/ 覆盖到 ui/ 根部)
-            const subFolders = ['feedback', 'console', 'framedef', 'webui'];
-            for (const folder of subFolders) {
-                const src = path.join(uiPath, sourceDirName, folder);
-                const dest = path.join(uiPath, folder);
-
-                if (await fs.pathExists(src)) {
-                    console.log(`[UIService] Copying ${folder} from ${sourceDirName} to root...`);
-                    await fs.copy(src, dest, { overwrite: true });
-                } else {
-                    // 如果源文件夹里没有这个组件 (通常是 Classic 模式下没有 console/framedef)，
-                    // 我们要确保删除顶层对应目录，防止 zip 根目录中自带的 Quenching 文件残留。
-                    if (await fs.pathExists(dest)) {
-                        console.log(`[UIService] Component ${folder} not in ${sourceDirName}, removing from root to restore original.`);
-                        await fs.remove(dest).catch(() => { });
-                    }
-                }
-            }
+            await fs.copy(stagingPath, uiPath, { overwrite: true });
 
             console.log(`[UIService] Successfully updated UI to ${uiMode}`);
             return true;
-
         } catch (error) {
             console.error('Failed to update UI settings:', error);
             throw error;
+        } finally {
+            if (stagingPath) {
+                await fs.remove(stagingPath).catch(err => console.warn(`Failed to remove UI staging path ${stagingPath}:`, err));
+            }
         }
     }
 }

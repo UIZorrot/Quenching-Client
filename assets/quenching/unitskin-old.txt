@@ -174,7 +174,7 @@ abilSkinList=AInv
  
 skinnableID=Hpal
 sortUI=a1
-file=war3.w3mod:units\human\HeroPaladinBoss\HeroPaladinBoss
+file=war3.w3mod:units\human\HeroPaladin\HeroPaladin
 fileVerFlags=0
 unitSound=HeroPaladin
 tilesetSpecific=0

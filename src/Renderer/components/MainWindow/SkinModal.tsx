@@ -2,7 +2,22 @@ import React, { useState, useMemo } from 'react';
 import { Card, Typography, Button, Space, Row, Col, Image, message } from 'antd';
 import { useTranslation } from '../../utils/i18n';
 import { OverlayModal } from './OverlayModal';
-import { SKIN_CONFIG, HeroSkinConfig, CUSTOM_SKIN_CONFIG } from '../../assets/data/skin-config';
+import { SKIN_CONFIG, HeroSkinConfig, CUSTOM_SKIN_CONFIG, UnitSkinChange } from '../../assets/data/skin-config';
+
+/** Group flat warband rows into skin:apply-batch payload */
+function buildBatchChangesFromWarbandConfig(config: UnitSkinChange[]) {
+    const groupedChanges: Record<string, { field: string; value: string }[]> = {};
+    config.forEach((c) => {
+        if (!groupedChanges[c.unitId]) {
+            groupedChanges[c.unitId] = [];
+        }
+        groupedChanges[c.unitId].push({ field: c.field, value: c.value });
+    });
+    return Object.keys(groupedChanges).map((unitId) => ({
+        unitId,
+        changes: groupedChanges[unitId],
+    }));
+}
 import { useSound } from '../../hooks/useSound';
 import { useWar3Settings } from '../../hooks/useWar3Settings';
 import { useWar3Detector } from '../../hooks/useWar3Detector';
@@ -242,20 +257,16 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                 console.log('[SkinModal] Warband skin selection:', warband);
                 if (!warband) return;
 
-                // 战团涂装是批量更新，按 unitId 分组合并 changes
-                const groupedChanges: Record<string, any[]> = {};
-                warband.config.forEach(c => {
-                    if (!groupedChanges[c.unitId]) {
-                        groupedChanges[c.unitId] = [];
-                    }
-                    groupedChanges[c.unitId].push({ field: c.field, value: c.value });
-                });
+                const vanillaWarband = currentWarbands.find(w => w.id.endsWith('_u1'));
 
-                const batchChanges = Object.keys(groupedChanges).map(unitId => ({
-                    unitId,
-                    changes: groupedChanges[unitId]
-                }));
+                // 先还原为该种族「原版」战团，再应用所选涂装，避免 A→B 时只覆盖部分兵种导致混搭
+                if (vanillaWarband && warband.id !== vanillaWarband.id) {
+                    const resetBatch = buildBatchChangesFromWarbandConfig(vanillaWarband.config);
+                    console.log('[SkinModal] Reset race units to vanilla warband before apply:', vanillaWarband.id, resetBatch);
+                    await (window as any).electronAPI.applyBatchSkin(resetBatch);
+                }
 
+                const batchChanges = buildBatchChangesFromWarbandConfig(warband.config);
                 console.log('[SkinModal] Batch skin changes:', batchChanges);
                 await (window as any).electronAPI.applyBatchSkin(batchChanges);
                 message.success({ content: t('skin.apply.success'), key: 'applySkin' });

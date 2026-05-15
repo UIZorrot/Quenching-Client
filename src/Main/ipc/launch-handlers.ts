@@ -5,6 +5,16 @@ import { themeService } from '../services/theme-service';
 import { AssetSyncService } from '../services/asset-sync';
 import fs from 'fs-extra';
 import path from 'path';
+import { extractCampaignW3nMerged } from '../services/campaign-w3n-merge';
+import { readInstalledCampaignMetadata, InstalledCampaignMetadata } from '../services/campaign-metadata';
+
+function slugFromW3nBasename(w3nPath: string): string {
+    const ext = path.extname(w3nPath);
+    let base = path.basename(w3nPath, ext);
+    base = base.replace(/[<>:"/\\|?*]/g, '_').trim();
+    if (!base) base = 'campaign';
+    return base;
+}
 
 export function registerLaunchHandlers() {
     const isFullPackageInstalled = async (war3Path: string | undefined): Promise<boolean> => {
@@ -48,6 +58,69 @@ export function registerLaunchHandlers() {
         } catch (e: any) {
             console.error(e);
             throw e;
+        }
+    });
+
+    ipcMain.handle('campaign:extract-w3n', async (event, w3nPath: string) => {
+        try {
+            if (!w3nPath) {
+                throw new Error('w3n path is required');
+            }
+            if (!(await fs.pathExists(w3nPath))) {
+                throw new Error(`w3n not found: ${w3nPath}`);
+            }
+            const ext = path.extname(w3nPath).toLowerCase();
+            if (ext !== '.w3n') {
+                throw new Error('only .w3n archive is supported');
+            }
+
+            const war3Path = configManager.get('war3Path') as string | undefined;
+            if (!war3Path || !(await fs.pathExists(war3Path))) {
+                throw new Error('Configure Warcraft III installation path before importing a campaign (needed for _QMCampaign folder).');
+            }
+            const slug = slugFromW3nBasename(w3nPath);
+            const finalOutputDir = path.join(war3Path, '_QMCampaign', slug);
+
+            const { outputDir: out, maps } = await extractCampaignW3nMerged(w3nPath, finalOutputDir, (progress) => {
+                event.sender.send('campaign:extract-progress', progress);
+            });
+            return { success: true, outputDir: out, maps };
+        } catch (e: any) {
+            console.error('[Campaign] Failed to extract w3n:', e);
+            throw e;
+        }
+    });
+
+    ipcMain.handle('campaign:list-installed', async () => {
+        try {
+            const war3Path = configManager.get('war3Path') as string | undefined;
+            if (!war3Path || !(await fs.pathExists(war3Path))) {
+                return { campaigns: [] as Array<{ id: string; path: string; mapCount: number } & InstalledCampaignMetadata> };
+            }
+            const root = path.join(war3Path, '_QMCampaign');
+            if (!(await fs.pathExists(root))) {
+                return { campaigns: [] };
+            }
+            const entries = await fs.readdir(root, { withFileTypes: true });
+            const language = configManager.get('language') as string | undefined;
+            const campaigns: Array<{ id: string; path: string; mapCount: number } & InstalledCampaignMetadata> = [];
+            for (const ent of entries) {
+                if (!ent.isDirectory()) continue;
+                const campPath = path.join(root, ent.name);
+                const w3f = path.join(campPath, 'war3campaign.w3f');
+                const merged = path.join(campPath, '_merged');
+                if (!(await fs.pathExists(w3f)) || !(await fs.pathExists(merged))) continue;
+                const files = await fs.readdir(merged);
+                const mapCount = files.filter((f) => /\.w3x$/i.test(f) || /\.w3m$/i.test(f)).length;
+                if (mapCount === 0) continue;
+                const metadata = await readInstalledCampaignMetadata(campPath, language);
+                campaigns.push({ id: ent.name, path: campPath, mapCount, ...metadata });
+            }
+            campaigns.sort((a, b) => (a.title || a.id).localeCompare(b.title || b.id, undefined, { numeric: true, sensitivity: 'base' }));
+            return { campaigns };
+        } catch (e) {
+            console.error('[Campaign] list-installed failed:', e);
+            return { campaigns: [] };
         }
     });
 

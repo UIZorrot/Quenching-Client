@@ -12,7 +12,7 @@ const ASSET_FINGERPRINTS: Record<string, { file: string; expectedHash: string }>
     expectedHash: '' // 留空，首次运行时计算
   },
   'zip-environment.zip': {
-    file: 'foliage/foliage.txt',
+    file: 'dnc/dnclordaeron/dnclordaeronterrain/dnclordaeronterrain.mdl',
     expectedHash: ''
   },
   'zip-scripts.zip': {
@@ -21,29 +21,47 @@ const ASSET_FINGERPRINTS: Record<string, { file: string; expectedHash: string }>
   }
 };
 
+const CLASSIC_PARKED_DIRS = [
+  'environment',
+  'buildings',
+  'campaign',
+  'doodads',
+  'fonts',
+  'patch',
+  'replaceabletextures',
+  'shaders',
+  'splats',
+  'terrainart',
+  'textures',
+  'units'
+];
+
 export class AssetSyncService {
   static async getAssetsDir(): Promise<string> {
     const appPath = app.getAppPath();
-    if (process.env.NODE_ENV === 'development') {
-      const candidates = [
-        path.join(process.cwd(), 'assets'),
-        path.join(process.cwd(), 'public', 'assets'),
-        path.join(process.cwd(), 'QuenChing-Electron-Client', 'assets'),
-        path.join(process.cwd(), 'projects', 'QuenChing-Mod-Client', 'assets'),
-        path.join(appPath, 'assets'),
-        path.join(appPath, 'projects', 'QuenChing-Mod-Client', 'assets'),
-      ];
-      console.log(`[AssetSync] Searching for assets in:`, candidates);
-      for (const p of candidates) {
-        if (await fs.pathExists(p)) {
-          console.log(`[AssetSync] Found local assets at: ${p}`);
-          return p;
-        }
+    const resourcesPath = (process as any).resourcesPath as string | undefined;
+    const candidates = [
+      resourcesPath ? path.join(resourcesPath, 'assets') : '',
+      path.join(process.cwd(), 'assets'),
+      path.join(process.cwd(), 'public', 'assets'),
+      path.join(process.cwd(), 'QuenChing-Electron-Client', 'assets'),
+      path.join(process.cwd(), 'projects', 'QuenChing-Mod-Client', 'assets'),
+      path.join(appPath, 'assets'),
+      path.join(path.dirname(appPath), 'assets'),
+      path.join(appPath, 'projects', 'QuenChing-Mod-Client', 'assets'),
+    ].filter(Boolean).map(p => path.normalize(p));
+
+    const uniqueCandidates = Array.from(new Set(candidates));
+    console.log(`[AssetSync] Searching for assets in:`, uniqueCandidates);
+    for (const p of uniqueCandidates) {
+      if (await fs.pathExists(p)) {
+        console.log(`[AssetSync] Found assets at: ${p}`);
+        return p;
       }
-      return candidates[0];
-    } else {
-      return path.join(path.dirname(appPath), 'assets');
     }
+
+    console.warn(`[AssetSync] Assets directory not found. Falling back to: ${uniqueCandidates[0]}`);
+    return uniqueCandidates[0];
   }
 
   static async extractZip(zipPath: string, extractPath: string, onProgress?: (percent: number, currentFile: string) => void): Promise<void> {
@@ -157,18 +175,78 @@ export class AssetSyncService {
     return true;
   }
 
+  private static async hasDirectoryContent(dir: string): Promise<boolean> {
+    if (!(await fs.pathExists(dir))) {
+      return false;
+    }
+
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const entryPath = path.join(dir, entry.name);
+      if (entry.isFile()) {
+        return true;
+      }
+      if (entry.isDirectory() && await this.hasDirectoryContent(entryPath)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private static async parkClassicActiveDirs(war3Path: string): Promise<void> {
+    const baseDir = path.join(war3Path, '_retail_');
+    const qmoffDir = path.join(baseDir, 'QMoff');
+
+    for (const dir of CLASSIC_PARKED_DIRS) {
+      const activePath = path.join(baseDir, dir);
+      const parkedPath = path.join(qmoffDir, dir);
+
+      const activeExists = await fs.pathExists(activePath);
+      if (!activeExists) {
+        continue;
+      }
+
+      await fs.ensureDir(qmoffDir);
+
+      const activeHasContent = await this.hasDirectoryContent(activePath);
+      const parkedHasContent = await this.hasDirectoryContent(parkedPath);
+
+      if (!activeHasContent) {
+        console.log(`[AssetSync] Classic mode: removing empty active folder ${activePath}`);
+        await fs.remove(activePath);
+      } else if (parkedHasContent) {
+        console.log(`[AssetSync] Classic mode: removing stray active folder ${activePath}`);
+        await fs.remove(activePath);
+      } else {
+        if (await fs.pathExists(parkedPath)) {
+          console.log(`[AssetSync] Classic mode: removing empty parked folder ${parkedPath}`);
+          await fs.remove(parkedPath);
+        }
+        console.log(`[AssetSync] Classic mode: parking active folder ${activePath} -> ${parkedPath}`);
+        await fs.move(activePath, parkedPath, { overwrite: true });
+      }
+    }
+  }
+
   static async syncAssetsBeforeLaunch(war3Path: string): Promise<void> {
     console.log('\n[AssetSync] ===== syncAssetsBeforeLaunch CALLED =====');
     console.log(`[AssetSync] Target War3 Path: ${war3Path}`);
 
     const modSettings = configManager.get('modSettings');
     const isModEnabled = modSettings?.modEnabled !== false; // default true
+    const isClassicMode = modSettings?.classicMode === true;
 
     console.log(`[AssetSync] Mod Enabled: ${isModEnabled}`);
+    console.log(`[AssetSync] Classic Mode: ${isClassicMode}`);
 
     if (!isModEnabled) {
       console.log('[AssetSync] Mod is disabled. Skipping auto-extraction.');
       return;
+    }
+
+    if (isClassicMode) {
+      await this.parkClassicActiveDirs(war3Path);
     }
 
     const assetsDir = await this.getAssetsDir();
@@ -211,6 +289,49 @@ export class AssetSyncService {
       } else if (name === 'zip-shaders.zip') {
         targetDir = path.join(war3Path, '_retail_', 'shaders');
         qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'shaders');
+      }
+
+      if (isClassicMode && (name === 'zip-environment.zip' || name === 'zip-shaders.zip')) {
+        const activeExists = targetDir && await fs.pathExists(targetDir);
+        const backupHasContent = qmoffDir && await this.hasDirectoryContent(qmoffDir);
+
+        if (activeExists) {
+          await fs.ensureDir(path.dirname(qmoffDir));
+          const activeHasContent = await this.hasDirectoryContent(targetDir);
+
+          if (!activeHasContent) {
+            console.log(`[AssetSync] Classic mode: removing empty active asset ${targetDir}`);
+            await fs.remove(targetDir);
+          } else if (backupHasContent) {
+            console.log(`[AssetSync] Classic mode: removing stray active asset ${targetDir}`);
+            await fs.remove(targetDir);
+          } else {
+            if (await fs.pathExists(qmoffDir)) {
+              console.log(`[AssetSync] Classic mode: removing empty parked asset ${qmoffDir}`);
+              await fs.remove(qmoffDir);
+            }
+            console.log(`[AssetSync] Classic mode: moving active asset ${targetDir} -> ${qmoffDir}`);
+            await fs.move(targetDir, qmoffDir, { overwrite: true });
+          }
+        }
+
+        if (await this.hasDirectoryContent(qmoffDir)) {
+          console.log(`[AssetSync] Classic mode: ${name} is parked in QMoff. Skipping active extraction.`);
+          continue;
+        }
+
+        console.log(`[AssetSync] Classic mode: missing QMoff asset for ${name}, extracting backup to ${qmoffDir}...`);
+        await this.extractZip(zipPath, qmoffDir);
+
+        if (name === 'zip-environment.zip' && modSettings?.foliage === false) {
+          const foliageDir = path.join(qmoffDir, 'foliage');
+          if (await fs.pathExists(foliageDir)) {
+            console.log(`[AssetSync] Classic mode: foliage=false, removing foliage from backup: ${foliageDir}`);
+            await fs.remove(foliageDir);
+          }
+        }
+
+        continue;
       }
 
       const hasBase = await (async () => {

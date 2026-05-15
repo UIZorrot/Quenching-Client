@@ -74,13 +74,15 @@ export const OverlayModal: React.FC<OverlayModalProps> = ({
           width: width,
           maxWidth: '1200px',
           height: '85vh',
+          maxHeight: '85vh',
           background: 'transparent',
           zIndex: 2001,
           opacity: open ? 1 : 0,
           transform: open ? 'scale(1)' : 'scale(0.95)',
           transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          minHeight: 0
         }}
       >
         {/* 标题栏 */}
@@ -99,9 +101,10 @@ export const OverlayModal: React.FC<OverlayModalProps> = ({
           </div>
         )}
 
-        {/* 内容区域 - 可滚动 */}
+        {/* 内容区域 - 可滚动（minHeight:0 避免 flex 子项被内容撑破 85vh） */}
         <div style={{
           flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
           padding: '10px',
           scrollbarWidth: 'thin',

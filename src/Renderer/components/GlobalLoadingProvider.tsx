@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import ReactDOM from 'react-dom';
-import { Spin, Typography } from 'antd';
+import { Progress, Spin, Typography } from 'antd';
 
 const { Text } = Typography;
 
@@ -80,11 +80,19 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
               boxShadow: '0 0 40px rgba(0, 0, 0, 0)'
             }}
           >
-            <Spin size="large" />
-            <Text style={{ color: '#d4af37', fontSize: 16, fontWeight: 500 }}>{loadingState.message}</Text>
-            {typeof loadingState.percent === 'number' && (
-              <Text style={{ color: '#d4af37', fontSize: 14 }}>{Math.round(loadingState.percent)}%</Text>
+            {typeof loadingState.percent === 'number' ? (
+              <Progress
+                type="circle"
+                percent={Math.max(0, Math.min(100, Math.round(loadingState.percent)))}
+                size={72}
+                strokeColor="#d4af37"
+                trailColor="rgba(212, 175, 55, 0.15)"
+                format={(percent) => <span style={{ color: '#d4af37', fontSize: 14 }}>{percent}%</span>}
+              />
+            ) : (
+              <Spin size="large" />
             )}
+            <Text style={{ color: '#d4af37', fontSize: 16, fontWeight: 500 }}>{loadingState.message}</Text>
           </div>
         </div>,
         document.body

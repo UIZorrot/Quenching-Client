@@ -18,6 +18,7 @@ import { useSound } from '../../hooks/useSound';
 import { BackgroundVideo } from './BackgroundVideo';
 import { LanguageSelector } from './LanguageSelector';
 import SettingsModal from './SettingsModal';
+import { CampaignModal } from './CampaignModal';
 import { ThemeModal } from './ThemeModal';
 import { AboutModal } from './AboutModal';
 import { NewsPanel } from './NewsPanel';
@@ -595,6 +596,15 @@ export const MainWindow: React.FC = () => {
           <Button
             type="text"
             className={styles.titleBarButton}
+            onClick={() => openModal('campaign')}
+            style={{ textShadow: '0 1px 1px rgba(0, 0, 0, 0.2), 0 0 4px rgba(0, 0, 0, 0.6)', fontSize: '12px' }}
+          >
+            {t('main.btn.campaign')}
+          </Button>
+
+          <Button
+            type="text"
+            className={styles.titleBarButton}
             onClick={() => setIsNewsPanelOpen(!isNewsPanelOpen)}
             style={{ textShadow: '0 1px 1px rgba(0, 0, 0, 0.2), 0 0 4px rgba(0, 0, 0, 0.6)', fontSize: '12px' }}
           >
@@ -779,12 +789,13 @@ export const MainWindow: React.FC = () => {
 
               <div style={{
                 letterSpacing: '2px',
-                color: '#888',
+                color: '#f5d76e',
                 fontSize: '14px',
                 fontStyle: 'italic',
+                fontWeight: 700,
                 width: '200px',
                 textAlign: 'center',
-                textShadow: '0 1px 1px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.5)',
+                textShadow: '0 2px 3px rgba(0, 0, 0, 0.95), 0 0 10px rgba(212, 175, 55, 0.55)',
               }}>
                 {t('main.tips.toggle')}
               </div>
@@ -895,7 +906,7 @@ export const MainWindow: React.FC = () => {
                   textShadow: '0 1px 1px rgba(0, 0, 0, 0.9), 0 0 5px rgba(0, 0, 0, 0.5)'
                 }}
               >
-                {t('setup.btn.change')}
+                {t('setup.btn.change_game_dir')}
               </Text>
             </div>
           </div>
@@ -961,6 +972,13 @@ export const MainWindow: React.FC = () => {
         onClose={closeModal}
         isFullPackageInstalled={isFullPackageInstalled}
         onModDeleted={() => refreshFullPackageStatus()}
+      />
+
+      <CampaignModal
+        open={activeModal === 'campaign'}
+        onClose={closeModal}
+        war3RootPath={currentInstallation?.path}
+        onRequestOpenSettings={() => setActiveModal('settings')}
       />
 
       <ThemeModal

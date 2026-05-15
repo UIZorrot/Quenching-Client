@@ -15,11 +15,14 @@ const electronAPI: ElectronAPI = {
   // 游戏启动
   launchGame: (executablePath?: string) => ipcRenderer.invoke('game:launch', executablePath),
   launchMap: (mapPath: string, difficulty: number) => ipcRenderer.invoke('game:launch-map', mapPath, difficulty),
+  extractCampaignW3n: (w3nPath: string) => ipcRenderer.invoke('campaign:extract-w3n', w3nPath),
+  listInstalledCampaigns: () => ipcRenderer.invoke('campaign:list-installed'),
   selectGamePath: () => ipcRenderer.invoke('game:select-path'),
   getConfig: (key: string) => ipcRenderer.invoke('config:get', key),
   setConfig: (key: string, value: any) => ipcRenderer.invoke('config:set', key, value),
   applyTheme: (themeId: string) => ipcRenderer.invoke('theme:apply', themeId),
-  updateMdlLighting: (war3Path: string, lightingMode: string) => ipcRenderer.invoke('mdl:update-lighting', war3Path, lightingMode),
+  updateMdlLighting: (war3Path: string, lightingMode: string, lightingBrightness?: number) =>
+    ipcRenderer.invoke('mdl:update-lighting', war3Path, lightingMode, lightingBrightness),
   updateUISettings: (war3Path: string, uiMode: string) => ipcRenderer.invoke('ui:update-settings', war3Path, uiMode),
   updateTerrainSettings: (war3Path: string, terrainMode: string) => ipcRenderer.invoke('terrain:update-settings', war3Path, terrainMode),
   updateTreeSettings: (war3Path: string, treeMode: string) => ipcRenderer.invoke('tree:update-settings', war3Path, treeMode),
@@ -27,6 +30,8 @@ const electronAPI: ElectronAPI = {
   updateFoliageSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('foliage:update-settings', war3Path, enabled),
   updateObjectShader: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-object-shader', war3Path, enabled),
   updatePostProcessing: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-post-processing', war3Path, enabled),
+  updateLegacyWar3Shader: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-legacy-war3', war3Path, enabled),
+  updateIntelAmdShaderFix: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-intel-amd', war3Path, enabled),
   updateEnvRenderSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('script:update-env-render', war3Path, enabled),
   updateGlowSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('glow:update-settings', war3Path, enabled),
   updateHalfPortrait: (war3Path: string, visionModPath: string, enabled: boolean) => ipcRenderer.invoke('vision:update-half-portrait', war3Path, visionModPath, enabled),
@@ -136,6 +141,10 @@ ipcRenderer.on('mod:install-progress', (event, data) => {
 });
 
 // 错误处理
+ipcRenderer.on('campaign:extract-progress', (event, data) => {
+  window.dispatchEvent(new CustomEvent('campaign-extract-progress', { detail: data }));
+});
+
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception in preload:', error);
 });

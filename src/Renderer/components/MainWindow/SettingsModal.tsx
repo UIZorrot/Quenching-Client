@@ -9,6 +9,31 @@ import { useGlobalLoading } from '../GlobalLoadingProvider';
 
 const { Text } = Typography;
 
+/** Basic tab: shared vertical rhythm (titles, desc, controls, status row). */
+const BASIC_SETTINGS_TITLE: React.CSSProperties = {
+  marginTop: 0,
+  marginBottom: 6,
+  fontSize: '16px',
+  lineHeight: 1.35,
+  fontFamily: "'Trajan Pro 3', serif",
+  color: '#d4af37'
+};
+const BASIC_SETTINGS_TITLE_DANGER: React.CSSProperties = {
+  ...BASIC_SETTINGS_TITLE,
+  color: '#ff4d4f'
+};
+const BASIC_SETTINGS_DESC: React.CSSProperties = {
+  color: '#888',
+  fontSize: '12px',
+  lineHeight: 1.45,
+  margin: 0
+};
+const BASIC_SETTINGS_CONTROL_BTN: React.CSSProperties = {
+  height: 28,
+  fontSize: '12px',
+  alignSelf: 'flex-start'
+};
+
 interface SettingsModalProps {
   open: boolean;
   onClose: () => void;
@@ -28,9 +53,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     desc: t('settings.preview.default'),
     image: null
   });
-  const [selectedMap, setSelectedMap] = useState<string>('');
-  const [selectedDifficulty, setSelectedDifficulty] = useState<number>(0);
-
   const isClassicMode = modSettings?.classicMode || false;
 
   const categories = [
@@ -67,15 +89,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     }
   };
 
-  const handleToggleClassicMode = async () => {
+  const handleClassicModeChange = async (nextClassic: boolean) => {
     if (!currentInstallation?.path) return;
-    const newMode = !isClassicMode;
+    if (nextClassic === isClassicMode) return;
     try {
-      showLoading(t(newMode ? 'msg.classicMode.switching' : 'msg.classicMode.restoring'));
-      await window.electronAPI?.toggleClassicMode(currentInstallation.path, newMode);
-      message.success(t(newMode ? 'msg.classicMode.switched' : 'msg.classicMode.restored'));
+      showLoading(t(nextClassic ? 'msg.classicMode.switching' : 'msg.classicMode.restoring'));
+      await window.electronAPI?.toggleClassicMode(currentInstallation.path, nextClassic);
+      message.success(t(nextClassic ? 'msg.classicMode.switched' : 'msg.classicMode.restored'));
       detectInstallations();
-      // 强制刷新设置状态
       await loadModSettings(currentInstallation.path);
     } catch (e: any) {
       message.error(e.message || 'Error');
@@ -211,7 +232,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     }
 
     // 2. Classic Mode Check
-    const restrictedInClassic = ['foliage', 'objectShader', 'postProcessing', 'half', 'modelEnhance', 'water', 'lighting', 'glow'];
+    const restrictedInClassic = ['foliage', 'objectShader', 'postProcessing', 'half', 'modelEnhance', 'water', 'terrain', 'tree', 'lighting', 'lightingBrightness', 'glow', 'useLegacyWar3Shaders', 'useIntelAmdShaderFix'];
     if (restrictedInClassic.includes(key) && isClassicMode) {
       return { disabled: true, reason: t('settings.basic.classicMode.disabled') };
     }
@@ -226,13 +247,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     return { disabled: false, reason: null };
   };
 
-  const renderStatusPlaceholder = (reason: string | null) => {
+  const renderStatusPlaceholder = (reason: string | null, tone: 'default' | 'danger' = 'default') => {
+    const textColor = reason && tone === 'danger' ? '#ff4d4f' : '#666';
     return (
       <div style={{
-        color: '#666',
+        color: textColor,
         fontSize: '12px',
-        marginTop: '4px',
-        minHeight: '20px', // Reserve space for alignment
+        marginTop: 4,
+        minHeight: 20,
         lineHeight: '20px'
       }}>
         {reason || ''}
@@ -328,11 +350,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     const sTerrain = getSettingStatus('terrain');
     const sTree = getSettingStatus('tree');
     const sLighting = getSettingStatus('lighting');
+    const sLightingBrightness = getSettingStatus('lightingBrightness');
     const sUi = getSettingStatus('ui'); // not used yet but good to have
 
     return (
-      <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
-        <div style={{ marginBottom: '30px', paddingBottom: '20px', borderBottom: '1px solid rgba(212, 175, 55, 0.1)' }}>
+      <div style={{ padding: '16px', height: '100%', overflowY: 'auto' }}>
+        <div style={{ marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid rgba(212, 175, 55, 0.1)' }}>
           <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('setup.war3.path')}</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <div style={{
@@ -366,12 +389,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
               onMouseEnter={() => playHover()}
               style={{ borderColor: '#d4af37', color: '#d4af37' }}
             >
-              {t('setup.btn.change')}
+              {t('setup.btn.change_game_dir')}
             </Button>
           </div>
         </div>
 
-        <Row gutter={[20, 20]}>
+        <Row gutter={[16, 14]}>
           <Col span={24}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.ui.style')}</h3>
             <Space wrap>
@@ -408,150 +431,136 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
               {renderSettingButton('RPG', modSettings.lighting, 'rpg', () => handleSettingChange('lighting', 'rpg'), () => setPreviewInfo({ title: t('settings.lighting'), desc: 'RPG', image: './assets/quenching/set3.png' }), sLighting.disabled)}
             </Space>
             {renderStatusPlaceholder(sLighting.reason)}
+            <h3 style={{ color: '#d4af37', marginBottom: '10px', marginTop: '12px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.lighting.brightness')}</h3>
+            <Space wrap>
+              {([1, 2, 3, 4, 5] as const).map((lvl) =>
+                renderSettingButton(
+                  String(lvl),
+                  modSettings.lightingBrightness ?? 3,
+                  lvl,
+                  () => handleSettingChange('lightingBrightness', lvl),
+                  () =>
+                    setPreviewInfo({
+                      title: t('settings.lighting.brightness'),
+                      desc: t('settings.lighting.brightness.desc'),
+                      image: './assets/quenching/set3.png'
+                    }),
+                  sLightingBrightness.disabled
+                )
+              )}
+            </Space>
+            {renderStatusPlaceholder(sLightingBrightness.reason)}
           </Col>
         </Row>
       </div>
     );
   };
 
-  const renderBasicSettings = () => (
-    <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <div>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>
-            {t('settings.basic.launchMap.title')}
-          </h3>
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <div style={{ color: '#888' }}>
-              {t('settings.basic.launchMap.desc')}
-            </div>
+  const renderBasicSettings = () => {
+    const sLegacyShaders = getSettingStatus('useLegacyWar3Shaders');
+    const sIntelAmdShaderFix = getSettingStatus('useIntelAmdShaderFix');
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
-              <div style={{
-                flex: 1,
-                padding: '8px 12px',
-                background: 'rgba(0, 0, 0, 0.3)',
-                border: '1px solid rgba(212, 175, 55, 0.2)',
-                borderRadius: '4px',
-                color: '#aaa',
-                fontSize: '13px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
-                {selectedMap || t('settings.basic.launchMap.selectMap')}
-              </div>
-              <Button
-                type="primary"
-                ghost
-                size="small"
-                onClick={async () => {
-                  playSmall();
-                  const path = await window.electronAPI?.selectFile({
-                    title: t('settings.basic.launchMap.selectMap'),
-                    filters: [{ name: 'Warcraft III Map', extensions: ['w3x', 'w3m'] }]
-                  });
-                  if (path) {
-                    setSelectedMap(path);
-                  }
-                }}
-                onMouseEnter={() => playHover()}
-                style={{ borderColor: '#d4af37', color: '#d4af37' }}
-              >
-                {t('setup.btn.change')}
-              </Button>
-            </div>
-
-            <div style={{ marginBottom: '15px' }}>
-              <div style={{ color: '#d4af37', marginBottom: '5px', fontSize: '14px' }}>
-                {t('settings.basic.launchMap.difficulty')}
-              </div>
-              <Space wrap>
-                {renderSettingButton(t('settings.basic.launchMap.easy'), selectedDifficulty, 0, () => setSelectedDifficulty(0))}
-                {renderSettingButton(t('settings.basic.launchMap.normal'), selectedDifficulty, 1, () => setSelectedDifficulty(1))}
-                {renderSettingButton(t('settings.basic.launchMap.hard'), selectedDifficulty, 2, () => setSelectedDifficulty(2))}
-              </Space>
-            </div>
-
-            <Button
-              type="primary"
-              disabled={!selectedMap || isLoading}
-              onClick={async () => {
-                playSmall();
-                if (!selectedMap) return;
-                try {
-                  showLoading(t('msg.launching'));
-                  await window.electronAPI?.launchMap(selectedMap, selectedDifficulty);
-                  message.success(t('msg.launch.success'));
-                } catch (e: any) {
-                  message.error(e.message || '启动失败');
-                } finally {
-                  hideLoading();
-                }
-              }}
-              onMouseEnter={() => playHover()}
-              style={{
-                background: selectedMap ? 'linear-gradient(135deg, #d4af37 0%, #a67c00 100%)' : 'rgba(212, 175, 55, 0.1)',
-                borderColor: '#d4af37',
-                color: selectedMap ? '#000' : '#d4af37',
-                fontWeight: 'bold',
-                height: '36px',
-                width: '120px'
-              }}
-            >
-              {t('settings.basic.launchMap.btn')}
-            </Button>
-          </Space>
-        </div>
-
+    return (
+    <div style={{ padding: '14px', height: '100%', overflowY: 'auto' }}>
+      <Space direction="vertical" size={16} style={{ width: '100%' }}>
         {/* 经典版模式切换 */}
         <div>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>
-            {t(isClassicMode ? 'settings.basic.classicMode.unlock' : 'settings.basic.classicMode.lock')}
-          </h3>
-          <Space direction="vertical">
-            <div style={{ color: '#888' }}>
+          <h3 style={BASIC_SETTINGS_TITLE}>{t('settings.basic.classicMode.title')}</h3>
+          <Space direction="vertical" size={6} style={{ width: '100%' }}>
+            <div style={BASIC_SETTINGS_DESC}>
               {t(isClassicMode
                 ? 'settings.basic.classicMode.unlock.desc'
                 : 'settings.basic.classicMode.lock.desc'
               )}
             </div>
-            <Button
-              onClick={() => { playSmall(); handleToggleClassicMode(); }}
-              onMouseEnter={() => playHover()}
-              style={{ borderColor: isClassicMode ? '#ff4d4f' : '#d4af37', color: isClassicMode ? '#ff4d4f' : '#d4af37' }}
-            >
-              {t(isClassicMode ? 'settings.basic.classicMode.unlock' : 'settings.basic.classicMode.lock')}
-            </Button>
+            <Space size={6}>
+              {renderSettingButton(
+                t('settings.btn.turnon'),
+                isClassicMode,
+                true,
+                () => { void handleClassicModeChange(true); },
+                () => setPreviewInfo({ title: t('settings.basic.classicMode.title'), desc: t('settings.basic.classicMode.lock.desc'), image: null })
+              )}
+              {renderSettingButton(
+                t('settings.btn.turnoff'),
+                isClassicMode,
+                false,
+                () => { void handleClassicModeChange(false); },
+                () => setPreviewInfo({ title: t('settings.basic.classicMode.title'), desc: t('settings.basic.classicMode.unlock.desc'), image: null })
+              )}
+            </Space>
+            {renderStatusPlaceholder(null)}
           </Space>
         </div>
 
-        {/* 重置渲染 */}
         <div>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.basic.resetRendering')}</h3>
-          <Space direction="vertical">
-            <div style={{ color: '#888' }}>{t('settings.basic.resetRendering.desc')}</div>
-            <Button disabled={isClassicMode} onClick={() => { playSmall(); handleResetRendering(); }} onMouseEnter={() => playHover()} style={{ borderColor: '#d4af37', color: '#d4af37' }}>
+          <h3 style={BASIC_SETTINGS_TITLE}>{t('settings.basic.legacyShaders.title')}</h3>
+          <Space direction="vertical" size={6} style={{ width: '100%' }}>
+            <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.legacyShaders.desc')}</div>
+            <Space size={6}>
+              {renderSettingButton(t('settings.btn.turnon'), modSettings.useLegacyWar3Shaders, true, () => handleSettingChange('useLegacyWar3Shaders', true), undefined, sLegacyShaders.disabled)}
+              {renderSettingButton(t('settings.btn.turnoff'), modSettings.useLegacyWar3Shaders, false, () => handleSettingChange('useLegacyWar3Shaders', false), undefined, sLegacyShaders.disabled)}
+            </Space>
+            {renderStatusPlaceholder(sLegacyShaders.reason)}
+          </Space>
+        </div>
+
+        <div>
+          <h3 style={BASIC_SETTINGS_TITLE}>{t('settings.basic.intelAmdShaderFix.title')}</h3>
+          <Space direction="vertical" size={6} style={{ width: '100%' }}>
+            <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.intelAmdShaderFix.desc')}</div>
+            <Space size={6}>
+              {renderSettingButton(t('settings.btn.turnon'), modSettings.useIntelAmdShaderFix, true, () => handleSettingChange('useIntelAmdShaderFix', true), undefined, sIntelAmdShaderFix.disabled)}
+              {renderSettingButton(t('settings.btn.turnoff'), modSettings.useIntelAmdShaderFix, false, () => handleSettingChange('useIntelAmdShaderFix', false), undefined, sIntelAmdShaderFix.disabled)}
+            </Space>
+            {renderStatusPlaceholder(sIntelAmdShaderFix.reason)}
+          </Space>
+        </div>
+
+        <div>
+          <h3 style={BASIC_SETTINGS_TITLE}>{t('settings.basic.resetRendering')}</h3>
+          <Space direction="vertical" size={6} style={{ width: '100%' }}>
+            <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.resetRendering.desc')}</div>
+            <Button
+              size="small"
+              disabled={isClassicMode}
+              onClick={() => { playSmall(); handleResetRendering(); }}
+              onMouseEnter={() => playHover()}
+              style={{ ...BASIC_SETTINGS_CONTROL_BTN, borderColor: '#d4af37', color: '#d4af37' }}
+            >
               {t('settings.basic.resetRendering')}
             </Button>
-            {isClassicMode && <div style={{ color: '#ff4d4f', fontSize: '12px' }}>{t('settings.basic.classicMode.restrict')}</div>}
+            {renderStatusPlaceholder(
+              isClassicMode ? t('settings.basic.classicMode.restrict') : null,
+              isClassicMode ? 'danger' : 'default'
+            )}
           </Space>
         </div>
 
-        {/* 删除MOD */}
         <div>
-          <h3 style={{ color: '#ff4d4f', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.basic.deleteMod')}</h3>
-          <Space direction="vertical">
-            <div style={{ color: '#888' }}>{t('settings.basic.deleteMod.desc')}</div>
-            <Button danger disabled={isClassicMode} onClick={() => { playSmall(); handleDeleteMod(); }} onMouseEnter={() => playHover()}>
+          <h3 style={BASIC_SETTINGS_TITLE_DANGER}>{t('settings.basic.deleteMod')}</h3>
+          <Space direction="vertical" size={6} style={{ width: '100%' }}>
+            <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.deleteMod.desc')}</div>
+            <Button
+              danger
+              size="small"
+              disabled={isClassicMode}
+              onClick={() => { playSmall(); handleDeleteMod(); }}
+              onMouseEnter={() => playHover()}
+              style={BASIC_SETTINGS_CONTROL_BTN}
+            >
               {t('settings.basic.deleteMod')}
             </Button>
-            {isClassicMode && <div style={{ color: '#ff4d4f', fontSize: '12px' }}>{t('settings.basic.classicMode.restrict')}</div>}
+            {renderStatusPlaceholder(
+              isClassicMode ? t('settings.basic.classicMode.restrict') : null,
+              isClassicMode ? 'danger' : 'default'
+            )}
           </Space>
         </div>
-      </Space >
-    </div >
+      </Space>
+    </div>
   );
+  };
 
   return (
     <OverlayModal
@@ -562,9 +571,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     >
       <div style={{
         flex: 1,
+        minHeight: 0,
         display: 'flex',
         position: 'relative',
-        height: '100%'
+        height: '100%',
+        overflow: 'hidden'
       }}>
 
 
@@ -590,11 +601,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
         {/* 左侧菜单 */}
         <div style={{
           width: '200px',
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           padding: '20px 0',
           zIndex: 1,
-          borderRight: '1px solid rgba(212, 175, 55, 0.1)'
+          borderRight: '1px solid rgba(212, 175, 55, 0.1)',
+          overflowY: 'auto',
+          flexShrink: 0
         }}>
           {categories.map(cat => (
             <div
@@ -627,13 +641,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
         {/* 主内容区：设置 + 浮动说明 */}
         <div style={{
           flex: 1,
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           zIndex: 1,
-          position: 'relative'
+          position: 'relative',
+          overflow: 'hidden'
         }}>
           {/* 设置项滚动区 */}
-          <div style={{ flex: 1, padding: '30px', overflowY: 'auto' }}>
+          <div style={{ flex: 1, minHeight: 0, padding: '30px', overflowY: 'auto' }}>
             {selectedCategory === 'graphics' && renderGraphicsSettings()}
             {selectedCategory === 'game' && renderGameSettings()}
             {selectedCategory === 'basic' && renderBasicSettings()}
