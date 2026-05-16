@@ -773,6 +773,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
         preview: 'cosu_u3.png',
         config: [
           { unitId: 'uabo', field: 'file', value: 'cos\\ud2\\1' },
+          { unitId: 'uabo', field: 'modelScale:hd', value: '1.15' },
           { unitId: 'umtw', field: 'file', value: 'cos\\ud2\\2' },
           { unitId: 'ugho', field: 'file', value: 'cos\\ud2\\3' },
           { unitId: 'ugho', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNud2.blp' },
