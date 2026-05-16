@@ -1,11 +1,27 @@
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import os from 'node:os';
 import { getProjectPaths, absolutelyPath_RepositoryRoot } from '../../engine/toolkit/paths.ts';
 
 
 const { absolutelyPath_subproject } = getProjectPaths.default;
 
-const absolutelyElectronExe = path.join(absolutelyPath_RepositoryRoot, 'node_modules/electron/dist/electron.exe');
+// 根据平台选择正确的 Electron 可执行文件路径
+function getElectronPath(): string {
+	const platform = os.platform();
+	switch (platform) {
+		case 'darwin':
+			return path.join(absolutelyPath_RepositoryRoot, 'node_modules/electron/dist/Electron.app/Contents/MacOS/Electron');
+		case 'win32':
+			return path.join(absolutelyPath_RepositoryRoot, 'node_modules/electron/dist/electron.exe');
+		case 'linux':
+			return path.join(absolutelyPath_RepositoryRoot, 'node_modules/electron/dist/electron');
+		default:
+			throw new Error(`Unsupported platform: ${platform}`);
+	}
+}
+
+const absolutelyElectronExe = getElectronPath();
 
 // 使用 spawn 来启动 Electron
 const electronProcess = spawn(absolutelyElectronExe, ['.', '--inspect=5858'], {

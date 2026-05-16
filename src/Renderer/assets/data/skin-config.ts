@@ -762,7 +762,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
           { unitId: 'unec', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNFrostRevenant.blp' },
           { unitId: 'unec', field: 'modelScale:hd', value: '1.05' },
           { unitId: 'ugho', field: 'file', value: 'units\\undead\\Ghoul\\Ghoul' },
-          { unitId: 'ugho', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNGhoul.blp' },
+          { unitId: 'ugho', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNZombie.blp' },
           { unitId: 'uske', field: 'unitSound', value: 'Skeleton' },
           { unitId: 'uskm', field: 'unitSound', value: 'Skeleton' },
         ]
@@ -773,6 +773,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
         preview: 'cosu_u3.png',
         config: [
           { unitId: 'uabo', field: 'file', value: 'cos\\ud2\\1' },
+          { unitId: 'uabo', field: 'modelScale:hd', value: '1.15' },
           { unitId: 'umtw', field: 'file', value: 'cos\\ud2\\2' },
           { unitId: 'ugho', field: 'file', value: 'cos\\ud2\\3' },
           { unitId: 'ugho', field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNud2.blp' },
@@ -802,7 +803,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
               { field: 'file:hd', value: 'Units\\Undead\\EvilArthas\\UndeadArthas' },
               { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNArthasEvil.blp' },
               { field: 'unitSound', value: 'HeroDeathKnight' },
-              { field: 'modelScale:hd', value: '1.05' }
+              { field: 'modelScale:hd', value: '1.15' }
             ]
           },
           {
@@ -818,13 +819,13 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
           },
           {
             id: 'u9_3',
-            name: '阿尔萨斯',
+            name: '黑锋骑士',
             preview: 'cosh_u6.png',
             config: [
-              { field: 'file:hd', value: 'Units\\Human\\Arthas\\Arthas' },
-              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNArthas.blp' },
-              { field: 'unitSound', value: 'Arthas' },
-              { field: 'modelScale:hd', value: '1.05' }
+              { field: 'file:hd', value: 'cos\\DeathKnightMounted\\Death_Knight_Mount' },
+              { field: 'Art:hd', value: 'ReplaceableTextures\\CommandButtons\\BTNDeathknightMounted.dds' },
+              { field: 'unitSound', value: 'HeroDeathKnight' },
+              { field: 'modelScale:hd', value: '1.2' }
             ]
           }
         ]
@@ -1195,7 +1196,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '原版',
             preview: 'cosh_t4.png',
             config: [
-              { field: 'file', value: 'units\\Creeps\\HeroBeastMaster\\HeroBeastMaster' },
+              { field: 'file', value: 'Units\\Creeps\\Beastmaster\\Beastmaster' },
               { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNBeastMaster.blp' },
               { field: 'unitSound', value: 'HeroBeastMaster' },
               { field: 'modelScale:hd', value: '1.05' }
@@ -1206,7 +1207,7 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '雷克萨',
             preview: 'cosh_t3.png',
             config: [
-              { field: 'file', value: 'Units\\Creeps\\Rexxar\\Rexxar' },
+              { field: 'file', value: 'Units\\Other\\Rexxar\\Rexxar' },
               { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNRexxar.blp' },
               { field: 'unitSound', value: 'Rexxar' },
               { field: 'modelScale:hd', value: '1.1' }
@@ -1225,9 +1226,9 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             name: '原版',
             preview: 'cosh_t13.png',
             config: [
-              { field: 'file', value: 'Units\\Creeps\\HeroDarkRanger\\HeroDarkRanger' },
-              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNHeroDarkRanger.blp' },
-              { field: 'unitSound', value: 'HeroDarkRanger' },
+              { field: 'file', value: 'Units\\Creeps\\BansheeRanger\\BansheeRanger' },
+              { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNBansheeRanger.blp' },
+              { field: 'unitSound', value: 'DarkRanger' },
               { field: 'modelScale:hd', value: '1.15' }
             ]
           },

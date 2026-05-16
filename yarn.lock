@@ -1362,6 +1362,14 @@
     wrap-ansi "^8.1.0"
     wrap-ansi-cjs "npm:wrap-ansi@^7.0.0"
 
+"@jamiephan/stormlib@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.npmjs.org/@jamiephan/stormlib/-/stormlib-0.0.2.tgz"
+  integrity sha512-29oh4dKrjL0BLqUAyDhUMHmW7IFWEBOIuADCtxbLdWfXpdBH7LARFtPZXYHHV9mD41JF7nWWBx/siLd5jATFqA==
+  dependencies:
+    node-addon-api "^7.1.0"
+    node-gyp-build "^4.8.0"
+
 "@jridgewell/gen-mapping@^0.3.5":
   version "0.3.5"
   resolved "https://registry.npmjs.org/@jridgewell/gen-mapping/-/gen-mapping-0.3.5.tgz"
@@ -3142,13 +3150,6 @@ caniuse-lite@^1.0.30001669:
   version "1.0.30001686"
   resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001686.tgz"
   integrity sha512-Y7deg0Aergpa24M3qLC5xjNklnKnhsmSyR/V89dLZ1n0ucJIFNs7PgR2Yfa/Zf6W79SbBicgtGxZr2juHkEUIA==
-
-casclib@^1.0.4:
-  version "1.0.4"
-  resolved "https://registry.npmmirror.com/casclib/-/casclib-1.0.4.tgz"
-  integrity sha512-EUyM3Cx5uy8xzmQYiELGuVkDrtSyCgA9rE9GTg9KML4HypnWf+y19paQ1lqvA/75h3PPX0xMW2yTKq4Retk7+A==
-  dependencies:
-    node-addon-api "^1.1.0"
 
 ccount@^2.0.0:
   version "2.0.1"
@@ -7009,10 +7010,15 @@ node-abi@^3.45.0:
   dependencies:
     semver "^7.3.5"
 
-node-addon-api@^1.1.0, node-addon-api@^1.6.3:
+node-addon-api@^1.6.3:
   version "1.7.2"
   resolved "https://registry.npmmirror.com/node-addon-api/-/node-addon-api-1.7.2.tgz"
   integrity sha512-ibPK3iA+vaY1eEjESkQkM0BbCqFOaZMiXRTtdB0u7b4djtY6JnsjvPdUHVMg6xQt3B8fpTTWHI9A+ADjM9frzg==
+
+node-addon-api@^7.1.0:
+  version "7.1.1"
+  resolved "https://registry.npmjs.org/node-addon-api/-/node-addon-api-7.1.1.tgz"
+  integrity sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==
 
 node-api-version@^0.2.0:
   version "0.2.0"
@@ -7025,6 +7031,11 @@ node-forge@^1:
   version "1.3.1"
   resolved "https://registry.npmjs.org/node-forge/-/node-forge-1.3.1.tgz"
   integrity sha512-dPEtOeMvF9VMcYV/1Wb8CPoVAXtp6MKMlcbAt4ddqmGqUJ6fQZFXkNZNkNlfevtNkGtaSoXf/vNNNSvgrdXwtA==
+
+node-gyp-build@^4.8.0:
+  version "4.8.4"
+  resolved "https://registry.npmjs.org/node-gyp-build/-/node-gyp-build-4.8.4.tgz"
+  integrity sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==
 
 node-gyp@^9.0.0:
   version "9.4.1"

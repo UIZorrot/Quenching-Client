@@ -32,9 +32,9 @@ async function extractZip(zipPath: string, extractPath: string): Promise<boolean
                 } else {
                     // 文件
                     fs.ensureDir(path.dirname(outputPath)).then(() => {
-                        zipfile.openReadStream(entry, (err, readStream) => {
-                            if (err) {
-                                reject(err);
+                        zipfile.openReadStream(entry, (err2, readStream) => {
+                            if (err2 || !readStream) {
+                                reject(err2);
                                 return;
                             }
                             const writeStream = fs.createWriteStream(outputPath);
@@ -108,4 +108,25 @@ export function registerFoliageHandlers() {
             throw error;
         }
     });
+}
+
+/**
+ * 启动时根据设置清理植被目录
+ * 与 cleanupShadersOnStartup / cleanupScriptsOnStartup 保持一致
+ * 【修复】解决"关闭植被后重启客户端又显示为开启"的状态不一致问题：
+ * - zip-environment.zip 解压后包含 foliage/ 子目录
+ * - 如果配置中 foliage=false，启动时需要将该目录删除，保持配置与文件状态一致
+ */
+export async function cleanupFoliageOnStartup(war3Path: string, modSettings: any) {
+    if (modSettings.foliage === false) {
+        console.log('[Foliage] foliage=false in config, cleaning up foliage directory on startup');
+        const retailPath = path.join(war3Path, '_retail_');
+        const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
+        const foliageDir = path.join(baseDir, 'environment', 'foliage');
+
+        if (await fs.pathExists(foliageDir)) {
+            await fs.remove(foliageDir).catch((e: any) => console.error('[Foliage] Startup cleanup failed:', e));
+            console.log('[Foliage] Foliage directory removed on startup.');
+        }
+    }
 }

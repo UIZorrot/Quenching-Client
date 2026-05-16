@@ -38,3 +38,12 @@ mac:
 downloadAlternateFFmpeg: false
 
 asar: true
+
+# @jamiephan/stormlib ships N-API prebuilds, but its npm package does not ship
+# thirdparty/StormLib sources required by node-gyp rebuild. Rebuilding during
+# electron-builder therefore fails with missing StormLib.h; use the prebuild.
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+asarUnpack:
+  - node_modules/@jamiephan/stormlib/prebuilds/**/*.node

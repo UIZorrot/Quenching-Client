@@ -15,6 +15,15 @@ logger.initialize();
 
 console.log(__NODE_ENV__);
 
+// =====================================================================
+// 【修复】搜狗输入法/中文输入法兼容性 - 必须在任何 electron ready 前执行
+// 搜狗等第三方 IME 在 Windows 上与 Electron GPU 沙箱冲突导致白屏/不弹窗
+// =====================================================================
+app.commandLine.appendSwitch('no-sandbox');
+app.commandLine.appendSwitch('disable-gpu-compositing');
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('ignore-certificate-errors');
+
 app.whenReady().then(() => {
 	// 注册所有API
 	registerAllAPIs();

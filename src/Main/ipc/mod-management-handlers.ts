@@ -56,6 +56,7 @@ export function registerModManagementHandlers() {
             water: 'transparent',
             foliage: true,
             lighting: 'standard',
+            lightingBrightness: 3,
             half: false,
             ui: 'quenching',
             cam: false,
@@ -64,6 +65,8 @@ export function registerModManagementHandlers() {
             tree: 'tall',
             envRender: true,
             modelEnhance: false,
+            useLegacyWar3Shaders: false,
+            useIntelAmdShaderFix: false,
             visionModPath: ''
         };
 

@@ -36,6 +36,8 @@ export const electronMainConf: Configuration = {
 		// path : 'require("path")',
 		// child_process : 'require("child_process")',
 
+		// @jamiephan/stormlib 为带 .node 的原生模块，必须由 Node 从 node_modules 加载（勿打进 webpack）。
+		'@jamiephan/stormlib': 'commonjs @jamiephan/stormlib',
 	},
 	plugins: [
 		// new NodePolyfillPlugin() ,

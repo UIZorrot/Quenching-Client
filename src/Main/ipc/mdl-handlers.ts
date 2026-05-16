@@ -4,50 +4,57 @@ import path from 'path';
 import yauzl from 'yauzl';
 import { configManager } from '../services/config-manager';
 
+/** 亮度等级 1–5 对应强度系数（仅乘在 Intensity，不含 AmbIntensity） */
+const LIGHTING_BRIGHTNESS_MULTIPLIERS: readonly number[] = [0.7, 0.9, 1.1, 1.3, 1.5];
+
+function normalizeBrightnessLevel(level: unknown): number {
+    const n = typeof level === 'number' ? level : parseInt(String(level), 10);
+    if (n >= 1 && n <= 5) return n;
+    return 3;
+}
+
 export function registerMdlHandlers() {
     /**
      * 更新光照设置
      * @param lightingMode 'standard' | 'battle' | 'rpg'
+     * @param lightingBrightness 亮度等级 1–5，缺省为 3
      */
-    ipcMain.handle('mdl:update-lighting', async (event, war3Path: string, lightingMode: string) => {
-        try {
-            if (!war3Path) {
-                war3Path = configManager.get('war3Path');
+    ipcMain.handle(
+        'mdl:update-lighting',
+        async (event, war3Path: string, lightingMode: string, lightingBrightness?: number) => {
+            try {
+                if (!war3Path) {
+                    war3Path = configManager.get('war3Path');
+                }
+
+                if (!war3Path) {
+                    throw new Error('未设置魔兽争霸III路径');
+                }
+
+                const brightnessLevel = normalizeBrightnessLevel(lightingBrightness);
+                const brightnessMul = LIGHTING_BRIGHTNESS_MULTIPLIERS[brightnessLevel - 1];
+                console.log(`[MDL] Updating lighting mode: ${lightingMode}, brightness level: ${brightnessLevel} (×${brightnessMul})`);
+                console.log(`[MDL] War3 Path: ${war3Path}`);
+
+                const dncPath = path.join(war3Path, '_retail_', 'environment', 'dnc');
+
+                await restoreDncFiles(war3Path);
+
+                if (await fs.pathExists(dncPath)) {
+                    console.log(`[MDL] Modifying DNC files in: ${dncPath}`);
+                    await traverseAndModify(dncPath, lightingMode, brightnessLevel);
+                    console.log('[MDL] Modification complete.');
+                } else {
+                    console.warn(`[MDL] DNC path not found after restore: ${dncPath}`);
+                }
+
+                return true;
+            } catch (error) {
+                console.error('Failed to update MDL lighting:', error);
+                throw error;
             }
-
-            if (!war3Path) {
-                throw new Error('未设置魔兽争霸III路径');
-            }
-
-            console.log(`[MDL] Updating lighting to mode: ${lightingMode}`);
-            console.log(`[MDL] War3 Path: ${war3Path}`);
-
-            const dncPath = path.join(war3Path, '_retail_', 'environment', 'dnc');
-
-            // 1. 还原 DNC 文件 (从 zip-environment.zip)
-            await restoreDncFiles(war3Path);
-
-            // 2. 如果是 'standard' (普通) 模式
-            // if (lightingMode === 'standard') {
-            //     console.log('[MDL] Standard mode selected, restoration complete.');
-            //     return true;
-            // }
-
-            // 3. 遍历并修改 DNC 文件
-            if (await fs.pathExists(dncPath)) {
-                console.log(`[MDL] Modifying DNC files in: ${dncPath}`);
-                await traverseAndModify(dncPath, lightingMode);
-                console.log('[MDL] Modification complete.');
-            } else {
-                console.warn(`[MDL] DNC path not found after restore: ${dncPath}`);
-            }
-
-            return true;
-        } catch (error) {
-            console.error('Failed to update MDL lighting:', error);
-            throw error;
         }
-    });
+    );
 }
 
 async function getAssetsDir(): Promise<string> {
@@ -174,20 +181,20 @@ async function extractZip(zipPath: string, extractPath: string): Promise<void> {
     });
 }
 
-async function traverseAndModify(dir: string, mode: string) {
+async function traverseAndModify(dir: string, mode: string, brightnessLevel: number) {
     const files = await fs.readdir(dir);
     for (const file of files) {
         const fullPath = path.join(dir, file);
         const stat = await fs.stat(fullPath);
         if (stat.isDirectory()) {
-            await traverseAndModify(fullPath, mode);
+            await traverseAndModify(fullPath, mode, brightnessLevel);
         } else if (file.toLowerCase().endsWith('.mdl')) {
-            await processMdlFile(fullPath, file, mode);
+            await processMdlFile(fullPath, file, mode, brightnessLevel);
         }
     }
 }
 
-async function processMdlFile(filePath: string, fileName: string, mode: string) {
+async function processMdlFile(filePath: string, fileName: string, mode: string, brightnessLevel: number) {
     let content = await fs.readFile(filePath, 'utf-8');
     const lines = content.split(/\r?\n/);
     let modified = false;
@@ -236,6 +243,10 @@ async function processMdlFile(filePath: string, fileName: string, mode: string) 
             targetIntVal = 1.4;
         }
     }
+
+    // 亮度等级：在模式算出的直射光强度上乘系数，不改动 AmbIntensity
+    const bl = Math.min(5, Math.max(1, brightnessLevel));
+    targetIntVal = targetIntVal * LIGHTING_BRIGHTNESS_MULTIPLIERS[bl - 1];
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
