@@ -140,6 +140,14 @@ export function registerLaunchHandlers() {
                 selectedPath = path.dirname(selectedPath);
             }
 
+            const retailPath = path.join(selectedPath, '_retail_');
+            const hasRetailDir = await fs.pathExists(retailPath);
+
+            if (hasRetailDir) {
+                configManager.set('war3Path', selectedPath);
+                return selectedPath;
+            }
+
             const possibleExes = isMac ? [
                 path.join(selectedPath, 'Warcraft III.app'),
                 path.join(selectedPath, '_retail_', 'Warcraft III.app'),
@@ -158,22 +166,15 @@ export function registerLaunchHandlers() {
             }
 
             if (isValid) {
-                // Additional validation: Check if _retail_ directory exists
-                const retailPath = path.join(selectedPath, '_retail_');
-                const hasRetailDir = await fs.pathExists(retailPath);
-
-                if (!hasRetailDir) {
-                    dialog.showErrorBox('路径无效', '所选目录中未找到 _retail_ 文件夹，请选择正确的魔兽争霸III安装目录。\n\n有效的目录应包含 _retail_ 子文件夹。');
-                    return null;
-                }
-
                 configManager.set('war3Path', selectedPath);
                 return selectedPath;
-            } else {
-                const msg = isMac ? '所选目录中未找到 Warcraft III.app' : '所选目录中未找到 Warcraft III.exe';
-                dialog.showErrorBox('路径无效', `${msg}，请重新选择正确的游戏安装目录。`);
-                return null;
             }
+
+            const msg = isMac
+                ? '所选目录中未找到 _retail_ 文件夹或 Warcraft III.app'
+                : '所选目录中未找到 _retail_ 文件夹或 Warcraft III.exe';
+            dialog.showErrorBox('路径无效', `${msg}，请重新选择正确的游戏安装目录。`);
+            return null;
         }
         return null;
     });

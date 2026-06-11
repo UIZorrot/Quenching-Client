@@ -42,19 +42,79 @@ export class SkinService {
   }
 
   /**
-   * 确保 unitskin.txt 存在并应用淬火版模板
+   * 获取游戏 units 目录
    */
-  async ensureUnitSkinExists(forceRefresh: boolean = false): Promise<void> {
+  private async getUnitsDir(): Promise<{ baseDir: string; unitsDir: string } | null> {
     const war3Path = configManager.get('war3Path');
-    if (!war3Path) return;
+    if (!war3Path) return null;
 
     const retailPath = path.join(war3Path, '_retail_');
     const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
-    const unitskinPath = path.join(baseDir, 'units', 'unitskin.txt');
+    return { baseDir, unitsDir: path.join(baseDir, 'units') };
+  }
+
+  /**
+   * 关闭皮肤：unitskin.txt -> unitskin-dis.txt
+   */
+  async disableSkins(): Promise<boolean> {
+    const dirs = await this.getUnitsDir();
+    if (!dirs) throw new Error('Warcraft III path not configured');
+
+    const unitskinPath = path.join(dirs.unitsDir, 'unitskin.txt');
+    const disabledPath = path.join(dirs.unitsDir, 'unitskin-dis.txt');
+
+    if (await fs.pathExists(unitskinPath)) {
+      if (await fs.pathExists(disabledPath)) {
+        await fs.remove(disabledPath);
+      }
+      await fs.move(unitskinPath, disabledPath, { overwrite: true });
+      console.log('[SkinService] Disabled skins: unitskin.txt -> unitskin-dis.txt');
+    }
+
+    return true;
+  }
+
+  /**
+   * 启用皮肤：unitskin-dis.txt -> unitskin.txt，必要时从模板初始化
+   */
+  async enableSkins(forceRefresh: boolean = false): Promise<void> {
+    const dirs = await this.getUnitsDir();
+    if (!dirs) return;
+
+    const unitskinPath = path.join(dirs.unitsDir, 'unitskin.txt');
+    const disabledPath = path.join(dirs.unitsDir, 'unitskin-dis.txt');
+
+    if (!(await fs.pathExists(unitskinPath)) && (await fs.pathExists(disabledPath))) {
+      await fs.move(disabledPath, unitskinPath, { overwrite: true });
+      console.log('[SkinService] Enabled skins: unitskin-dis.txt -> unitskin.txt');
+    }
+
+    await this.ensureUnitSkinExists(forceRefresh);
+  }
+
+  async isSkinEnabled(): Promise<boolean> {
+    const dirs = await this.getUnitsDir();
+    if (!dirs) return false;
+    return fs.pathExists(path.join(dirs.unitsDir, 'unitskin.txt'));
+  }
+
+  /**
+   * 确保 unitskin.txt 存在并应用淬火版模板
+   */
+  async ensureUnitSkinExists(forceRefresh: boolean = false): Promise<void> {
+    const dirs = await this.getUnitsDir();
+    if (!dirs) return;
+
+    const { baseDir, unitsDir } = dirs;
+    const unitskinPath = path.join(unitsDir, 'unitskin.txt');
+    const disabledPath = path.join(unitsDir, 'unitskin-dis.txt');
     const exists = await fs.pathExists(unitskinPath);
 
+    if (await fs.pathExists(disabledPath) && !exists) {
+      return;
+    }
+
     if (!exists || forceRefresh) {
-      const unitsDir = path.join(baseDir, 'units');
       await fs.ensureDir(unitsDir);
 
       const assetsDir = await this.getAssetsDir();
@@ -82,12 +142,17 @@ export class SkinService {
       throw new Error('Warcraft III path not configured');
     }
 
-    // 自动检测并初始化 unitskin.txt
-    await this.ensureUnitSkinExists();
+    // 自动检测并初始化 unitskin.txt（若已关闭则先恢复）
+    await this.enableSkins();
 
-    const retailPath = path.join(war3Path, '_retail_');
-    const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
-    const unitskinPath = path.join(baseDir, 'units', 'unitskin.txt');
+    const dirs = await this.getUnitsDir();
+    if (!dirs) {
+      console.error('[SkinService] Warcraft III path not configured');
+      throw new Error('Warcraft III path not configured');
+    }
+
+    const unitskinPath = path.join(dirs.unitsDir, 'unitskin.txt');
+    const baseDir = dirs.baseDir;
     console.log(`[SkinService] Target unitskin.txt: ${unitskinPath}`);
 
     // 如果初始化后还是不存在，则报错

@@ -8,7 +8,7 @@ import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
-const appPath = process.argv[2] || './__Bin/mac-arm64/QM Client.app';
+const appPath = process.argv[2] || './__Bin/mac-arm64/QMClient.app';
 
 const electronFrameworkPath = path.join(
     appPath,

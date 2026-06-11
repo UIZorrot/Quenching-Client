@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { configManager } from '../services/config-manager';
 import { AssetSyncService } from '../services/asset-sync';
+import { UIService } from '../services/ui-service';
 
 export function registerModManagementHandlers() {
     // 删除MOD
@@ -167,6 +168,8 @@ export function registerModManagementHandlers() {
                     ...currentSettings,
                     classicMode: true
                 });
+
+                await UIService.patchInstalledUiFeedbackForClassicMode(war3Path);
 
             } else {
                 // 关闭经典模式：还原文件夹

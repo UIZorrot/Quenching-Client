@@ -19,4 +19,22 @@ export function registerSkinHandlers() {
       throw error;
     }
   });
+
+  ipcMain.handle('skin:disable', async () => {
+    try {
+      return await skinService.disableSkins();
+    } catch (error) {
+      console.error('Failed to disable skins:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('skin:is-enabled', async () => {
+    try {
+      return await skinService.isSkinEnabled();
+    } catch (error) {
+      console.error('Failed to check skin status:', error);
+      throw error;
+    }
+  });
 }

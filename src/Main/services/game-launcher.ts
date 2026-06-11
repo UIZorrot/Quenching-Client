@@ -70,6 +70,15 @@ export class GameLauncher {
         }
 
         if (!exePath || !fs.existsSync(exePath)) {
+            if (isMac && gamePath && fs.existsSync(path.join(gamePath, '_retail_'))) {
+                const retailApp = path.join(gamePath, '_retail_', 'Warcraft III.app');
+                if (fs.existsSync(retailApp)) {
+                    exePath = retailApp;
+                }
+            }
+        }
+
+        if (!exePath || !fs.existsSync(exePath)) {
             throw new Error(`Could not find Warcraft III executable at: ${exePath || 'configured path'}`);
         }
 

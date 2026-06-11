@@ -87,7 +87,7 @@ interface ElectronAPI {
   applyTheme: (themeId: string) => Promise<boolean>;
   updateMdlLighting: (war3Path: string, lightingMode: string, lightingBrightness?: number) => Promise<boolean>;
   updateUISettings: (war3Path: string, uiMode: string) => Promise<boolean>;
-  updateTerrainSettings: (war3Path: string, terrainMode: string) => Promise<boolean>;
+  updateTerrainSettings: (war3Path: string, terrainMode: string, waterMode?: string) => Promise<boolean>;
   updateTreeSettings: (war3Path: string, treeMode: string) => Promise<boolean>;
   updateWaterSettings: (war3Path: string, waterMode: string) => Promise<boolean>;
   updateFoliageSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
@@ -127,6 +127,8 @@ interface ElectronAPI {
   // 涂装系统
   applySkin: (unitId: string, changes: any[]) => Promise<boolean>;
   applyBatchSkin: (batchChanges: any[]) => Promise<boolean>;
+  disableSkins: () => Promise<boolean>;
+  isSkinEnabled: () => Promise<boolean>;
   selectModelFile: () => Promise<string | null>;
   selectFile: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => Promise<string | null>;
   selectDirectory: (title?: string) => Promise<string | null>;
