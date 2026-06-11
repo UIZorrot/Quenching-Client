@@ -110,6 +110,8 @@ export function registerTreeHandlers() {
                 switch (treeMode) {
                     case 'tall': applyTo20(handler); break;
                     case 'short': applyTo20Short(handler); break;
+                    case 'v18': applyTo18(handler); break;
+                    case 'v16': applyTo16(handler); break;
                     case 'retro': applyTo00(handler); break;
                     default:
                         console.warn(`[Tree] Unknown mode ${treeMode}, just saving baseline.`);
@@ -209,6 +211,92 @@ function applyTo20Short(handler: War3TextHandler) {
     handler.write("STlt", "file", "Doodads/que/d20/lordaerontree-short/LordaeronTree");
     handler.write("ZTtw", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
     handler.write("ZTtc", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+}
+
+function applyTo18(handler: War3TextHandler) {
+    handler.write("ATtr", "texFile", "ReplaceableTextures/tree/t18/AshenvaleTree/AshenTree");
+    handler.write("BTtw", "texFile", "ReplaceableTextures/tree/t18/BarrensTree/BarrensTree");
+    handler.write("CTtr", "texFile", "ReplaceableTextures/tree/t18/AshenvaleTree/FelwoodTree");
+    handler.write("FTtw", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronFallTree");
+    handler.write("FTtw", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
+    handler.write("LTlt", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronSummerTree");
+    handler.write("LTlt", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
+    handler.write("WTtw", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronWinterTree");
+    handler.write("WTtw", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
+    handler.write("WTst", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronSnowTree");
+    handler.write("WTst", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
+    handler.write("YTct", "texFile", "ReplaceableTextures/tree/tc/citytree/cityscapetree");
+    handler.write("YTct", "file", "Doodads/que/d18/Citytree");
+    handler.write("YTwt", "texFile", "ReplaceableTextures/tree/tc/citytree/cityscapetreew");
+    handler.write("YTwt", "file", "Doodads/que/d18/Citytree");
+    handler.write("YTft", "texFile", "ReplaceableTextures/tree/tc/citytree/cityscapetreea");
+    handler.write("YTft", "file", "Doodads/que/d18/Citytree");
+    handler.write("VTlt", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/lordaeronvillagetree");
+    handler.write("VTlt", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
+    handler.write("ATt1", "texFile", "ReplaceableTextures/tree/t18/AshenvaleTree/AshenTree");
+    handler.write("ATtc", "texFile", "ReplaceableTextures/tree/t18/AshenvaleTree/AshenCanopyTree");
+    handler.write("JTct", "texFile", "ReplaceableTextures/tree/t18/lordaerontree/lordaeronsummertree");
+    handler.write("JTct", "file", "Doodads/que/d18/lordaerontree/lordaerontree");
+    handler.write("JTtw", "texFile", "ReplaceableTextures/tree/t18/lordaerontree/lordaeronsummertree");
+    handler.write("JTtw", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
+    handler.write("BTtc", "texFile", "ReplaceableTextures/tree/t18/BarrensTree/BarrensTree");
+    handler.write("CTtc", "texFile", "ReplaceableTextures/tree/t18/AshenvaleTree/FelwoodCanopyTree");
+    handler.write("LFpt", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
+    handler.write("LFpt", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronFallTree");
+    handler.write("Yts1", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronSummerTree");
+    handler.write("Yts1", "texFile:hd", "ReplaceableTextures/tree/tc/SilvermoonTree/SilverMoonTree");
+    handler.write("Yts2", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronSummerTree");
+    handler.write("Yts3", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronSummerTree");
+    handler.write("STlt", "texFile", "ReplaceableTextures/tree/t18/LordaeronTree/LordaeronSummerTree");
+    handler.write("STlt", "file", "Doodads/que/d18/LordaeronTree/LordaeronTree");
+    handler.write("ZTtw", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+    handler.write("ZTtc", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+    handler.write("Yts1", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+    handler.write("Yts2", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+    handler.write("Yts3", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+}
+
+function applyTo16(handler: War3TextHandler) {
+    handler.write("ATtr", "texFile", "ReplaceableTextures/tree/t16/AshenvaleTree/AshenTree");
+    handler.write("BTtw", "texFile", "ReplaceableTextures/tree/t16/BarrensTree/BarrensTree");
+    handler.write("CTtr", "texFile", "ReplaceableTextures/tree/t16/AshenvaleTree/FelwoodTree");
+    handler.write("FTtw", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronFallTree");
+    handler.write("FTtw", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
+    handler.write("LTlt", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronSummerTree");
+    handler.write("LTlt", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
+    handler.write("WTtw", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronWinterTree");
+    handler.write("WTtw", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
+    handler.write("WTst", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronSnowTree");
+    handler.write("WTst", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
+    handler.write("YTct", "texFile", "ReplaceableTextures/tree/tc/citytree/cityscapetree");
+    handler.write("YTct", "file", "Doodads/que/d16/Citytree");
+    handler.write("YTwt", "texFile", "ReplaceableTextures/tree/tc/citytree/cityscapetreew");
+    handler.write("YTwt", "file", "Doodads/que/d16/Citytree");
+    handler.write("YTft", "texFile", "ReplaceableTextures/tree/tc/citytree/cityscapetreea");
+    handler.write("YTft", "file", "Doodads/que/d16/Citytree");
+    handler.write("VTlt", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/lordaeronvillagetree");
+    handler.write("VTlt", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
+    handler.write("ATt1", "texFile", "ReplaceableTextures/tree/t16/AshenvaleTree/AshenTree");
+    handler.write("ATtc", "texFile", "ReplaceableTextures/tree/t16/AshenvaleTree/AshenCanopyTree");
+    handler.write("JTct", "texFile", "ReplaceableTextures/tree/t16/lordaerontree/lordaeronsummertree");
+    handler.write("JTct", "file", "Doodads/que/d16/lordaerontree/lordaerontree");
+    handler.write("JTtw", "texFile", "ReplaceableTextures/tree/t16/lordaerontree/lordaeronsummertree");
+    handler.write("JTtw", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
+    handler.write("BTtc", "texFile", "ReplaceableTextures/tree/t16/BarrensTree/BarrensTree");
+    handler.write("CTtc", "texFile", "ReplaceableTextures/tree/t16/AshenvaleTree/FelwoodCanopyTree");
+    handler.write("LFpt", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
+    handler.write("LFpt", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronFallTree");
+    handler.write("Yts1", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronSummerTree");
+    handler.write("Yts1", "texFile:hd", "ReplaceableTextures/tree/tc/SilvermoonTree/SilverMoonTree");
+    handler.write("Yts2", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronSummerTree");
+    handler.write("Yts3", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronSummerTree");
+    handler.write("STlt", "texFile", "ReplaceableTextures/tree/t16/LordaeronTree/LordaeronSummerTree");
+    handler.write("STlt", "file", "Doodads/que/d16/LordaeronTree/LordaeronTree");
+    handler.write("ZTtw", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+    handler.write("ZTtc", "texFile", "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree");
+    handler.write("Yts1", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+    handler.write("Yts2", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
+    handler.write("Yts3", "texFile:hd", "ReplaceableTextures/tree/tc/SilverMoonTree/SilverMoonTree");
 }
 
 function applyTo00(handler: War3TextHandler) {

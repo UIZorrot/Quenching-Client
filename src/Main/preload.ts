@@ -24,7 +24,7 @@ const electronAPI: ElectronAPI = {
   updateMdlLighting: (war3Path: string, lightingMode: string, lightingBrightness?: number) =>
     ipcRenderer.invoke('mdl:update-lighting', war3Path, lightingMode, lightingBrightness),
   updateUISettings: (war3Path: string, uiMode: string) => ipcRenderer.invoke('ui:update-settings', war3Path, uiMode),
-  updateTerrainSettings: (war3Path: string, terrainMode: string) => ipcRenderer.invoke('terrain:update-settings', war3Path, terrainMode),
+  updateTerrainSettings: (war3Path: string, terrainMode: string, waterMode?: string) => ipcRenderer.invoke('terrain:update-settings', war3Path, terrainMode, waterMode),
   updateTreeSettings: (war3Path: string, treeMode: string) => ipcRenderer.invoke('tree:update-settings', war3Path, treeMode),
   updateWaterSettings: (war3Path: string, waterMode: string) => ipcRenderer.invoke('water:update-settings', war3Path, waterMode),
   updateFoliageSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('foliage:update-settings', war3Path, enabled),
@@ -38,6 +38,8 @@ const electronAPI: ElectronAPI = {
   updateModelEnhance: (war3Path: string, visionModPath: string, enabled: boolean) => ipcRenderer.invoke('vision:update-model-enhance', war3Path, visionModPath, enabled),
   applySkin: (unitId: string, changes: any[]) => ipcRenderer.invoke('skin:apply', unitId, changes),
   applyBatchSkin: (batchChanges: any[]) => ipcRenderer.invoke('skin:apply-batch', batchChanges),
+  disableSkins: () => ipcRenderer.invoke('skin:disable'),
+  isSkinEnabled: () => ipcRenderer.invoke('skin:is-enabled'),
   selectModelFile: () => ipcRenderer.invoke('file:select-model'),
   selectFile: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => ipcRenderer.invoke('file:select', options),
   selectDirectory: (title?: string) => ipcRenderer.invoke('file:select-directory', title),

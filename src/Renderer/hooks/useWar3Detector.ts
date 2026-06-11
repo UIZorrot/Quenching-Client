@@ -93,6 +93,10 @@ export const reaxel_War3Detector = reaxel(() => {
     if (!dirPath) return false;
 
     try {
+      if (await window.electronAPI?.pathExists(`${dirPath}/_retail_`)) {
+        return true;
+      }
+
       // 检查关键文件是否存在
       const keyFiles = [
         'Warcraft III.exe',
@@ -144,6 +148,16 @@ export const reaxel_War3Detector = reaxel(() => {
       }
 
       if (!executablePath) {
+        const hasRetail = await window.electronAPI?.pathExists(`${dirPath}/_retail_`);
+        if (hasRetail) {
+          return {
+            path: dirPath,
+            version: 'Reforged (Retail)',
+            isReforged: true,
+            isValid: true,
+            executablePath: `${dirPath}/_retail_/Warcraft III.app`
+          };
+        }
         return null;
       }
 

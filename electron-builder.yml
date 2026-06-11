@@ -47,3 +47,4 @@ nodeGypRebuild: false
 buildDependenciesFromSource: false
 asarUnpack:
   - node_modules/@jamiephan/stormlib/prebuilds/**/*.node
+  - node_modules/@jamiephan/stormlib/build/**/*.node

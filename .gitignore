@@ -8,4 +8,5 @@ dist
 dist1
 dist2
 _ref
-
+.tmp-stormlib-unicode-test
+.tmp-stormlib-test

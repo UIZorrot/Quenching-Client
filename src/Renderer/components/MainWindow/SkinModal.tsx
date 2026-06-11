@@ -43,6 +43,14 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
     const [selectedWarbandId, setSelectedWarbandId] = useState<string>('');
     const [selectedSkinId, setSelectedSkinId] = useState<string>('');
     const [customSkins, setCustomSkins] = useState<Record<string, string>>({});
+    const [skinEnabled, setSkinEnabled] = useState(true);
+
+    React.useEffect(() => {
+        if (!open) return;
+        window.electronAPI?.isSkinEnabled?.()
+            .then((enabled) => setSkinEnabled(enabled !== false))
+            .catch(() => setSkinEnabled(true));
+    }, [open, war3Path]);
 
     // 种族数据
     const races = [
@@ -178,6 +186,22 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
         } catch (error) {
             console.error('Failed to select model file:', error);
             message.error(t('skin.model.select.fail'));
+        }
+    };
+
+    const handleDisableSkins = async () => {
+        if (!war3Path) {
+            message.error('War3 path not detected');
+            return;
+        }
+        message.loading({ content: t('skin.applying'), key: 'applySkin' });
+        try {
+            await window.electronAPI?.disableSkins?.();
+            setSkinEnabled(false);
+            setSelectedSkinId('');
+            message.success({ content: t('skin.disable.success'), key: 'applySkin' });
+        } catch (error: any) {
+            message.error({ content: `${t('skin.disable.fail')}: ${error.message || ''}`, key: 'applySkin' });
         }
     };
 
@@ -361,6 +385,25 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                                 }}
                             >
                                 {t('skin.category.unit')}
+                            </Button>
+                        )}
+                        {!isClassicMode && isFullPackageInstalled && (
+                            <Button
+                                onClick={() => {
+                                    playSmall();
+                                    handleDisableSkins();
+                                }}
+                                onMouseEnter={() => playHover()}
+                                disabled={!skinEnabled}
+                                style={{
+                                    borderColor: skinEnabled ? '#ff7875' : '#666',
+                                    color: skinEnabled ? '#ff7875' : '#666',
+                                    height: '40px',
+                                    padding: '0 20px',
+                                    fontSize: '16px'
+                                }}
+                            >
+                                {t('skin.disable')}
                             </Button>
                         )}
                     </Space>

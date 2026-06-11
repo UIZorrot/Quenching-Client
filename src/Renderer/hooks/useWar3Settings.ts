@@ -316,10 +316,10 @@ export const reaxel_War3Settings = reaxel(() => {
       const normalized = content.replace(/\\/g, '/').toLowerCase();
 
       if (normalized.includes('d20/lordaerontree-short')) return 'short';
-      if (normalized.includes('d20/lordaerontree')) return 'tall';
+      if (normalized.includes('tree/t18/') || normalized.includes('d18/')) return 'v18';
+      if (normalized.includes('tree/t16/') || normalized.includes('d16/')) return 'v16';
+      if (normalized.includes('d20/lordaerontree') || normalized.includes('tree/t20/')) return 'tall';
       if (normalized.includes('tree/t00')) return 'retro';
-      if (normalized.includes('v16/')) return 'v16';
-      if (normalized.includes('v18/')) return 'v18';
 
       return 'original';
     } catch (e) {
@@ -475,7 +475,11 @@ export const reaxel_War3Settings = reaxel(() => {
           console.log('[useWar3Settings] Invoking updateTerrainSettings IPC...');
 
           // 增加超时保护
-          const updateTerrainPromise = window.electronAPI.updateTerrainSettings(war3Path, updatedSettings.terrain);
+          const updateTerrainPromise = window.electronAPI.updateTerrainSettings(
+            war3Path,
+            updatedSettings.terrain,
+            updatedSettings.water
+          );
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Update terrain settings timeout')), 45000)
           );
@@ -719,17 +723,20 @@ angle=${store.cameraSettings.angleOfAttack}
     try {
       const retailDir = `${war3Path}/_retail_`;
       const baseDir = (await window.electronAPI?.pathExists(retailDir)) ? retailDir : war3Path;
-      const cliffPath = `${baseDir}/terrainart/clifftypes.slk`;
-      const exists = await window.electronAPI?.pathExists(cliffPath);
+      const terrainDir = `${baseDir}/terrainart`;
+      const terrainExists = await window.electronAPI?.pathExists(terrainDir);
 
-      if (!exists) return 'original';
+      if (!terrainExists) return 'original';
 
-      // 如果存在，进一步细分
-      // 注：这里由于 SLK 是二进制，暂时只做路径包含检测或信任配置
-      // 为了稳定起见，如果检测到文件存在，而配置中是 retro/v16/v18，则保持配置
-      const currentStored = store.modSettings.terrain;
-      if (['retro', 'v16', 'v18'].includes(currentStored)) {
-        return currentStored;
+      const metaPath = `${terrainDir}/meta.que`;
+      const metaExists = await window.electronAPI?.pathExists(metaPath);
+      if (metaExists) {
+        // @ts-ignore
+        const meta = ((await window.electronAPI.readFile(metaPath)) || '').trim();
+        if (meta === '00') return 'retro';
+        if (meta === '16') return 'v16';
+        if (meta === '18') return 'v18';
+        if (meta === '20') return 'latest';
       }
 
       return 'latest';

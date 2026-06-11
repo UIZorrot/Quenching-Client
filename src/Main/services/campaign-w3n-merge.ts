@@ -11,6 +11,7 @@ import { Archive, MPQ_FILE_REPLACEEXISTING } from '@jamiephan/stormlib';
 import { AssetSyncService } from './asset-sync';
 
 const RESERVED_DIRS = new Set(['_merged', '_merge_work']);
+const ASCII_PATH_RE = /^[\x00-\x7F]+$/;
 
 export type CampaignExtractProgressPhase =
     | 'prepare'
@@ -76,6 +77,39 @@ function discoverMapsFromListfile(listLines: string[]): string[] {
 function diskPathFromInternal(root: string, internalPath: string): string {
     const parts = internalPath.replace(/\\/g, '/').split('/').filter((p) => p && p !== '.' && p !== '..');
     return path.join(root, ...parts);
+}
+
+async function canWriteDirectory(dir: string): Promise<boolean> {
+    try {
+        await fs.ensureDir(dir);
+        const probe = path.join(dir, `write-test-${Date.now()}-${Math.random().toString(16).slice(2)}.tmp`);
+        await fs.writeFile(probe, 'ok');
+        await fs.remove(probe);
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+async function createStormSafeWorkDir(): Promise<string> {
+    const driveRoot = path.parse(process.cwd()).root;
+    const candidates = [
+        driveRoot ? path.join(driveRoot, 'QuenchingTemp') : '',
+        process.env.PROGRAMDATA ? path.join(process.env.PROGRAMDATA, 'QuenchingModClient', 'Temp') : '',
+        process.env.TEMP ? path.join(process.env.TEMP, 'QuenchingModClient') : '',
+        path.join(process.cwd(), '.campaign-work')
+    ].filter(Boolean).map((p) => path.normalize(p));
+
+    for (const candidate of Array.from(new Set(candidates))) {
+        if (!ASCII_PATH_RE.test(candidate)) {
+            continue;
+        }
+        if (await canWriteDirectory(candidate)) {
+            return fs.mkdtemp(path.join(candidate, 'campaign-'));
+        }
+    }
+
+    throw new Error('No writable ASCII temp directory is available for StormLib campaign extraction.');
 }
 
 function extractEntireMpqToDisk(
@@ -216,6 +250,7 @@ export async function extractCampaignW3nMerged(
 ): Promise<{ outputDir: string; maps: string[] }> {
     const report = (progress: CampaignExtractProgress) => onProgress?.(progress);
     const finalOutputDir = path.resolve(outputDir);
+    let workRoot = '';
     report({ phase: 'prepare', percent: 2 });
 
     const ctempPath = path.join(await AssetSyncService.getAssetsDir(), 'quenching', 'ctemp.w3x');
@@ -227,83 +262,110 @@ export async function extractCampaignW3nMerged(
         throw new Error(`w3n not found: ${w3nPath}`);
     }
 
-    await fs.remove(finalOutputDir).catch(() => { });
-    await fs.ensureDir(finalOutputDir);
+    const needsStormSafePaths = !ASCII_PATH_RE.test(path.resolve(w3nPath)) || !ASCII_PATH_RE.test(finalOutputDir);
 
-    const root = new Archive();
-    root.open(w3nPath);
-    report({ phase: 'readList', percent: 8 });
-
-    let listLines: string[];
     try {
-        const listRaw = root.readFileAsString('(listfile)');
-        listLines = parseListfileContent(listRaw);
-    } catch (e: any) {
-        root.close();
-        throw new Error(`Campaign archive has no (listfile): ${e?.message || e}`);
-    }
+        let stormW3nPath = path.resolve(w3nPath);
+        let activeOutputDir = finalOutputDir;
 
-    extractEntireMpqToDisk(root, finalOutputDir, report);
-    root.close();
-
-    report({ phase: 'discoverMaps', percent: 48 });
-    let mapEntries = discoverMapsFromListfile(listLines);
-    if (mapEntries.length === 0) {
-        const relPaths = await collectMapsFallback(finalOutputDir);
-        mapEntries = relPaths;
-    }
-
-    const sharedPaths = buildSharedMergePaths(listLines);
-    const mergedDir = path.join(finalOutputDir, '_merged');
-    const workDir = path.join(finalOutputDir, '_merge_work');
-    await fs.ensureDir(mergedDir);
-    await fs.remove(workDir).catch(() => { });
-    await fs.ensureDir(workDir);
-
-    const mergedMapPaths: string[] = [];
-    let idx = 0;
-    const totalMaps = Math.max(mapEntries.length, 1);
-    for (const mapRel of mapEntries) {
-        const mapOnDisk = diskPathFromInternal(finalOutputDir, mapRel);
-        if (!(await fs.pathExists(mapOnDisk))) {
-            console.warn(`[CampaignMerge] listfile map not on disk, skip: ${mapRel}`);
-            continue;
+        if (needsStormSafePaths) {
+            workRoot = await createStormSafeWorkDir();
+            stormW3nPath = path.join(workRoot, 'source.w3n');
+            activeOutputDir = path.join(workRoot, 'out');
+            await fs.copy(w3nPath, stormW3nPath, { overwrite: true });
+            await fs.ensureDir(activeOutputDir);
+        } else {
+            await fs.remove(finalOutputDir).catch(() => { });
+            await fs.ensureDir(finalOutputDir);
         }
-        const ext = path.extname(mapRel) || '.w3x';
-        const base = path.basename(mapRel, ext);
-        const mergedName = `${base}_merged${ext}`;
-        const mergedOut = path.join(mergedDir, mergedName);
+
+        const root = new Archive();
+        root.open(stormW3nPath);
+        report({ phase: 'readList', percent: 8 });
+
+        let listLines: string[];
         try {
-            report({
-                phase: 'mergeMap',
-                percent: 50 + Math.round((idx / totalMaps) * 43),
-                current: mapRel,
-                index: idx + 1,
-                total: totalMaps
-            });
-            await mergeOneMap({
-                campRoot: finalOutputDir,
-                mapInternalPath: mapRel,
-                sharedPaths,
-                ctempTemplatePath: ctempPath,
-                mergedOutPath: mergedOut,
-                workDir: path.join(workDir, `slot_${idx++}`)
-            });
-            mergedMapPaths.push(mergedOut);
-        } catch (e) {
-            console.error(`[CampaignMerge] failed for ${mapRel}:`, e);
-            throw e;
+            const listRaw = root.readFileAsString('(listfile)');
+            listLines = parseListfileContent(listRaw);
+        } catch (e: any) {
+            root.close();
+            throw new Error(`Campaign archive has no (listfile): ${e?.message || e}`);
+        }
+
+        extractEntireMpqToDisk(root, activeOutputDir, report);
+        root.close();
+
+        report({ phase: 'discoverMaps', percent: 48 });
+        let mapEntries = discoverMapsFromListfile(listLines);
+        if (mapEntries.length === 0) {
+            const relPaths = await collectMapsFallback(activeOutputDir);
+            mapEntries = relPaths;
+        }
+
+        const sharedPaths = buildSharedMergePaths(listLines);
+        const mergedDir = path.join(activeOutputDir, '_merged');
+        const workDir = path.join(activeOutputDir, '_merge_work');
+        await fs.ensureDir(mergedDir);
+        await fs.remove(workDir).catch(() => { });
+        await fs.ensureDir(workDir);
+
+        const mergedMapPaths: string[] = [];
+        let idx = 0;
+        const totalMaps = Math.max(mapEntries.length, 1);
+        for (const mapRel of mapEntries) {
+            const mapOnDisk = diskPathFromInternal(activeOutputDir, mapRel);
+            if (!(await fs.pathExists(mapOnDisk))) {
+                console.warn(`[CampaignMerge] listfile map not on disk, skip: ${mapRel}`);
+                continue;
+            }
+            const ext = path.extname(mapRel) || '.w3x';
+            const base = path.basename(mapRel, ext);
+            const mergedName = `${base}_merged${ext}`;
+            const mergedOut = path.join(mergedDir, mergedName);
+            try {
+                report({
+                    phase: 'mergeMap',
+                    percent: 50 + Math.round((idx / totalMaps) * 43),
+                    current: mapRel,
+                    index: idx + 1,
+                    total: totalMaps
+                });
+                await mergeOneMap({
+                    campRoot: activeOutputDir,
+                    mapInternalPath: mapRel,
+                    sharedPaths,
+                    ctempTemplatePath: ctempPath,
+                    mergedOutPath: mergedOut,
+                    workDir: path.join(workDir, `slot_${idx++}`)
+                });
+                mergedMapPaths.push(mergedOut);
+            } catch (e) {
+                console.error(`[CampaignMerge] failed for ${mapRel}:`, e);
+                throw e;
+            }
+        }
+
+        report({ phase: 'cleanup', percent: 96 });
+        await fs.remove(workDir).catch(() => { });
+
+        if (mergedMapPaths.length === 0) {
+            throw new Error('No playable maps were produced after merge (empty .w3n or unsupported layout)');
+        }
+
+        mergedMapPaths.sort();
+
+        if (needsStormSafePaths) {
+            await fs.remove(finalOutputDir).catch(() => { });
+            await fs.ensureDir(path.dirname(finalOutputDir));
+            await fs.copy(activeOutputDir, finalOutputDir, { overwrite: true });
+        }
+
+        const finalMapPaths = mergedMapPaths.map((p) => path.join(finalOutputDir, path.relative(activeOutputDir, p)));
+        report({ phase: 'complete', percent: 100, total: finalMapPaths.length });
+        return { outputDir: finalOutputDir, maps: finalMapPaths };
+    } finally {
+        if (workRoot) {
+            await fs.remove(workRoot).catch((e) => console.warn(`[CampaignMerge] failed to remove work dir ${workRoot}:`, e));
         }
     }
-
-    report({ phase: 'cleanup', percent: 96 });
-    await fs.remove(workDir).catch(() => { });
-
-    if (mergedMapPaths.length === 0) {
-        throw new Error('No playable maps were produced after merge (empty .w3n or unsupported layout)');
-    }
-
-    mergedMapPaths.sort();
-    report({ phase: 'complete', percent: 100, total: mergedMapPaths.length });
-    return { outputDir: finalOutputDir, maps: mergedMapPaths };
 }

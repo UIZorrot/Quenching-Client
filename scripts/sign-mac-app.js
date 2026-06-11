@@ -9,7 +9,7 @@ import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
-const appPath = process.argv[2] || './__Bin/mac-arm64/QM Client.app';
+const appPath = process.argv[2] || './__Bin/mac-arm64/QMClient.app';
 
 if (!fs.existsSync(appPath)) {
     console.error('Application not found at:', appPath);
