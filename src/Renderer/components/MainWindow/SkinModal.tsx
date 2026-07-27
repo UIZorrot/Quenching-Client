@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Card, Typography, Button, Space, Row, Col, Image, message } from 'antd';
+import { Card, Typography, Button, Space, Row, Col, Image, message, Switch } from 'antd';
 import { useTranslation } from '../../utils/i18n';
 import { OverlayModal } from './OverlayModal';
 import { SKIN_CONFIG, HeroSkinConfig, CUSTOM_SKIN_CONFIG, UnitSkinChange } from '../../assets/data/skin-config';
@@ -24,6 +24,10 @@ import { useWar3Detector } from '../../hooks/useWar3Detector';
 
 const { Text } = Typography;
 
+function heroSkinKey(raceId: string, heroId: string): string {
+    return `${raceId}:${heroId}`;
+}
+
 interface SkinModalProps {
     open: boolean;
     onClose: () => void;
@@ -40,17 +44,42 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
     const [selectedRace, setSelectedRace] = useState<string>('hum');
     const [selectedCategory, setSelectedCategory] = useState<string>('hero');
     const [selectedHeroId, setSelectedHeroId] = useState<string>('');
-    const [selectedWarbandId, setSelectedWarbandId] = useState<string>('');
-    const [selectedSkinId, setSelectedSkinId] = useState<string>('');
+    const [heroSkinByKey, setHeroSkinByKey] = useState<Record<string, string>>({});
+    const [warbandSkinByRace, setWarbandSkinByRace] = useState<Record<string, string>>({});
+    const [selectedCustomUnitId, setSelectedCustomUnitId] = useState<string>('');
     const [customSkins, setCustomSkins] = useState<Record<string, string>>({});
     const [skinEnabled, setSkinEnabled] = useState(true);
+    const [retroUnitsEnabled, setRetroUnitsEnabled] = useState(false);
+    const [retroBuildingsEnabled, setRetroBuildingsEnabled] = useState(false);
+    const [retroUnitsDirName, setRetroUnitsDirName] = useState<string | null>(null);
+    const [retroBuildingsDirName, setRetroBuildingsDirName] = useState<string | null>(null);
+    const [retroApplying, setRetroApplying] = useState(false);
+
+    const isRetroTab = selectedCategory === 'retro';
+    const isRetroActive = retroUnitsEnabled || retroBuildingsEnabled;
+    const panelDisabled = !skinEnabled;
 
     React.useEffect(() => {
         if (!open) return;
         window.electronAPI?.isSkinEnabled?.()
             .then((enabled) => setSkinEnabled(enabled !== false))
             .catch(() => setSkinEnabled(true));
-    }, [open, war3Path]);
+
+        window.electronAPI?.getRetroSkinStatus?.()
+            .then((status) => {
+                if (!status) return;
+                setRetroUnitsEnabled(isFullPackageInstalled && status.unitsEnabled);
+                setRetroBuildingsEnabled(isFullPackageInstalled && status.buildingsEnabled);
+                setRetroUnitsDirName(status.unitsDirName);
+                setRetroBuildingsDirName(status.buildingsDirName);
+                if (isFullPackageInstalled && (status.unitsEnabled || status.buildingsEnabled)) {
+                    setSelectedCategory('retro');
+                } else {
+                    setSelectedCategory('hero');
+                }
+            })
+            .catch(() => {});
+    }, [open, war3Path, isFullPackageInstalled]);
 
     // 种族数据
     const races = [
@@ -77,63 +106,32 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
     React.useEffect(() => {
         if (selectedCategory === 'hero') {
             if (currentHeroes.length > 0) {
-                // Keep selectedHeroId if possible, otherwise first one
                 if (!currentHeroes.find(h => h.id === selectedHeroId)) {
                     setSelectedHeroId(currentHeroes[0].id);
-                    setSelectedSkinId('');
-                } else {
-                    // If switching back to hero category, we might want to keep selection or clear skin
-                    // But usually this effect runs when *category* changes or *race* changes.
-                    // If race changes, currentHeroes changes, so we enter the first condition.
-                    // If category changes to 'hero', we might keep hero?
-                    // The original code was:
-                    /*
-                       if (currentHeroes.length > 0) {
-                           setSelectedHeroId(currentHeroes[0].id);
-                       }
-                       setSelectedSkinId('');
-                    */
                 }
-            } else {
-                setSelectedSkinId('');
             }
         } else {
-            // 如果当前已经是自定义模式，切换种族时不重置为 warband
             if (selectedHeroId !== 'custom') {
                 setSelectedHeroId('warband');
             }
 
             if (selectedHeroId === 'warband' && currentWarbands.length > 0) {
-                // Check if current selection is valid for warband
-                if (!currentWarbands.find(w => w.id === selectedSkinId)) {
-                    setSelectedSkinId(currentWarbands[0].id);
+                const saved = warbandSkinByRace[selectedRace];
+                if (!saved || !currentWarbands.find(w => w.id === saved)) {
+                    const defaultWarband = currentWarbands.find(w => w.id.endsWith('_u1')) || currentWarbands[0];
+                    if (defaultWarband) {
+                        setWarbandSkinByRace(prev => ({ ...prev, [selectedRace]: defaultWarband.id }));
+                    }
                 }
             } else if (selectedHeroId === 'custom') {
-                // 切换种族后，如果当前选中的自定义单位不在新种族的列表中，则取消选中
                 const raceUnits = CUSTOM_SKIN_CONFIG[selectedRace]?.units || [];
-                if (!raceUnits.find(u => u.unitId === selectedSkinId)) {
-                    setSelectedSkinId('');
+                if (selectedCustomUnitId && !raceUnits.find(u => u.unitId === selectedCustomUnitId)) {
+                    setSelectedCustomUnitId('');
                 }
             }
         }
-    }, [selectedRace, selectedCategory, currentHeroes, currentWarbands]); // This dependency array seems missing 'selectedHeroId' in original code but using it inside?
+    }, [selectedRace, selectedCategory, currentHeroes, currentWarbands, selectedHeroId, selectedCustomUnitId, warbandSkinByRace]);
 
-    // Original effect had dependencies: [selectedRace, selectedCategory, currentHeroes, currentWarbands]
-    // My modification above was trying to be smarter but let's stick to adding the NEW effects separately to avoid breaking existing behavior unless necessary.
-    // Actually, looking at original code:
-    /*
-    React.useEffect(() => {
-        if (selectedCategory === 'hero') {
-            if (currentHeroes.length > 0) {
-                setSelectedHeroId(currentHeroes[0].id);
-            }
-            setSelectedSkinId('');
-        }
-        ...
-    */
-    // This resets hero selection EVERY key press of race/category.
-
-    // New effects for restrictions:
     // 获取当前选中的英雄数据
     const currentHero = useMemo(() => {
         return currentHeroes.find(h => h.id === selectedHeroId);
@@ -157,29 +155,51 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
         return skins;
     }, [currentHero, isClassicMode, isFullPackageInstalled]);
 
+    const activeHeroSkinId = useMemo(() => {
+        if (!currentHero || availableSkins.length === 0) return '';
+        const saved = heroSkinByKey[heroSkinKey(selectedRace, selectedHeroId)];
+        if (saved && availableSkins.some(s => s.id === saved)) {
+            return saved;
+        }
+        return availableSkins[0].id;
+    }, [heroSkinByKey, selectedRace, selectedHeroId, availableSkins, currentHero]);
+
+    const activeWarbandSkinId = useMemo(() => {
+        if (currentWarbands.length === 0) return '';
+        const saved = warbandSkinByRace[selectedRace];
+        if (saved && currentWarbands.some(w => w.id === saved)) {
+            return saved;
+        }
+        const defaultWarband = currentWarbands.find(w => w.id.endsWith('_u1')) || currentWarbands[0];
+        return defaultWarband?.id || '';
+    }, [warbandSkinByRace, selectedRace, currentWarbands]);
+
     // 获取当前选中的战团数据
     const currentWarband = useMemo(() => {
-        return currentWarbands.find(w => w.id === selectedSkinId);
-    }, [currentWarbands, selectedSkinId]);
+        return currentWarbands.find(w => w.id === activeWarbandSkinId);
+    }, [currentWarbands, activeWarbandSkinId]);
 
     React.useEffect(() => {
         if (selectedCategory === 'unit') {
             if (isClassicMode || !isFullPackageInstalled) {
                 setSelectedCategory('hero');
-                setSelectedSkinId('');
             }
         }
     }, [isClassicMode, isFullPackageInstalled, selectedCategory]);
 
-    // Removed the aggressive reset effect for selectedSkinId to fix "no resident effect" issue.
-    // Logic was: if (selectedCategory === 'hero' && selectedSkinId && !availableSkins.find(...)) setSelectedSkinId('');
+    React.useEffect(() => {
+        if (!open || selectedCategory !== 'hero' || selectedHeroId) return;
+        if (currentHeroes.length > 0) {
+            setSelectedHeroId(currentHeroes[0].id);
+        }
+    }, [open, selectedCategory, selectedHeroId, currentHeroes]);
 
     const handleSelectModel = async (unitId: string) => {
         try {
             const filePath = await (window as any).electronAPI.selectModelFile();
             if (filePath) {
                 setCustomSkins(prev => ({ ...prev, [unitId]: filePath }));
-                setSelectedSkinId(unitId);
+                setSelectedCustomUnitId(unitId);
                 // 选择模型后立即应用，传入 filePath 避免状态更新延迟导致的问题
                 await handleApplySkin('custom', unitId, filePath);
             }
@@ -189,20 +209,91 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
         }
     };
 
-    const handleDisableSkins = async () => {
+    const handleToggleSkins = async () => {
         if (!war3Path) {
             message.error('War3 path not detected');
             return;
         }
         message.loading({ content: t('skin.applying'), key: 'applySkin' });
         try {
-            await window.electronAPI?.disableSkins?.();
-            setSkinEnabled(false);
-            setSelectedSkinId('');
-            message.success({ content: t('skin.disable.success'), key: 'applySkin' });
+            if (skinEnabled) {
+                await window.electronAPI?.disableSkins?.();
+                setSkinEnabled(false);
+                setHeroSkinByKey({});
+                setWarbandSkinByRace({});
+                setSelectedCustomUnitId('');
+                message.success({ content: t('skin.disable.success'), key: 'applySkin' });
+            } else {
+                await window.electronAPI?.enableSkins?.();
+                setSkinEnabled(true);
+                message.success({ content: t('skin.allow.success'), key: 'applySkin' });
+                const status = await window.electronAPI?.getRetroSkinStatus?.();
+                if (status) {
+                    setRetroUnitsEnabled(status.unitsEnabled);
+                    setRetroBuildingsEnabled(status.buildingsEnabled);
+                    setRetroUnitsDirName(status.unitsDirName);
+                    setRetroBuildingsDirName(status.buildingsDirName);
+                }
+            }
         } catch (error: any) {
-            message.error({ content: `${t('skin.disable.fail')}: ${error.message || ''}`, key: 'applySkin' });
+            const failKey = skinEnabled ? 'skin.disable.fail' : 'skin.allow.fail';
+            message.error({ content: `${t(failKey)}: ${error.message || ''}`, key: 'applySkin' });
         }
+    };
+
+    const applyRetroSettings = async (unitsEnabled: boolean, buildingsEnabled: boolean) => {
+        if (!war3Path) {
+            message.error('War3 path not detected');
+            return;
+        }
+
+        if ((unitsEnabled || buildingsEnabled) && !isFullPackageInstalled) {
+            message.error(t('main.status.full_not_installed'));
+            return;
+        }
+
+        setRetroApplying(true);
+        message.loading({ content: t('skin.applying'), key: 'applySkin' });
+        try {
+            const status = await window.electronAPI?.applyRetroSkin?.({
+                unitsEnabled,
+                buildingsEnabled,
+            });
+            if (status) {
+                setRetroUnitsEnabled(status.unitsEnabled);
+                setRetroBuildingsEnabled(status.buildingsEnabled);
+                setRetroUnitsDirName(status.unitsDirName);
+                setRetroBuildingsDirName(status.buildingsDirName);
+            }
+            const skinStillEnabled = await window.electronAPI?.isSkinEnabled?.();
+            setSkinEnabled(skinStillEnabled !== false);
+            message.success({ content: t('skin.apply.success'), key: 'applySkin' });
+        } catch (error: any) {
+            message.error({ content: `${t('skin.apply.fail')}: ${error.message || ''}`, key: 'applySkin' });
+        } finally {
+            setRetroApplying(false);
+        }
+    };
+
+    const handleRetroToggle = async (type: 'units' | 'buildings', enabled: boolean) => {
+        const nextUnits = type === 'units' ? enabled : retroUnitsEnabled;
+        const nextBuildings = type === 'buildings' ? enabled : retroBuildingsEnabled;
+        await applyRetroSettings(nextUnits, nextBuildings);
+    };
+
+    const handleRetroCategoryClick = async () => {
+        if (panelDisabled || retroApplying || !isFullPackageInstalled) return;
+        playSmall();
+        if (isRetroActive) {
+            await applyRetroSettings(false, false);
+            setSelectedCategory('hero');
+            return;
+        }
+        if (isRetroTab) {
+            setSelectedCategory('hero');
+            return;
+        }
+        setSelectedCategory('retro');
     };
 
     const handleApplySkin = async (targetId: string, skinId: string, customFilePath?: string) => {
@@ -254,6 +345,10 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                     await (window as any).electronAPI.applySkin(currentHero.unitId, skin.config);
                 }
 
+                setHeroSkinByKey(prev => ({
+                    ...prev,
+                    [heroSkinKey(selectedRace, selectedHeroId)]: skinId,
+                }));
                 message.success({ content: t('skin.apply.success'), key: 'applySkin' });
             } else if (selectedHeroId === 'custom') {
                 // Custom skins not available in classic mode
@@ -269,6 +364,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                     return;
                 }
                 await (window as any).electronAPI.applySkin(skinId, [{ field: 'file', value: filePath }]);
+                setSelectedCustomUnitId(skinId);
                 message.success({ content: t('skin.apply.success'), key: 'applySkin' });
             } else {
                 // Warband skins not available in classic mode
@@ -293,6 +389,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                 const batchChanges = buildBatchChangesFromWarbandConfig(warband.config);
                 console.log('[SkinModal] Batch skin changes:', batchChanges);
                 await (window as any).electronAPI.applyBatchSkin(batchChanges);
+                setWarbandSkinByRace(prev => ({ ...prev, [selectedRace]: warband.id }));
                 message.success({ content: t('skin.apply.success'), key: 'applySkin' });
             }
         } catch (error: any) {
@@ -318,7 +415,11 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                     paddingBottom: '20px'
                 }}>
                     {/* 种族选择 */}
-                    <Space size="large">
+                    {!isRetroTab && (
+                    <Space size="large" style={{
+                        opacity: panelDisabled ? 0.45 : 1,
+                        pointerEvents: panelDisabled ? 'none' : 'auto',
+                    }}>
                         {races.map((race) => (
                             <div
                                 key={race.id}
@@ -345,23 +446,27 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                             </div>
                         ))}
                     </Space>
+                    )}
 
                     {/* 类别选择 */}
                     <Space>
                         <Button
                             type={selectedCategory === 'hero' ? "primary" : "default"}
                             onClick={() => {
+                                if (isRetroTab) return;
                                 playSmall();
                                 setSelectedCategory('hero');
                             }}
                             onMouseEnter={() => playHover()}
+                            disabled={isRetroTab || panelDisabled}
                             style={{
                                 background: selectedCategory === 'hero' ? '#d4af37' : 'transparent',
                                 borderColor: '#d4af37',
-                                color: selectedCategory === 'hero' ? '#000' : '#d4af37',
+                                color: (isRetroTab || panelDisabled) ? '#666' : (selectedCategory === 'hero' ? '#000' : '#d4af37'),
                                 height: '40px',
                                 padding: '0 30px',
-                                fontSize: '16px'
+                                fontSize: '16px',
+                                opacity: (isRetroTab || panelDisabled) ? 0.5 : 1
                             }}
                         >
                             {t('skin.category.hero')}
@@ -371,45 +476,153 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                             <Button
                                 type={selectedCategory === 'unit' ? "primary" : "default"}
                                 onClick={() => {
+                                    if (isRetroTab) return;
                                     playSmall();
                                     setSelectedCategory('unit');
                                 }}
                                 onMouseEnter={() => playHover()}
+                                disabled={isRetroTab || panelDisabled}
                                 style={{
                                     background: selectedCategory === 'unit' ? '#d4af37' : 'transparent',
                                     borderColor: '#d4af37',
-                                    color: selectedCategory === 'unit' ? '#000' : '#d4af37',
+                                    color: (isRetroTab || panelDisabled) ? '#666' : (selectedCategory === 'unit' ? '#000' : '#d4af37'),
                                     height: '40px',
                                     padding: '0 30px',
-                                    fontSize: '16px'
+                                    fontSize: '16px',
+                                    opacity: (isRetroTab || panelDisabled) ? 0.5 : 1
                                 }}
                             >
                                 {t('skin.category.unit')}
                             </Button>
                         )}
+                        <Button
+                            type={isRetroActive || isRetroTab ? "primary" : "default"}
+                            onClick={() => { void handleRetroCategoryClick(); }}
+                            onMouseEnter={() => playHover()}
+                            disabled={panelDisabled || retroApplying || !isFullPackageInstalled}
+                            style={{
+                                background: (isRetroActive || isRetroTab) ? '#d4af37' : 'transparent',
+                                borderColor: isRetroActive ? '#ff7875' : '#d4af37',
+                                color: panelDisabled ? '#666' : (isRetroActive ? '#000' : (isRetroTab ? '#000' : '#d4af37')),
+                                height: '40px',
+                                padding: '0 20px',
+                                fontSize: '16px',
+                                opacity: panelDisabled ? 0.5 : 1
+                            }}
+                        >
+                            {isRetroActive ? t('skin.category.retro.off') : t('skin.category.retro')}
+                        </Button>
                         {!isClassicMode && isFullPackageInstalled && (
                             <Button
                                 onClick={() => {
                                     playSmall();
-                                    handleDisableSkins();
+                                    handleToggleSkins();
                                 }}
                                 onMouseEnter={() => playHover()}
-                                disabled={!skinEnabled}
                                 style={{
-                                    borderColor: skinEnabled ? '#ff7875' : '#666',
-                                    color: skinEnabled ? '#ff7875' : '#666',
+                                    borderColor: skinEnabled ? '#ff7875' : '#52c41a',
+                                    color: skinEnabled ? '#ff7875' : '#52c41a',
                                     height: '40px',
                                     padding: '0 20px',
                                     fontSize: '16px'
                                 }}
                             >
-                                {t('skin.disable')}
+                                {skinEnabled ? t('skin.disable') : t('skin.allow')}
                             </Button>
                         )}
                     </Space>
                 </div>
 
+                {panelDisabled && (
+                    <div style={{
+                        marginBottom: '24px',
+                        padding: '12px 16px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255, 120, 117, 0.35)',
+                        background: 'rgba(255, 120, 117, 0.08)',
+                        color: '#ffaaa8',
+                        fontSize: '14px',
+                        textAlign: 'center',
+                    }}>
+                        {t('skin.disabled.hint')}
+                    </div>
+                )}
+
                 {/* 主内容区：两栏布局 */}
+                <div style={{
+                    opacity: panelDisabled ? 0.45 : 1,
+                    pointerEvents: panelDisabled ? 'none' : 'auto',
+                }}>
+                {isRetroTab ? (
+                    <div style={{ padding: '20px 0', minHeight: '500px' }}>
+                        <Text style={{ color: '#d4af37', fontSize: '18px', marginBottom: '12px', display: 'block' }}>
+                            {t('skin.retro.title')}
+                        </Text>
+                        <Text style={{ color: '#aaa', fontSize: '14px', marginBottom: '32px', display: 'block' }}>
+                            {t('skin.retro.desc')}
+                        </Text>
+
+                        <Space direction="vertical" size={24} style={{ width: '100%', maxWidth: '640px' }}>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '20px 24px',
+                                border: '1px solid rgba(212, 175, 55, 0.3)',
+                                borderRadius: '8px',
+                                background: 'rgba(0,0,0,0.3)'
+                            }}>
+                                <div>
+                                    <div style={{ color: '#d4af37', fontSize: '16px', marginBottom: '6px' }}>
+                                        {t('skin.retro.units')}
+                                    </div>
+                                    <div style={{ color: '#888', fontSize: '13px' }}>
+                                        {retroUnitsDirName
+                                            ? `${t('skin.retro.units.desc')} (${retroUnitsDirName})`
+                                            : t('skin.retro.units.missing')}
+                                    </div>
+                                </div>
+                                <Switch
+                                    checked={retroUnitsEnabled}
+                                    disabled={retroApplying || !isFullPackageInstalled || !retroUnitsDirName}
+                                    onChange={(checked) => {
+                                        playSmall();
+                                        handleRetroToggle('units', checked);
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '20px 24px',
+                                border: '1px solid rgba(212, 175, 55, 0.3)',
+                                borderRadius: '8px',
+                                background: 'rgba(0,0,0,0.3)'
+                            }}>
+                                <div>
+                                    <div style={{ color: '#d4af37', fontSize: '16px', marginBottom: '6px' }}>
+                                        {t('skin.retro.buildings')}
+                                    </div>
+                                    <div style={{ color: '#888', fontSize: '13px' }}>
+                                        {retroBuildingsDirName
+                                            ? `${t('skin.retro.buildings.desc')} (${retroBuildingsDirName})`
+                                            : t('skin.retro.buildings.missing')}
+                                    </div>
+                                </div>
+                                <Switch
+                                    checked={retroBuildingsEnabled}
+                                    disabled={retroApplying || !isFullPackageInstalled || !retroBuildingsDirName}
+                                    onChange={(checked) => {
+                                        playSmall();
+                                        handleRetroToggle('buildings', checked);
+                                    }}
+                                />
+                            </div>
+                        </Space>
+                    </div>
+                ) : (
                 <Row gutter={40}>
                     {/* 左侧：列表 */}
                     <Col span={6}>
@@ -479,7 +692,7 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                                             onClick={() => {
                                                 playSmall();
                                                 setSelectedHeroId('custom');
-                                                setSelectedSkinId('');
+                                                setSelectedCustomUnitId('');
                                             }}
                                             onMouseEnter={() => playHover()}
                                             style={{
@@ -523,20 +736,18 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                                         onClick={() => {
                                             console.log('[SkinModal] Skin clicked:', skin.id);
                                             playSmall();
-                                            setSelectedSkinId(skin.id);
-                                            // 立即应用皮肤
                                             handleApplySkin(currentHero.id, skin.id);
                                         }}
                                         onMouseEnter={() => playHover()}
                                         style={{
-                                            background: selectedSkinId === skin.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
-                                            border: selectedSkinId === skin.id ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
+                                            background: activeHeroSkinId === skin.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
+                                            border: activeHeroSkinId === skin.id ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
                                             borderRadius: '8px',
                                             overflow: 'hidden',
                                             cursor: 'pointer',
                                             transition: 'all 0.2s',
-                                            transform: selectedSkinId === skin.id ? 'translateY(-5px)' : 'none',
-                                            boxShadow: selectedSkinId === skin.id ? '0 5px 15px rgba(0,0,0,0.5)' : 'none'
+                                            transform: activeHeroSkinId === skin.id ? 'translateY(-5px)' : 'none',
+                                            boxShadow: activeHeroSkinId === skin.id ? '0 5px 15px rgba(0,0,0,0.5)' : 'none'
                                         }}
                                     >
                                         <div style={{ height: '140px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
@@ -552,10 +763,10 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                                             padding: '10px',
                                             textAlign: 'center',
                                             borderTop: '1px solid rgba(212, 175, 55, 0.2)',
-                                            background: selectedSkinId === skin.id ? '#d4af37' : 'transparent'
+                                            background: activeHeroSkinId === skin.id ? '#d4af37' : 'transparent'
                                         }}>
                                             <span style={{
-                                                color: selectedSkinId === skin.id ? '#000' : '#d4af37',
+                                                color: activeHeroSkinId === skin.id ? '#000' : '#d4af37',
                                                 fontWeight: 'bold'
                                             }}>
                                                 {t(`skin.hero.${selectedHeroId}.skin.${skin.id}` as any, skin.name)}
@@ -569,12 +780,12 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                                         key={unit.unitId}
                                         onClick={() => {
                                             playSmall();
-                                            setSelectedSkinId(unit.unitId);
+                                            setSelectedCustomUnitId(unit.unitId);
                                         }}
                                         onMouseEnter={() => playHover()}
                                         style={{
-                                            background: selectedSkinId === unit.unitId ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
-                                            border: selectedSkinId === unit.unitId ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
+                                            background: selectedCustomUnitId === unit.unitId ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
+                                            border: selectedCustomUnitId === unit.unitId ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
                                             borderRadius: '8px',
                                             padding: '15px',
                                             cursor: 'pointer',
@@ -631,20 +842,18 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                                         key={warband.id}
                                         onClick={() => {
                                             playSmall();
-                                            setSelectedSkinId(warband.id);
-                                            // 立即应用战团皮肤
                                             handleApplySkin('warband', warband.id);
                                         }}
                                         onMouseEnter={() => playHover()}
                                         style={{
-                                            background: selectedSkinId === warband.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
-                                            border: selectedSkinId === warband.id ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
+                                            background: activeWarbandSkinId === warband.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
+                                            border: activeWarbandSkinId === warband.id ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
                                             borderRadius: '8px',
                                             overflow: 'hidden',
                                             cursor: 'pointer',
                                             transition: 'all 0.2s',
-                                            transform: selectedSkinId === warband.id ? 'translateY(-5px)' : 'none',
-                                            boxShadow: selectedSkinId === warband.id ? '0 5px 15px rgba(0,0,0,0.5)' : 'none'
+                                            transform: activeWarbandSkinId === warband.id ? 'translateY(-5px)' : 'none',
+                                            boxShadow: activeWarbandSkinId === warband.id ? '0 5px 15px rgba(0,0,0,0.5)' : 'none'
                                         }}
                                     >
                                         <div style={{ height: '140px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
@@ -660,10 +869,10 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                                             padding: '10px',
                                             textAlign: 'center',
                                             borderTop: '1px solid rgba(212, 175, 55, 0.2)',
-                                            background: selectedSkinId === warband.id ? '#d4af37' : 'transparent'
+                                            background: activeWarbandSkinId === warband.id ? '#d4af37' : 'transparent'
                                         }}>
                                             <span style={{
-                                                color: selectedSkinId === warband.id ? '#000' : '#d4af37',
+                                                color: activeWarbandSkinId === warband.id ? '#000' : '#d4af37',
                                                 fontWeight: 'bold'
                                             }}>
                                                 {t(`skin.warband.${warband.id}` as any, warband.name)}
@@ -674,14 +883,20 @@ export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPacka
                             )}
                         </div>
 
-                        {!selectedSkinId && (
+                        {selectedCategory === 'hero' && !currentHero && (
                             <div style={{ color: '#666', textAlign: 'center', marginTop: '50px' }}>
-                                {selectedCategory === 'hero' ? t('skin.prompt.hero') :
-                                    selectedHeroId === 'custom' ? t('skin.prompt.custom') : t('skin.prompt.warband')}
+                                {t('skin.prompt.hero')}
+                            </div>
+                        )}
+                        {selectedCategory === 'unit' && selectedHeroId === 'custom' && !selectedCustomUnitId && (
+                            <div style={{ color: '#666', textAlign: 'center', marginTop: '50px' }}>
+                                {t('skin.prompt.custom')}
                             </div>
                         )}
                     </Col>
                 </Row>
+                )}
+                </div>
             </div>
         </OverlayModal>
     );

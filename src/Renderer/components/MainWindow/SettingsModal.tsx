@@ -29,8 +29,9 @@ const BASIC_SETTINGS_DESC: React.CSSProperties = {
   margin: 0
 };
 const BASIC_SETTINGS_CONTROL_BTN: React.CSSProperties = {
-  height: 28,
-  fontSize: '12px',
+  height: 36,
+  fontSize: '13px',
+  paddingInline: 18,
   alignSelf: 'flex-start'
 };
 
@@ -226,7 +227,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
 
   const getSettingStatus = (key: string) => {
     // 1. Full Package Check (Highest Priority)
-    const requiresFullPackage = ['water', 'glow', 'terrain', 'tree'];
+    const requiresFullPackage = ['water', 'glow'];
     if (requiresFullPackage.includes(key) && !isFullPackageInstalled) {
       return { disabled: true, reason: t('main.status.full_not_installed') };
     }
@@ -244,6 +245,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
       return { disabled: true, reason: t('settings.status.visionmod_required') };
     }
 
+    return { disabled: false, reason: null };
+  };
+
+  const getModResourceStatus = () => {
+    if (!isFullPackageInstalled) {
+      return { disabled: true, reason: t('main.status.full_not_installed') };
+    }
+    if (isClassicMode) {
+      return { disabled: true, reason: t('settings.basic.classicMode.disabled') };
+    }
     return { disabled: false, reason: null };
   };
 
@@ -349,6 +360,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
   const renderGameSettings = () => {
     const sTerrain = getSettingStatus('terrain');
     const sTree = getSettingStatus('tree');
+    const sTerrainMod = getModResourceStatus();
+    const sTreeMod = getModResourceStatus();
     const sLighting = getSettingStatus('lighting');
     const sLightingBrightness = getSettingStatus('lightingBrightness');
     const sUi = getSettingStatus('ui'); // not used yet but good to have
@@ -409,24 +422,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.terrain.style')}</h3>
             <Space wrap>
               {renderSettingButton(t('settings.terrain.original'), modSettings.terrain, 'original', () => handleSettingChange('terrain', 'original'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.original'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.tree.height.16'), modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.tree.height.18'), modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.tree.height.16'), modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.tree.height.18'), modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
             </Space>
-            {renderStatusPlaceholder(sTerrain.reason)}
+            {renderStatusPlaceholder(sTerrainMod.reason || sTerrain.reason)}
           </Col>
           <Col span={24}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.tree.style')}</h3>
             <Space wrap>
               {renderSettingButton(t('settings.tree.original'), modSettings.tree, 'original', () => handleSettingChange('tree', 'original'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.original'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.tree.tall'), modSettings.tree, 'tall', () => handleSettingChange('tree', 'tall'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.tall'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.tree.short'), modSettings.tree, 'short', () => handleSettingChange('tree', 'short'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.short'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.tree.height.18'), modSettings.tree, 'v18', () => handleSettingChange('tree', 'v18'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.tree.height.16'), modSettings.tree, 'v16', () => handleSettingChange('tree', 'v16'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.terrain.retro'), modSettings.tree, 'retro', () => handleSettingChange('tree', 'retro'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set2.png' }), sTree.disabled)}
+              {renderSettingButton(t('settings.tree.tall'), modSettings.tree, 'tall', () => handleSettingChange('tree', 'tall'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.tall'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
+              {renderSettingButton(t('settings.tree.short'), modSettings.tree, 'short', () => handleSettingChange('tree', 'short'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.short'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
+              {renderSettingButton(t('settings.tree.height.18'), modSettings.tree, 'v18', () => handleSettingChange('tree', 'v18'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
+              {renderSettingButton(t('settings.tree.height.16'), modSettings.tree, 'v16', () => handleSettingChange('tree', 'v16'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
+              {renderSettingButton(t('settings.terrain.retro'), modSettings.tree, 'retro', () => handleSettingChange('tree', 'retro'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
             </Space>
-            {renderStatusPlaceholder(sTree.reason)}
+            {renderStatusPlaceholder(sTreeMod.reason || sTree.reason)}
           </Col>
           <Col span={24}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.lighting')}</h3>
@@ -527,7 +540,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
           <Space direction="vertical" size={6} style={{ width: '100%' }}>
             <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.resetRendering.desc')}</div>
             <Button
-              size="small"
               disabled={isClassicMode}
               onClick={() => { playSmall(); handleResetRendering(); }}
               onMouseEnter={() => playHover()}
@@ -548,7 +560,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.deleteMod.desc')}</div>
             <Button
               danger
-              size="small"
               disabled={isClassicMode}
               onClick={() => { playSmall(); handleDeleteMod(); }}
               onMouseEnter={() => playHover()}

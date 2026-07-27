@@ -7,6 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { extractCampaignW3nMerged } from '../services/campaign-w3n-merge';
 import { readInstalledCampaignMetadata, InstalledCampaignMetadata } from '../services/campaign-metadata';
+import { isFullPackageInstalled, removeTerrainSlkIfFullPackageMissing } from '../services/full-package-service';
 
 function slugFromW3nBasename(w3nPath: string): string {
     const ext = path.extname(w3nPath);
@@ -17,29 +18,6 @@ function slugFromW3nBasename(w3nPath: string): string {
 }
 
 export function registerLaunchHandlers() {
-    const isFullPackageInstalled = async (war3Path: string | undefined): Promise<boolean> => {
-        if (!war3Path) {
-            return false;
-        }
-
-        const patchDir = path.join(war3Path, '_retail_', 'patch');
-        const qmoffPatchDir = path.join(war3Path, '_retail_', 'QMoff', 'patch');
-        const patchKeep = path.join(patchDir, 'keep.que');
-        const qmoffKeep = path.join(qmoffPatchDir, 'keep.que');
-
-        if (await fs.pathExists(patchKeep) || await fs.pathExists(qmoffKeep)) {
-            return true;
-        }
-
-        const patchExists = (await fs.pathExists(patchDir)) && (await fs.readdir(patchDir)).length > 0;
-        const qmoffPatchExists = (await fs.pathExists(qmoffPatchDir)) && (await fs.readdir(qmoffPatchDir)).length > 0;
-
-        if (patchExists || qmoffPatchExists) {
-            return true;
-        }
-
-        return false;
-    };
     ipcMain.handle('game:launch', async (event, executablePath?: string) => {
         try {
             return await GameLauncher.launchGame(executablePath);
@@ -225,11 +203,23 @@ export function registerLaunchHandlers() {
             await AssetSyncService.extractZip(zipPath, targetPath, (percent, currentFile) => {
                 event.sender.send('mod:install-progress', { percent, message: `正在安装: ${currentFile}` });
             });
+            // Extraction alone does not prove that the selected archive is a
+            // complete package. Do not report success or enable dependent
+            // features until all required full-package resources are present.
+            const installed = await isFullPackageInstalled(war3Path);
+            if (!installed) {
+                await removeTerrainSlkIfFullPackageMissing(war3Path);
+                return {
+                    success: false,
+                    error: 'incompletePackage'
+                };
+            }
             return {
                 success: true,
                 skipped: false
             };
         } catch (e: any) {
+            await removeTerrainSlkIfFullPackageMissing(war3Path).catch(() => undefined);
             return {
                 success: false,
                 error: e && e.message ? e.message : String(e)

@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs-extra';
+import { assertFullPackageInstalled } from '../services/full-package-service';
 
 export function registerGlowHandlers() {
     console.log('[Glow] Glow handlers registered.');
@@ -9,6 +10,8 @@ export function registerGlowHandlers() {
         console.log(`\n>>> [Glow] Updating hero glow: ${enabled ? 'REDUCED (ON)' : 'DEFAULT (OFF)'}`);
         try {
             if (!war3Path) throw new Error('未提供魔兽路径');
+
+            await assertFullPackageInstalled(war3Path);
 
             const retailPath = path.join(war3Path, '_retail_');
             const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;

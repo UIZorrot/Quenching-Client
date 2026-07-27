@@ -85,12 +85,18 @@ interface ElectronAPI {
   getConfig: (key: string) => Promise<any>;
   setConfig: (key: string, value: any) => Promise<void>;
   applyTheme: (themeId: string) => Promise<boolean>;
-  updateMdlLighting: (war3Path: string, lightingMode: string, lightingBrightness?: number) => Promise<boolean>;
+  updateMdlLighting: (
+    war3Path: string,
+    lightingMode: string,
+    lightingBrightness?: number,
+    previousLightingMode?: string,
+    previousLightingBrightness?: number
+  ) => Promise<boolean>;
   updateUISettings: (war3Path: string, uiMode: string) => Promise<boolean>;
-  updateTerrainSettings: (war3Path: string, terrainMode: string, waterMode?: string) => Promise<boolean>;
+  updateTerrainSettings: (war3Path: string, terrainMode: string, waterMode?: string, previousTerrainMode?: string) => Promise<boolean>;
   updateTreeSettings: (war3Path: string, treeMode: string) => Promise<boolean>;
   updateWaterSettings: (war3Path: string, waterMode: string) => Promise<boolean>;
-  updateFoliageSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
+  updateFoliageSettings: (war3Path: string, enabled: boolean, terrainMode?: string) => Promise<boolean>;
   updateObjectShader: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updatePostProcessing: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateLegacyWar3Shader: (war3Path: string, enabled: boolean) => Promise<boolean>;
@@ -128,7 +134,22 @@ interface ElectronAPI {
   applySkin: (unitId: string, changes: any[]) => Promise<boolean>;
   applyBatchSkin: (batchChanges: any[]) => Promise<boolean>;
   disableSkins: () => Promise<boolean>;
+  enableSkins: () => Promise<boolean>;
   isSkinEnabled: () => Promise<boolean>;
+  getRetroSkinStatus: () => Promise<{
+    unitsEnabled: boolean;
+    buildingsEnabled: boolean;
+    unitsDirName: string | null;
+    buildingsDirName: string | null;
+    unitskinExists: boolean;
+  }>;
+  applyRetroSkin: (options: { unitsEnabled?: boolean; buildingsEnabled?: boolean }) => Promise<{
+    unitsEnabled: boolean;
+    buildingsEnabled: boolean;
+    unitsDirName: string | null;
+    buildingsDirName: string | null;
+    unitskinExists: boolean;
+  }>;
   selectModelFile: () => Promise<string | null>;
   selectFile: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => Promise<string | null>;
   selectDirectory: (title?: string) => Promise<string | null>;

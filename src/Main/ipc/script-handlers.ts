@@ -1,14 +1,8 @@
-import { ipcMain, app } from 'electron';
+import { ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs-extra';
 import yauzl from 'yauzl';
-
-async function getAssetsDir(): Promise<string> {
-    if (process.env.NODE_ENV === 'development') {
-        return path.join(app.getAppPath(), 'assets');
-    }
-    return path.join(process.resourcesPath, 'assets');
-}
+import { AssetSyncService } from '../services/asset-sync';
 
 /**
  * 通用解压函数
@@ -74,7 +68,7 @@ export function registerScriptHandlers() {
 
             if (enabled) {
                 console.log('[Script] Enabling envRender... Extracting from zip-scripts.zip');
-                const assetsDir = await getAssetsDir();
+                const assetsDir = await AssetSyncService.getAssetsDir();
                 const zipPath = path.join(assetsDir, 'quenching', 'zip-scripts.zip');
 
                 if (!(await fs.pathExists(zipPath))) {

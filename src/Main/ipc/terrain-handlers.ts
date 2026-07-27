@@ -1,121 +1,100 @@
-import { ipcMain, app } from 'electron';
+import { ipcMain } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
+import { syncFoliageForTerrainIfEnabled } from '../services/foliage-service';
+import { syncBlightForTerrain } from '../services/blight-service';
+import { AssetSyncService } from '../services/asset-sync';
+import { assertTerrainModeAvailable } from '../services/full-package-service';
 
 type TerrainVersion = 'retro' | 'v16' | 'v18' | 'latest';
 
-const TERRAIN_VERSIONS: Record<TerrainVersion, { folder: string; meta: string; cliffFile: string }> = {
-    retro: { folder: 't00', meta: '00', cliffFile: 'clifftypes00.slk' },
-    v16: { folder: 't16', meta: '16', cliffFile: 'clifftypes16.slk' },
-    v18: { folder: 't18', meta: '18', cliffFile: 'clifftypes18.slk' },
-    latest: { folder: 't20', meta: '20', cliffFile: 'clifftypes20.slk' },
+const TERRAIN_VERSIONS: Record<TerrainVersion, { meta: string; cliffFile: string; terrainFile: string }> = {
+    retro: { meta: '00', cliffFile: 'clifftypes00.slk', terrainFile: 'terrain00.slk' },
+    v16: { meta: '16', cliffFile: 'clifftypes16.slk', terrainFile: 'terrain16.slk' },
+    v18: { meta: '18', cliffFile: 'clifftypes18.slk', terrainFile: 'terrain18.slk' },
+    latest: { meta: '20', cliffFile: 'clifftypes20.slk', terrainFile: 'terrain20.slk' },
 };
 
-async function getAssetsDir(): Promise<string> {
-    if (process.env.NODE_ENV === 'development') {
-        return path.join(app.getAppPath(), 'assets');
+const TERRAINART_SLK_NAMES = {
+    cliff: 'clifftypes.slk',
+    terrain: 'terrain.slk',
+} as const;
+
+async function copySlkFromAssets(terrainArtPath: string, fileName: string, destName: string) {
+    const assetsDir = await AssetSyncService.getAssetsDir();
+    const src = path.join(assetsDir, 'quenching', fileName);
+    const dest = path.join(terrainArtPath, destName);
+
+    if (!(await fs.pathExists(src))) {
+        throw new Error(`地形配置文件不存在: ${src}`);
     }
-    return path.join(process.resourcesPath, 'assets');
+
+    await fs.copy(src, dest, { overwrite: true });
+    const size = (await fs.stat(src)).size;
+    console.log(`[Terrain] Copied ${fileName} -> terrainart/${destName} (${size} bytes)`);
 }
 
-/** 将旧版 Electron 的 QMoff/terrainart 迁移到 t20，便于后续轮换 */
-async function migrateQmoffTerrain(baseDir: string) {
-    const qmoffPath = path.join(baseDir, 'QMoff', 'terrainart');
-    const t20Path = path.join(baseDir, 't20');
-
-    if (!(await fs.pathExists(qmoffPath)) || (await fs.pathExists(t20Path))) {
-        return;
+/** 旧版可能把 terrain.slk 放在 terrain-que 子目录，需清理避免游戏读到错误文件 */
+async function removeLegacyTerrainSlkPaths(terrainArtPath: string) {
+    const legacyTerrainSlk = path.join(terrainArtPath, 'terrain-que', TERRAINART_SLK_NAMES.terrain);
+    if (await fs.pathExists(legacyTerrainSlk)) {
+        await fs.remove(legacyTerrainSlk);
+        console.log('[Terrain] Removed legacy terrainart/terrain-que/terrain.slk');
     }
-
-    console.log('[Terrain] Migrating QMoff/terrainart -> t20');
-    await fs.move(qmoffPath, t20Path, { overwrite: true });
-    await fs.writeFile(path.join(t20Path, 'meta.que'), '20', 'utf-8');
 }
 
-/** 对应旧版 set_tile_by_meta：按 meta.que 将当前 terrainart 归档到 t00/t16/t18/t20 */
-async function archiveTerrainByMeta(baseDir: string) {
-    const terrainPath = path.join(baseDir, 'terrainart');
-    if (!(await fs.pathExists(terrainPath))) {
-        return;
-    }
-
-    let meta = '20';
-    const metaPath = path.join(terrainPath, 'meta.que');
-    if (await fs.pathExists(metaPath)) {
-        meta = (await fs.readFile(metaPath, 'utf-8')).trim();
-    }
-
-    const archivePath = path.join(baseDir, `t${meta}`);
-    console.log(`[Terrain] Archiving terrainart -> t${meta}`);
-
-    if (await fs.pathExists(archivePath)) {
-        await fs.remove(archivePath);
-    }
-    await fs.move(terrainPath, archivePath, { overwrite: true });
-}
-
-async function applyCliffTypes(baseDir: string, terrainPath: string, cliffFile: string) {
-    const assetsDir = await getAssetsDir();
-    const cliffSrc = path.join(assetsDir, 'quenching', cliffFile);
-    const cliffDest = path.join(terrainPath, 'clifftypes.slk');
-
-    if (!(await fs.pathExists(cliffSrc))) {
-        throw new Error(`悬崖类型文件不存在: ${cliffSrc}`);
-    }
-
-    await fs.copy(cliffSrc, cliffDest, { overwrite: true });
-    console.log(`[Terrain] Applied ${cliffFile} -> clifftypes.slk`);
-}
-
-/** 对应旧版 setbtn_tile 中 water.slk 的处理逻辑 */
-async function syncWaterSlk(terrainPath: string, waterMode?: string) {
-    const waterSlk = path.join(terrainPath, 'water.slk');
+async function syncWaterSlk(terrainArtPath: string, waterMode?: string) {
+    const waterSlk = path.join(terrainArtPath, 'water.slk');
 
     if (waterMode === 'transparent') {
-        const assetsDir = await getAssetsDir();
+        const assetsDir = await AssetSyncService.getAssetsDir();
         const waterSrc = path.join(assetsDir, 'quenching', 'water.slk');
         if (await fs.pathExists(waterSrc)) {
             await fs.copy(waterSrc, waterSlk, { overwrite: true });
             console.log('[Terrain] Copied water.slk for transparent water mode');
         }
-    } else {
+    } else if (await fs.pathExists(waterSlk)) {
         await fs.remove(waterSlk);
         console.log('[Terrain] Removed water.slk (non-transparent water mode)');
     }
 }
 
-async function activateTerrainVersion(baseDir: string, mode: TerrainVersion, waterMode?: string) {
-    await migrateQmoffTerrain(baseDir);
-    await archiveTerrainByMeta(baseDir);
+async function applyTerrainVersion(baseDir: string, mode: TerrainVersion, waterMode?: string) {
+    const { meta, cliffFile, terrainFile } = TERRAIN_VERSIONS[mode];
+    const terrainArtPath = path.join(baseDir, 'terrainart');
 
-    const { folder, meta, cliffFile } = TERRAIN_VERSIONS[mode];
-    const sourcePath = path.join(baseDir, folder);
-    const terrainPath = path.join(baseDir, 'terrainart');
+    await fs.ensureDir(terrainArtPath);
+    await removeLegacyTerrainSlkPaths(terrainArtPath);
+    await copySlkFromAssets(terrainArtPath, cliffFile, TERRAINART_SLK_NAMES.cliff);
+    await copySlkFromAssets(terrainArtPath, terrainFile, TERRAINART_SLK_NAMES.terrain);
+    await fs.writeFile(path.join(terrainArtPath, 'meta.que'), meta, 'utf-8');
+    await syncWaterSlk(terrainArtPath, waterMode);
 
-    if (!(await fs.pathExists(sourcePath))) {
-        throw new Error(`地形资源目录不存在: ${folder}，请先安装完整 MOD 资源包`);
-    }
-
-    console.log(`[Terrain] Activating ${mode}: ${folder} -> terrainart`);
-    await fs.move(sourcePath, terrainPath, { overwrite: true });
-    await fs.writeFile(path.join(terrainPath, 'meta.que'), meta, 'utf-8');
-    await applyCliffTypes(baseDir, terrainPath, cliffFile);
-    await syncWaterSlk(terrainPath, waterMode);
+    console.log(
+        `[Terrain] Applied ${mode} -> terrainart/${TERRAINART_SLK_NAMES.cliff}, terrainart/${TERRAINART_SLK_NAMES.terrain}, meta.que=${meta}`
+    );
 }
 
 async function switchToOriginalTerrain(baseDir: string) {
-    await migrateQmoffTerrain(baseDir);
-    await archiveTerrainByMeta(baseDir);
-    console.log('[Terrain] Switched to original (terrainart archived/disabled)');
+    const terrainArtPath = path.join(baseDir, 'terrainart');
+    const terrainSlk = path.join(terrainArtPath, TERRAINART_SLK_NAMES.terrain);
+    const legacyTerrainSlk = path.join(terrainArtPath, 'terrain-que', TERRAINART_SLK_NAMES.terrain);
+
+    if (await fs.pathExists(terrainSlk)) {
+        await fs.remove(terrainSlk);
+        console.log('[Terrain] Removed terrainart/terrain.slk (original mode)');
+    }
+
+    if (await fs.pathExists(legacyTerrainSlk)) {
+        await fs.remove(legacyTerrainSlk);
+        console.log('[Terrain] Removed legacy terrainart/terrain-que/terrain.slk (original mode)');
+    }
 }
 
 export function registerTerrainHandlers() {
-    /**
-     * 更新地形设置
-     * @param terrainMode 'original' | 'retro' | 'v16' | 'v18' | 'latest'
-     * @param waterMode 可选，用于同步 terrainart/water.slk
-     */
-    ipcMain.handle('terrain:update-settings', async (event, war3Path: string, terrainMode: string, waterMode?: string) => {
+    ipcMain.handle(
+        'terrain:update-settings',
+        async (_event, war3Path: string, terrainMode: string, waterMode?: string, previousTerrainMode?: string) => {
         try {
             console.log(`[Terrain] Updating terrain to mode: ${terrainMode}, water: ${waterMode ?? 'default'}`);
             if (!war3Path) {
@@ -133,11 +112,15 @@ export function registerTerrainHandlers() {
             if (terrainMode === 'classic' || terrainMode === 'original') {
                 await switchToOriginalTerrain(baseDir);
             } else if (terrainMode in TERRAIN_VERSIONS) {
-                await activateTerrainVersion(baseDir, terrainMode as TerrainVersion, waterMode);
+                await assertTerrainModeAvailable(war3Path, terrainMode);
+                await applyTerrainVersion(baseDir, terrainMode as TerrainVersion, waterMode);
             } else {
                 console.warn(`[Terrain] Unsupported terrain mode: ${terrainMode}, skipping switch.`);
                 return true;
             }
+
+            await syncFoliageForTerrainIfEnabled(war3Path, terrainMode, previousTerrainMode);
+            await syncBlightForTerrain(war3Path, terrainMode);
 
             console.log(`[Terrain] Successfully updated terrain to ${terrainMode}`);
             return true;
@@ -145,5 +128,6 @@ export function registerTerrainHandlers() {
             console.error('Failed to update terrain settings:', error);
             throw error;
         }
-    });
+    }
+    );
 }

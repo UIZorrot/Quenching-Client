@@ -263,7 +263,11 @@ export const reaxel_War3Settings = reaxel(() => {
       // 检测植被模式
       const detectedFoliage = await detectFoliageMode(war3Path);
       console.log(`[useWar3Settings] Detected foliage: ${detectedFoliage}`);
-      loadedSettings.foliage = detectedFoliage;
+      if (detectedTerrain === 'retro') {
+        loadedSettings.foliage = false;
+      } else if (detectedFoliage) {
+        loadedSettings.foliage = true;
+      }
 
       // 检测物体着色器
       const detectedObjectShader = await detectObjectShaderMode(war3Path);
@@ -349,11 +353,16 @@ export const reaxel_War3Settings = reaxel(() => {
    */
   const detectFoliageMode = async (war3Path: string): Promise<boolean> => {
     try {
+      const terrain = await detectTerrainMode(war3Path);
+      if (terrain === 'retro') {
+        return false;
+      }
+
       const retailDir = `${war3Path}/_retail_`;
       const baseDir = (await window.electronAPI?.pathExists(retailDir)) ? retailDir : war3Path;
       const foliageDir = `${baseDir}/environment/foliage`;
       const exists = await window.electronAPI?.pathExists(foliageDir);
-      return exists;
+      return !!exists;
     } catch (e) {
       console.warn('[useWar3Settings] detectFoliageMode failed:', e);
       return store.modSettings.foliage;
@@ -391,6 +400,22 @@ export const reaxel_War3Settings = reaxel(() => {
   };
 
   // 保存MOD设置
+  const requiresFullPackageChange = (newSettings: Partial<ModSettings>): boolean => {
+    if (newSettings.terrain !== undefined && newSettings.terrain !== 'original') {
+      return true;
+    }
+    if (newSettings.tree !== undefined && newSettings.tree !== 'original') {
+      return true;
+    }
+    if (newSettings.water !== undefined) {
+      return true;
+    }
+    if (newSettings.glow !== undefined) {
+      return true;
+    }
+    return false;
+  };
+
   const saveModSettings = async (war3Path: string, newSettings: Partial<ModSettings>) => {
     console.log('[useWar3Settings] saveModSettings called:', { war3Path, newSettings });
     setState({ isLoading: true });
@@ -399,6 +424,17 @@ export const reaxel_War3Settings = reaxel(() => {
     await new Promise(resolve => setTimeout(resolve, 0));
 
     try {
+      if (requiresFullPackageChange(newSettings) && window.electronAPI?.getFullPackageStatus) {
+        const installed = await window.electronAPI.getFullPackageStatus(war3Path);
+        if (!installed) {
+          throw new Error('完整包未安装，无法修改地形、树木、水面或光晕设置');
+        }
+      }
+
+      const previousLighting = store.modSettings.lighting;
+      const previousLightingBrightness = store.modSettings.lightingBrightness ?? 3;
+      const previousTerrain =
+        newSettings.terrain !== undefined ? store.modSettings.terrain : undefined;
       const updatedSettings = { ...store.modSettings, ...newSettings };
       console.log('[useWar3Settings] Updated settings state:', updatedSettings);
 
@@ -432,15 +468,24 @@ export const reaxel_War3Settings = reaxel(() => {
           const updatePromise = window.electronAPI.updateMdlLighting(
             war3Path,
             updatedSettings.lighting,
-            updatedSettings.lightingBrightness
+            updatedSettings.lightingBrightness,
+            previousLighting,
+            previousLightingBrightness
           );
 
-          // 15秒超时
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Update MDL lighting timeout')), 15000)
-          );
-
-          const result = await Promise.race([updatePromise, timeoutPromise]);
+          const result = await new Promise<boolean>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Update MDL lighting timeout')), 45000);
+            updatePromise.then(
+              (value) => {
+                clearTimeout(timer);
+                resolve(value);
+              },
+              (err) => {
+                clearTimeout(timer);
+                reject(err);
+              }
+            );
+          });
           console.log('[useWar3Settings] updateMdlLighting result:', result);
         } else {
           console.warn('[useWar3Settings] window.electronAPI.updateMdlLighting is undefined');
@@ -478,7 +523,8 @@ export const reaxel_War3Settings = reaxel(() => {
           const updateTerrainPromise = window.electronAPI.updateTerrainSettings(
             war3Path,
             updatedSettings.terrain,
-            updatedSettings.water
+            updatedSettings.water,
+            previousTerrain
           );
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Update terrain settings timeout')), 45000)
@@ -487,7 +533,14 @@ export const reaxel_War3Settings = reaxel(() => {
           await Promise.race([updateTerrainPromise, timeoutPromise]);
           // 切换完成后，重新检测实际文件状态以更新高亮
           const detectedTerrainAfter = await detectTerrainMode(war3Path);
-          setState({ modSettings: { ...store.modSettings, terrain: detectedTerrainAfter } });
+          const detectedFoliageAfter = await detectFoliageMode(war3Path);
+          setState({
+            modSettings: {
+              ...store.modSettings,
+              terrain: detectedTerrainAfter,
+              foliage: detectedFoliageAfter,
+            },
+          });
           console.log('[useWar3Settings] updateTerrainSettings completed');
         } else {
           console.warn('[useWar3Settings] window.electronAPI.updateTerrainSettings is undefined');
@@ -539,7 +592,11 @@ export const reaxel_War3Settings = reaxel(() => {
         console.log(`\n>>> [FOLIAGE-FRONTEND] Setting change requested: ${newSettings.foliage}`);
         if (window.electronAPI?.updateFoliageSettings) {
           console.log('[useWar3Settings] Calling updateFoliageSettings API...');
-          const updateFoliagePromise = window.electronAPI.updateFoliageSettings(war3Path, updatedSettings.foliage);
+          const updateFoliagePromise = window.electronAPI.updateFoliageSettings(
+            war3Path,
+            updatedSettings.foliage,
+            updatedSettings.terrain
+          );
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Update foliage settings timeout')), 60000)
           );
@@ -724,9 +781,10 @@ angle=${store.cameraSettings.angleOfAttack}
       const retailDir = `${war3Path}/_retail_`;
       const baseDir = (await window.electronAPI?.pathExists(retailDir)) ? retailDir : war3Path;
       const terrainDir = `${baseDir}/terrainart`;
-      const terrainExists = await window.electronAPI?.pathExists(terrainDir);
+      const terrainSlkPath = `${terrainDir}/terrain.slk`;
+      const terrainSlkExists = await window.electronAPI?.pathExists(terrainSlkPath);
 
-      if (!terrainExists) return 'original';
+      if (!terrainSlkExists) return 'original';
 
       const metaPath = `${terrainDir}/meta.que`;
       const metaExists = await window.electronAPI?.pathExists(metaPath);

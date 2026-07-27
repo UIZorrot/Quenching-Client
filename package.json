@@ -15,7 +15,8 @@
 		"sign:mac": "node scripts/sign-mac-app.js",
 		"create:dmg": "node scripts/create-dmg.js",
 		"dev": "concurrently \"npm run start\" \"npm run electron\"",
-		"postinstall": "patch-package && node scripts/ensure-stormlib-thirdparty.cjs"
+		"prepare:terrain": "node scripts/prepare-terrain-assets.mjs",
+		"build:terrain-slk": "node scripts/build-terrain-slk.mjs"
 	},
 	"electronmon": {
 		"patterns": [
