@@ -99,10 +99,40 @@ interface ElectronAPI {
   updateFoliageSettings: (war3Path: string, enabled: boolean, terrainMode?: string) => Promise<boolean>;
   updateObjectShader: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updatePostProcessing: (war3Path: string, enabled: boolean) => Promise<boolean>;
-  updateLegacyWar3Shader: (war3Path: string, enabled: boolean) => Promise<boolean>;
+  /** @deprecated Always auto-syncs from War3 version; `enabled` ignored. */
+  updateLegacyWar3Shader: (war3Path: string, enabled?: boolean) => Promise<boolean>;
+  syncVersionedShaders: (war3Path?: string) => Promise<{
+    success: boolean;
+    zipName?: string;
+    version?: {
+      version: string;
+      parts: number[];
+      source: string;
+      useLegacyShaders: boolean;
+      usePre200Shaders: boolean;
+      shaderZip: string;
+    };
+  }>;
+  detectWar3Version: (war3Path?: string) => Promise<{
+    version: string;
+    parts: number[];
+    source: string;
+    useLegacyShaders: boolean;
+    usePre200Shaders: boolean;
+    shaderZip: string;
+  }>;
   updateIntelAmdShaderFix: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateEnvRenderSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateGlowSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
+  getAntiHarmonyStatus: (war3Path?: string) => Promise<boolean>;
+  setAntiHarmonyEnabled: (
+    war3Path: string | undefined,
+    enabled: boolean
+  ) => Promise<{ success: boolean; enabled: boolean }>;
+  installAntiHarmony: (war3Path?: string) => Promise<{
+    success: boolean;
+    enabled?: boolean;
+  }>;
   updateHalfPortrait: (war3Path: string, visionModPath: string, enabled: boolean) => Promise<boolean>;
   updateModelEnhance: (war3Path: string, visionModPath: string, enabled: boolean) => Promise<boolean>;
 

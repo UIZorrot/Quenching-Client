@@ -6,8 +6,8 @@ import { assertFullPackageInstalled } from '../services/full-package-service';
 export function registerGlowHandlers() {
     console.log('[Glow] Glow handlers registered.');
 
-    ipcMain.handle('glow:update-settings', async (event, war3Path: string, enabled: boolean) => {
-        console.log(`\n>>> [Glow] Updating hero glow: ${enabled ? 'REDUCED (ON)' : 'DEFAULT (OFF)'}`);
+    ipcMain.handle('glow:update-settings', async (_event, war3Path: string, enabled: boolean) => {
+        console.log(`\n>>> [Glow] Updating hero glow: ${enabled ? 'WEAK' : 'STRONG'}`);
         try {
             if (!war3Path) throw new Error('未提供魔兽路径');
 
@@ -20,27 +20,26 @@ export function registerGlowHandlers() {
             const glowDisFile = path.join(baseDir, 'textures', 'fx', 'flare', 'heroglow_bw-dis.dds');
 
             if (enabled) {
-                // 减小光晕：启用该文件
+                // 弱：启用精简贴图 heroglow_bw.dds
                 if (await fs.pathExists(glowDisFile)) {
-                    // 如果存在备份文件，则重命名回正式文件
                     if (await fs.pathExists(glowFile)) {
                         await fs.remove(glowFile);
                     }
                     await fs.move(glowDisFile, glowFile);
-                    console.log('[Glow] Enabled reduced glow by moving -dis file.');
+                    console.log('[Glow] Switched to WEAK glow (heroglow_bw.dds).');
                 } else {
-                    console.log('[Glow] Reduced glow file already active or missing backup.');
+                    console.log('[Glow] Weak glow file already active or missing backup.');
                 }
             } else {
-                // 还原光晕：禁用该文件（重命名为 -dis）
+                // 强：移除本地精简贴图，回退游戏默认强光晕
                 if (await fs.pathExists(glowFile)) {
                     if (await fs.pathExists(glowDisFile)) {
                         await fs.remove(glowDisFile);
                     }
                     await fs.move(glowFile, glowDisFile);
-                    console.log('[Glow] Disabled reduced glow by moving to -dis.');
+                    console.log('[Glow] Switched to STRONG glow (default).');
                 } else {
-                    console.log('[Glow] Glow file already disabled or not found.');
+                    console.log('[Glow] Strong glow already active or file not found.');
                 }
             }
 

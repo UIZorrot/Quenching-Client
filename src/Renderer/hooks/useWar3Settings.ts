@@ -30,12 +30,12 @@ export interface ModSettings {
   half: boolean;         // 半透明效果
   ui: 'classic' | 'quenching' | 'carnival'; // UI风格
   cam: boolean;          // 自定义相机
-  glow: boolean;         // 缩减光晕
+  glow: boolean;         // 英雄光晕弱光晕（true=弱, false=强）
   terrain: 'original' | 'latest' | 'retro' | 'v16' | 'v18'; // 地形
   tree: 'original' | 'tall' | 'short' | 'retro' | 'v16' | 'v18'; // 树木
   envRender: boolean;    // 环境渲染
   modelEnhance: boolean; // 模型加强
-  useLegacyWar3Shaders: boolean; // 使用 2.02 shaders（否则 2.03）
+  useLegacyWar3Shaders: boolean; // 由魔兽版本自动决定（<2.0.3 → shaders2.02），不再手动切换
   useIntelAmdShaderFix: boolean; // Intel/AMD bloomextract 修复
   visionModPath: string; // VisionMod目录
   modEnabled: boolean;   // MOD总开关
@@ -289,8 +289,24 @@ export const reaxel_War3Settings = reaxel(() => {
       console.log(`[useWar3Settings] Detected glow: ${detectedGlow}`);
       loadedSettings.glow = detectedGlow;
 
+      // 着色器包：按检测到的魔兽版本自动选择（不再使用手动「旧版魔兽」开关）
+      if (window.electronAPI?.detectWar3Version) {
+        const versionInfo = await window.electronAPI.detectWar3Version(war3Path);
+        console.log('[useWar3Settings] Detected War3 version:', versionInfo);
+        loadedSettings.useLegacyWar3Shaders = !!versionInfo?.useLegacyShaders;
+        if (window.electronAPI.syncVersionedShaders) {
+          await window.electronAPI.syncVersionedShaders(war3Path).catch((err) => {
+            console.warn('[useWar3Settings] syncVersionedShaders failed:', err);
+          });
+        }
+      }
+
       console.log('[useWar3Settings] Final merged settings to be set in store:', loadedSettings);
       setState({ modSettings: loadedSettings });
+
+      if (window.electronAPI?.setConfig) {
+        await window.electronAPI.setConfig('modSettings', loadedSettings);
+      }
 
       await loadCameraSettings(war3Path);
       console.log('[useWar3Settings] loadModSettings COMPLETE\n');
@@ -627,11 +643,23 @@ export const reaxel_War3Settings = reaxel(() => {
         }
       }
 
-      // 如果修改了“使用旧版魔兽”兼容设置，切换 shaders 版本
+      // 旧版着色器开关已废弃：始终按魔兽版本自动同步
       if (newSettings.useLegacyWar3Shaders !== undefined) {
-        console.log(`\n>>> [SHADER-FRONTEND] Legacy shader version change requested: ${newSettings.useLegacyWar3Shaders}`);
-        if (window.electronAPI?.updateLegacyWar3Shader) {
-          await window.electronAPI.updateLegacyWar3Shader(war3Path, updatedSettings.useLegacyWar3Shaders);
+        console.log('\n>>> [SHADER-FRONTEND] Legacy shader toggle ignored; syncing from War3 version');
+        if (window.electronAPI?.syncVersionedShaders) {
+          const result = await window.electronAPI.syncVersionedShaders(war3Path);
+          if (result?.version) {
+            const synced = {
+              ...updatedSettings,
+              useLegacyWar3Shaders: !!result.version.useLegacyShaders,
+            };
+            setState({ modSettings: synced });
+            if (window.electronAPI?.setConfig) {
+              await window.electronAPI.setConfig('modSettings', synced);
+            }
+          }
+        } else if (window.electronAPI?.updateLegacyWar3Shader) {
+          await window.electronAPI.updateLegacyWar3Shader(war3Path);
         }
       }
 

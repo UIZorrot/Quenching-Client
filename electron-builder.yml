@@ -48,3 +48,5 @@ buildDependenciesFromSource: false
 asarUnpack:
   - node_modules/@jamiephan/stormlib/prebuilds/**/*.node
   - node_modules/@jamiephan/stormlib/build/**/*.node
+  - node_modules/@jamiephan/casclib/prebuilds/**/*.node
+  - node_modules/@jamiephan/casclib/build/**/*.node

@@ -43,10 +43,17 @@ const electronAPI: ElectronAPI = {
   updateFoliageSettings: (war3Path: string, enabled: boolean, terrainMode?: string) => ipcRenderer.invoke('foliage:update-settings', war3Path, enabled, terrainMode),
   updateObjectShader: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-object-shader', war3Path, enabled),
   updatePostProcessing: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-post-processing', war3Path, enabled),
-  updateLegacyWar3Shader: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-legacy-war3', war3Path, enabled),
+  /** @deprecated Manual toggle removed; always syncs shaders from detected War3 version. */
+  updateLegacyWar3Shader: (war3Path: string, enabled?: boolean) => ipcRenderer.invoke('shader:update-legacy-war3', war3Path, enabled),
+  syncVersionedShaders: (war3Path?: string) => ipcRenderer.invoke('shader:sync-versioned', war3Path),
+  detectWar3Version: (war3Path?: string) => ipcRenderer.invoke('war3:detect-version', war3Path),
   updateIntelAmdShaderFix: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-intel-amd', war3Path, enabled),
   updateEnvRenderSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('script:update-env-render', war3Path, enabled),
   updateGlowSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('glow:update-settings', war3Path, enabled),
+  getAntiHarmonyStatus: (war3Path?: string) => ipcRenderer.invoke('anti-harmony:get-status', war3Path),
+  setAntiHarmonyEnabled: (war3Path: string | undefined, enabled: boolean) =>
+    ipcRenderer.invoke('anti-harmony:set-enabled', war3Path, enabled),
+  installAntiHarmony: (war3Path?: string) => ipcRenderer.invoke('anti-harmony:install', war3Path),
   updateHalfPortrait: (war3Path: string, visionModPath: string, enabled: boolean) => ipcRenderer.invoke('vision:update-half-portrait', war3Path, visionModPath, enabled),
   updateModelEnhance: (war3Path: string, visionModPath: string, enabled: boolean) => ipcRenderer.invoke('vision:update-model-enhance', war3Path, visionModPath, enabled),
   applySkin: (unitId: string, changes: any[]) => ipcRenderer.invoke('skin:apply', unitId, changes),
@@ -157,6 +164,10 @@ ipcRenderer.on('show-about', () => {
 
 ipcRenderer.on('mod:install-progress', (event, data) => {
   window.dispatchEvent(new CustomEvent('mod-install-progress', { detail: data }));
+});
+
+ipcRenderer.on('anti-harmony:progress', (_event, data) => {
+  window.dispatchEvent(new CustomEvent('anti-harmony-progress', { detail: data }));
 });
 
 // 错误处理

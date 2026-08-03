@@ -4,13 +4,34 @@ import yauzl from 'yauzl';
 import { app } from 'electron';
 import { configManager } from './config-manager';
 import { isFullPackageFolderPresent, isFullPackageInstalled, removeTerrainSlkIfFullPackageMissing, resolveRetailDir } from './full-package-service';
+import {
+  isShaderPackCurrent,
+  resolveShaderZipName,
+  writeShaderPackMarker,
+  SHADER_ZIP_PRE200,
+  SHADER_ZIP_LEGACY,
+  SHADER_ZIP_MODERN,
+} from './war3-version';
 import crypto from 'crypto';
 
 // 文件指纹配置：用于验证资源版本
 const ASSET_FINGERPRINTS: Record<string, { file: string; expectedHash: string }> = {
-  'zip-shaders.zip': {
+  [SHADER_ZIP_MODERN]: {
     file: 'ps/hd.bls',
     expectedHash: '' // 留空，首次运行时计算
+  },
+  [SHADER_ZIP_LEGACY]: {
+    file: 'ps/hd.bls',
+    expectedHash: ''
+  },
+  [SHADER_ZIP_PRE200]: {
+    file: 'ps/hd.bls',
+    expectedHash: ''
+  },
+  // Legacy key kept so old installs still verify until re-synced
+  'zip-shaders.zip': {
+    file: 'ps/hd.bls',
+    expectedHash: ''
   },
   'zip-env.zip': {
     file: 'dnc/dnclordaeron/dnclordaeronterrain/dnclordaeronterrain.mdl',
@@ -21,6 +42,15 @@ const ASSET_FINGERPRINTS: Record<string, { file: string; expectedHash: string }>
     expectedHash: ''
   }
 };
+
+function isShaderZipName(name: string): boolean {
+  return (
+    name === SHADER_ZIP_MODERN ||
+    name === SHADER_ZIP_LEGACY ||
+    name === SHADER_ZIP_PRE200 ||
+    name === 'zip-shaders.zip'
+  );
+}
 
 const CLASSIC_PARKED_DIRS = [
   'environment',
@@ -328,10 +358,13 @@ export class AssetSyncService {
     console.log(`[AssetSync] Checking core assets in ${war3Path}`);
     console.log(`[AssetSync] Source directory: ${quenchingDir}`);
 
+    // Shader pack is chosen automatically from detected War3 version (< 2.0.3 → 2.02, else 2.03).
+    // Do not use zip-shaders.zip anymore.
+    const shaderZipName = await resolveShaderZipName(war3Path);
     const coreZips = [
       'zip-env.zip',
       'zip-scripts.zip',
-      'zip-shaders.zip'
+      shaderZipName,
     ];
 
     const uiType = modSettings?.ui || 'quenching'; // 默认 quenching
@@ -342,7 +375,7 @@ export class AssetSyncService {
       coreZipsToSync = coreZipsToSync.filter(name => name !== 'zip-scripts.zip');
     }
 
-    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, EnvRender: ${modSettings?.envRender !== false})`);
+    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, EnvRender: ${modSettings?.envRender !== false}, Shaders: ${shaderZipName})`);
 
     for (const name of coreZipsToSync) {
       const zipPath = path.join(quenchingDir, name);
@@ -359,12 +392,12 @@ export class AssetSyncService {
       } else if (name === 'zip-scripts.zip') {
         targetDir = path.join(war3Path, '_retail_', 'scripts');
         qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'scripts');
-      } else if (name === 'zip-shaders.zip') {
+      } else if (isShaderZipName(name)) {
         targetDir = path.join(war3Path, '_retail_', 'shaders');
         qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'shaders');
       }
 
-      if (isClassicMode && (name === 'zip-env.zip' || name === 'zip-shaders.zip')) {
+      if (isClassicMode && (name === 'zip-env.zip' || isShaderZipName(name))) {
         const activeExists = targetDir && await fs.pathExists(targetDir);
         const backupHasContent = qmoffDir && await this.hasDirectoryContent(qmoffDir);
 
@@ -395,6 +428,9 @@ export class AssetSyncService {
 
         console.log(`[AssetSync] Classic mode: missing QMoff asset for ${name}, extracting backup to ${qmoffDir}...`);
         await this.extractZip(zipPath, qmoffDir);
+        if (isShaderZipName(name)) {
+          await writeShaderPackMarker(qmoffDir, name);
+        }
 
         if (name === 'zip-env.zip') {
           const foliageDir = path.join(qmoffDir, 'foliage');
@@ -413,6 +449,16 @@ export class AssetSyncService {
         const files = await fs.readdir(targetDir);
         if (files.length === 0) return false;
 
+        // Shader pack must match detected War3 version (not just "folder exists").
+        if (isShaderZipName(name)) {
+          const packOk = await isShaderPackCurrent(targetDir, name);
+          if (!packOk) {
+            console.log(`[AssetSync] Shader pack mismatch in ${targetDir}, will re-extract ${name}`);
+            await fs.remove(targetDir);
+            return false;
+          }
+        }
+
         // 验证文件指纹
         const isValid = await this.verifyAssetFingerprint(name, targetDir);
         if (!isValid) {
@@ -428,6 +474,15 @@ export class AssetSyncService {
         if (!(await fs.pathExists(qmoffDir))) return false;
         const files = await fs.readdir(qmoffDir);
         if (files.length === 0) return false;
+
+        if (isShaderZipName(name)) {
+          const packOk = await isShaderPackCurrent(qmoffDir, name);
+          if (!packOk) {
+            console.log(`[AssetSync] Shader pack mismatch in ${qmoffDir}, will re-extract ${name}`);
+            await fs.remove(qmoffDir);
+            return false;
+          }
+        }
 
         // 验证备份文件夹的指纹
         const isValid = await this.verifyAssetFingerprint(name, qmoffDir);
@@ -446,6 +501,9 @@ export class AssetSyncService {
 
       console.log(`[AssetSync] Missing core assets for ${name}, extracting to ${targetDir}...`);
       await this.extractZip(zipPath, targetDir);
+      if (isShaderZipName(name)) {
+        await writeShaderPackMarker(targetDir, name);
+      }
 
       // zip-env.zip 不再负责植被；植被由 zip-foliage-*.zip 按地形模式单独安装
       if (name === 'zip-env.zip') {
