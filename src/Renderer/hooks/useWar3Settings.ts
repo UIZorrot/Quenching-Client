@@ -72,7 +72,7 @@ export const reaxel_War3Settings = reaxel(() => {
       glow: false,
       terrain: 'latest' as const,
       tree: 'tall' as const,
-      envRender: true,
+      envRender: false,
       modelEnhance: false,
       useLegacyWar3Shaders: false,
       useIntelAmdShaderFix: false,
@@ -426,9 +426,6 @@ export const reaxel_War3Settings = reaxel(() => {
     if (newSettings.water !== undefined) {
       return true;
     }
-    if (newSettings.glow !== undefined) {
-      return true;
-    }
     return false;
   };
 
@@ -443,7 +440,7 @@ export const reaxel_War3Settings = reaxel(() => {
       if (requiresFullPackageChange(newSettings) && window.electronAPI?.getFullPackageStatus) {
         const installed = await window.electronAPI.getFullPackageStatus(war3Path);
         if (!installed) {
-          throw new Error('完整包未安装，无法修改地形、树木、水面或光晕设置');
+          throw new Error('完整包未安装，无法修改地形、树木或水面设置');
         }
       }
 

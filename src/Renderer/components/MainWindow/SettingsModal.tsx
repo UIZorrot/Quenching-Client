@@ -318,13 +318,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
 
   const getSettingStatus = (key: string) => {
     // 1. Full Package Check (Highest Priority)
-    const requiresFullPackage = ['water', 'glow'];
+    const requiresFullPackage = ['water'];
     if (requiresFullPackage.includes(key) && !isFullPackageInstalled) {
       return { disabled: true, reason: t('main.status.full_not_installed') };
     }
 
     // 2. Classic Mode Check
-    const restrictedInClassic = ['foliage', 'objectShader', 'postProcessing', 'half', 'modelEnhance', 'water', 'terrain', 'tree', 'lighting', 'lightingBrightness', 'glow', 'useIntelAmdShaderFix'];
+    const restrictedInClassic = ['foliage', 'objectShader', 'postProcessing', 'half', 'modelEnhance', 'water', 'terrain', 'tree', 'lighting', 'lightingBrightness', 'useIntelAmdShaderFix'];
     if (restrictedInClassic.includes(key) && isClassicMode) {
       return { disabled: true, reason: t('settings.basic.classicMode.disabled') };
     }

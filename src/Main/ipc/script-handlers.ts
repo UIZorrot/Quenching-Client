@@ -102,7 +102,8 @@ export function registerScriptHandlers() {
  * 启动时根据设置清理环境渲染脚本
  */
 export async function cleanupScriptsOnStartup(war3Path: string, modSettings: any) {
-    if (modSettings.envRender === false) {
+    // 默认关闭：未显式开启时清掉本地 scripts，避免旧默认开启残留
+    if (modSettings.envRender !== true) {
         console.log('[Script] Cleaning up environment rendering scripts on startup');
         const retailPath = path.join(war3Path, '_retail_');
         const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;

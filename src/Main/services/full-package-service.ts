@@ -16,7 +16,7 @@ export const REQUIRED_TREE_TEXTURE_FOLDERS = [
     path.join('replaceabletextures', 'tree', 'tc'),
 ] as const;
 
-/** Resource folders used by the water, glow, retro-skin, and cos-skin features. */
+/** Resource folders used by the water, retro-skin, and cos-skin features. */
 export const REQUIRED_EXTRA_FULL_PACKAGE_FOLDERS = [
     path.join('replaceabletextures', 'water'),
     'cos',
@@ -28,17 +28,6 @@ export const REQUIRED_EXTRA_FULL_PACKAGE_FOLDERS = [
 export const REQUIRED_FULL_PACKAGE_FILES = [
     path.join('textures', 'fx', 'shoreline1.dds'),
     path.join('textures', 'fx', 'shorelineparticlexy.dds'),
-] as const;
-
-/** Either file is valid because the glow handler moves them between these names. */
-const ALTERNATIVE_FULL_PACKAGE_FILES = [
-    {
-        label: 'textures/fx/flare/heroglow_bw.dds or heroglow_bw-dis.dds',
-        candidates: [
-            path.join('textures', 'fx', 'flare', 'heroglow_bw.dds'),
-            path.join('textures', 'fx', 'flare', 'heroglow_bw-dis.dds'),
-        ],
-    },
 ] as const;
 
 export const REQUIRED_FULL_PACKAGE_FOLDERS = [
@@ -162,13 +151,6 @@ export async function getMissingFullPackageResources(war3Path: string): Promise<
     for (const fileName of REQUIRED_FULL_PACKAGE_FILES) {
         if (!(await isFullPackageFilePresent(war3Path, fileName))) {
             missing.push(fileName);
-        }
-    }
-
-    for (const group of ALTERNATIVE_FULL_PACKAGE_FILES) {
-        const present = await Promise.all(group.candidates.map((fileName) => isFullPackageFilePresent(war3Path, fileName)));
-        if (!present.some(Boolean)) {
-            missing.push(group.label);
         }
     }
 

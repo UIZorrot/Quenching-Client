@@ -1,45 +1,55 @@
 import { ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs-extra';
-import { assertFullPackageInstalled } from '../services/full-package-service';
+import { AssetSyncService } from '../services/asset-sync';
+
+const GLOW_RELATIVE = path.join('textures', 'fx', 'flare', 'heroglow_bw.dds');
+const ASSET_GLOW_NAME = 'heroglow_bw.dds';
+
+async function resolveBaseDir(war3Path: string): Promise<string> {
+    const retailPath = path.join(war3Path, '_retail_');
+    return (await fs.pathExists(retailPath)) ? retailPath : war3Path;
+}
+
+function glowTargetPath(baseDir: string): string {
+    return path.join(baseDir, GLOW_RELATIVE);
+}
 
 export function registerGlowHandlers() {
     console.log('[Glow] Glow handlers registered.');
 
     ipcMain.handle('glow:update-settings', async (_event, war3Path: string, enabled: boolean) => {
+        // enabled=true → weak (install client asset); enabled=false → strong (remove local override)
         console.log(`\n>>> [Glow] Updating hero glow: ${enabled ? 'WEAK' : 'STRONG'}`);
         try {
             if (!war3Path) throw new Error('未提供魔兽路径');
 
-            await assertFullPackageInstalled(war3Path);
-
-            const retailPath = path.join(war3Path, '_retail_');
-            const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
-
-            const glowFile = path.join(baseDir, 'textures', 'fx', 'flare', 'heroglow_bw.dds');
-            const glowDisFile = path.join(baseDir, 'textures', 'fx', 'flare', 'heroglow_bw-dis.dds');
+            const baseDir = await resolveBaseDir(war3Path);
+            const glowFile = glowTargetPath(baseDir);
+            // Clean up legacy rename-based backup if present
+            const legacyDis = path.join(baseDir, 'textures', 'fx', 'flare', 'heroglow_bw-dis.dds');
 
             if (enabled) {
-                // 弱：启用精简贴图 heroglow_bw.dds
-                if (await fs.pathExists(glowDisFile)) {
-                    if (await fs.pathExists(glowFile)) {
-                        await fs.remove(glowFile);
-                    }
-                    await fs.move(glowDisFile, glowFile);
-                    console.log('[Glow] Switched to WEAK glow (heroglow_bw.dds).');
-                } else {
-                    console.log('[Glow] Weak glow file already active or missing backup.');
+                const assetsDir = await AssetSyncService.getAssetsDir();
+                const source = path.join(assetsDir, 'quenching', ASSET_GLOW_NAME);
+                if (!(await fs.pathExists(source))) {
+                    throw new Error(`光晕资源不存在: ${source}`);
                 }
+                await fs.ensureDir(path.dirname(glowFile));
+                await fs.copy(source, glowFile, { overwrite: true });
+                if (await fs.pathExists(legacyDis)) {
+                    await fs.remove(legacyDis);
+                }
+                console.log(`[Glow] Installed WEAK glow from assets → ${glowFile}`);
             } else {
-                // 强：移除本地精简贴图，回退游戏默认强光晕
                 if (await fs.pathExists(glowFile)) {
-                    if (await fs.pathExists(glowDisFile)) {
-                        await fs.remove(glowDisFile);
-                    }
-                    await fs.move(glowFile, glowDisFile);
-                    console.log('[Glow] Switched to STRONG glow (default).');
+                    await fs.remove(glowFile);
+                    console.log(`[Glow] Removed local glow override → STRONG (CASC default): ${glowFile}`);
                 } else {
-                    console.log('[Glow] Strong glow already active or file not found.');
+                    console.log('[Glow] Strong glow already active (no local override).');
+                }
+                if (await fs.pathExists(legacyDis)) {
+                    await fs.remove(legacyDis);
                 }
             }
 

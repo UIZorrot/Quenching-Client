@@ -371,11 +371,12 @@ export class AssetSyncService {
 
     let coreZipsToSync = coreZips;
 
-    if (modSettings?.envRender === false) {
+    // envRender 默认关闭：仅在明确开启时同步 zip-scripts.zip
+    if (modSettings?.envRender !== true) {
       coreZipsToSync = coreZipsToSync.filter(name => name !== 'zip-scripts.zip');
     }
 
-    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, EnvRender: ${modSettings?.envRender !== false}, Shaders: ${shaderZipName})`);
+    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, EnvRender: ${modSettings?.envRender === true}, Shaders: ${shaderZipName})`);
 
     for (const name of coreZipsToSync) {
       const zipPath = path.join(quenchingDir, name);
