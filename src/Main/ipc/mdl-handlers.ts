@@ -103,17 +103,17 @@ const SURFACE_UNIT_BASELINE = {
     ambColorKeyframes: ['\t\t0:  { 1, 1, 1 },'],
 };
 
-/** 地表 terrain 基准（dnclordaeronterrain.mdl） */
+/** 地表 terrain 基准（dnclordaeronterrain.mdl）；相对原基准 Intensity 全量 +0.6 */
 const SURFACE_TERRAIN_BASELINE = {
     ambIntensity: -0.12,
     rotation: { x: 0.2, y: 0.2, z: 0.5, w: 0 },
     intensityKeyframes: [
-        '\t\t0: 3.50,',
-        '\t\t14000: 4.50,',
-        '\t\t16000: 4.50,',
-        '\t\t44000: 4.50,',
-        '\t\t45000: 5.00,',
-        '\t\t46000: 3.50,',
+        '\t\t0: 4.10,',
+        '\t\t14000: 5.10,',
+        '\t\t16000: 5.10,',
+        '\t\t44000: 5.10,',
+        '\t\t45000: 5.60,',
+        '\t\t46000: 4.10,',
     ],
     ambColorKeyframes: SURFACE_UNIT_BASELINE.ambColorKeyframes,
 };
