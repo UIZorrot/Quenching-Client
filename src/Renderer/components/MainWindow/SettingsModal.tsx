@@ -336,6 +336,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
       return { disabled: true, reason: t('settings.status.visionmod_required') };
     }
 
+    // 4. Retro terrain: foliage not available
+    if (key === 'foliage' && modSettings.terrain === 'retro') {
+      return { disabled: true, reason: t('settings.foliage.retro.disabled') };
+    }
+
     return { disabled: false, reason: null };
   };
 
@@ -545,10 +550,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.terrain.style')}</h3>
             <Space wrap>
               {renderSettingButton(t('settings.terrain.original'), modSettings.terrain, 'original', () => handleSettingChange('terrain', 'original'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.original'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
               {renderSettingButton(t('settings.tree.height.16'), modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
               {renderSettingButton(t('settings.tree.height.18'), modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
             </Space>
             {renderStatusPlaceholder(sTerrainMod.reason || sTerrain.reason)}
           </Col>

@@ -40,6 +40,10 @@ export async function applyFoliageSettings(
     if (isRetroTerrainMode(mode)) {
         console.log('[Foliage] Retro terrain, removing foliage directory');
         await removeFoliageDir(environmentDir);
+        const modSettings = configManager.get('modSettings') || {};
+        if (modSettings.foliage !== false) {
+            configManager.set('modSettings', { ...modSettings, foliage: false });
+        }
         return;
     }
 
@@ -79,6 +83,10 @@ export async function syncFoliageForTerrainIfEnabled(
         const baseDir = await resolveBaseDir(war3Path);
         console.log('[Foliage] Retro terrain switch, removing foliage directory');
         await removeFoliageDir(path.join(baseDir, 'environment'));
+        const modSettings = configManager.get('modSettings') || {};
+        if (modSettings.foliage !== false) {
+            configManager.set('modSettings', { ...modSettings, foliage: false });
+        }
         return;
     }
 
@@ -104,6 +112,9 @@ export async function syncFoliageOnStartup(war3Path: string, modSettings: Record
     if (isRetroTerrainMode(terrainMode)) {
         console.log('[Foliage] Retro terrain on startup, removing foliage directory');
         await removeFoliageDir(environmentDir);
+        if (modSettings.foliage !== false) {
+            configManager.set('modSettings', { ...modSettings, foliage: false });
+        }
         return;
     }
 

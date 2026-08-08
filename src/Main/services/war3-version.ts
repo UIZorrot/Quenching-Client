@@ -245,6 +245,34 @@ export async function writeShaderPackMarker(shadersDir: string, zipName: string)
     await fs.writeFile(path.join(shadersDir, SHADER_PACK_MARKER), `${zipName}\n`, 'utf-8');
 }
 
+/**
+ * Some shader zips (e.g. shaders2.03.zip) store *.bls at zip root.
+ * Game / toggles expect them under shaders/ps/. Move root-level .bls into ps/.
+ */
+export async function normalizeShaderExtractLayout(shadersDir: string): Promise<void> {
+    if (!(await fs.pathExists(shadersDir))) {
+        return;
+    }
+
+    const entries = await fs.readdir(shadersDir);
+    const rootBls = entries.filter((name) => name.toLowerCase().endsWith('.bls'));
+    if (rootBls.length === 0) {
+        return;
+    }
+
+    const psDir = path.join(shadersDir, 'ps');
+    await fs.ensureDir(psDir);
+    for (const file of rootBls) {
+        const from = path.join(shadersDir, file);
+        const to = path.join(psDir, file);
+        if (await fs.pathExists(to)) {
+            await fs.remove(to);
+        }
+        await fs.move(from, to);
+        console.log(`[War3Version] Normalized shader layout: ${file} -> ps/${file}`);
+    }
+}
+
 export async function isShaderPackCurrent(shadersDir: string, expectedZip: string): Promise<boolean> {
     if (!(await fs.pathExists(shadersDir))) {
         return false;

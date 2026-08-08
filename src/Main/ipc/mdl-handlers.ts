@@ -139,10 +139,10 @@ function getTargetAmbIntensity(category: DncCategory, mode: string): number | nu
         return null;
     }
     if (category === 'surface') {
-        if (mode === 'battle') return 0;
+        if (mode === 'battle') return 0.1;
         if (mode === 'rpg') return -0.12;
     } else {
-        if (mode === 'battle') return 0.02;
+        if (mode === 'battle') return 0.1;
         if (mode === 'rpg') return -0.2;
     }
     return null;

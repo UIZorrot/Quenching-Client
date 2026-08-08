@@ -6,6 +6,7 @@ import { configManager } from './config-manager';
 import { isFullPackageFolderPresent, isFullPackageInstalled, removeTerrainSlkIfFullPackageMissing, resolveRetailDir } from './full-package-service';
 import {
   isShaderPackCurrent,
+  normalizeShaderExtractLayout,
   resolveShaderZipName,
   writeShaderPackMarker,
   SHADER_ZIP_PRE200,
@@ -430,6 +431,7 @@ export class AssetSyncService {
         console.log(`[AssetSync] Classic mode: missing QMoff asset for ${name}, extracting backup to ${qmoffDir}...`);
         await this.extractZip(zipPath, qmoffDir);
         if (isShaderZipName(name)) {
+          await normalizeShaderExtractLayout(qmoffDir);
           await writeShaderPackMarker(qmoffDir, name);
         }
 
@@ -503,6 +505,7 @@ export class AssetSyncService {
       console.log(`[AssetSync] Missing core assets for ${name}, extracting to ${targetDir}...`);
       await this.extractZip(zipPath, targetDir);
       if (isShaderZipName(name)) {
+        await normalizeShaderExtractLayout(targetDir);
         await writeShaderPackMarker(targetDir, name);
       }
 

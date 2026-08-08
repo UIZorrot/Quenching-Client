@@ -448,7 +448,17 @@ export const reaxel_War3Settings = reaxel(() => {
       const previousLightingBrightness = store.modSettings.lightingBrightness ?? 3;
       const previousTerrain =
         newSettings.terrain !== undefined ? store.modSettings.terrain : undefined;
-      const updatedSettings = { ...store.modSettings, ...newSettings };
+      let updatedSettings = { ...store.modSettings, ...newSettings };
+
+      // Retro terrain never uses foliage
+      if (updatedSettings.terrain === 'retro') {
+        updatedSettings = { ...updatedSettings, foliage: false };
+      }
+      // Cannot enable foliage while on retro terrain
+      if (newSettings.foliage === true && updatedSettings.terrain === 'retro') {
+        updatedSettings = { ...updatedSettings, foliage: false };
+      }
+
       console.log('[useWar3Settings] Updated settings state:', updatedSettings);
 
       setState({ modSettings: updatedSettings });
@@ -546,14 +556,17 @@ export const reaxel_War3Settings = reaxel(() => {
           await Promise.race([updateTerrainPromise, timeoutPromise]);
           // 切换完成后，重新检测实际文件状态以更新高亮
           const detectedTerrainAfter = await detectTerrainMode(war3Path);
-          const detectedFoliageAfter = await detectFoliageMode(war3Path);
-          setState({
-            modSettings: {
-              ...store.modSettings,
-              terrain: detectedTerrainAfter,
-              foliage: detectedFoliageAfter,
-            },
-          });
+          const detectedFoliageAfter =
+            detectedTerrainAfter === 'retro' ? false : await detectFoliageMode(war3Path);
+          const afterTerrain = {
+            ...store.modSettings,
+            terrain: detectedTerrainAfter,
+            foliage: detectedFoliageAfter,
+          };
+          setState({ modSettings: afterTerrain });
+          if (window.electronAPI?.setConfig) {
+            await window.electronAPI.setConfig('modSettings', afterTerrain);
+          }
           console.log('[useWar3Settings] updateTerrainSettings completed');
         } else {
           console.warn('[useWar3Settings] window.electronAPI.updateTerrainSettings is undefined');
@@ -602,21 +615,29 @@ export const reaxel_War3Settings = reaxel(() => {
 
       // 如果修改了植被设置，执行植被效果更新
       if (newSettings.foliage !== undefined) {
-        console.log(`\n>>> [FOLIAGE-FRONTEND] Setting change requested: ${newSettings.foliage}`);
-        if (window.electronAPI?.updateFoliageSettings) {
-          console.log('[useWar3Settings] Calling updateFoliageSettings API...');
-          const updateFoliagePromise = window.electronAPI.updateFoliageSettings(
-            war3Path,
-            updatedSettings.foliage,
-            updatedSettings.terrain
-          );
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Update foliage settings timeout')), 60000)
-          );
-          await Promise.race([updateFoliagePromise, timeoutPromise]);
-          const detectedFoliageAfter = await detectFoliageMode(war3Path);
-          console.log(`[useWar3Settings] updateFoliageSettings completed. Detected: ${detectedFoliageAfter}`);
-          setState({ modSettings: { ...store.modSettings, foliage: detectedFoliageAfter } });
+        if (updatedSettings.terrain === 'retro') {
+          console.log('[useWar3Settings] Retro terrain: forcing foliage off');
+          if (window.electronAPI?.updateFoliageSettings) {
+            await window.electronAPI.updateFoliageSettings(war3Path, false, 'retro');
+          }
+          setState({ modSettings: { ...store.modSettings, foliage: false } });
+        } else {
+          console.log(`\n>>> [FOLIAGE-FRONTEND] Setting change requested: ${newSettings.foliage}`);
+          if (window.electronAPI?.updateFoliageSettings) {
+            console.log('[useWar3Settings] Calling updateFoliageSettings API...');
+            const updateFoliagePromise = window.electronAPI.updateFoliageSettings(
+              war3Path,
+              updatedSettings.foliage,
+              updatedSettings.terrain
+            );
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Update foliage settings timeout')), 60000)
+            );
+            await Promise.race([updateFoliagePromise, timeoutPromise]);
+            const detectedFoliageAfter = await detectFoliageMode(war3Path);
+            console.log(`[useWar3Settings] updateFoliageSettings completed. Detected: ${detectedFoliageAfter}`);
+            setState({ modSettings: { ...store.modSettings, foliage: detectedFoliageAfter } });
+          }
         }
       }
 

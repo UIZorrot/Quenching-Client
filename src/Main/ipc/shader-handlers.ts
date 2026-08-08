@@ -6,6 +6,7 @@ import { configManager } from '../services/config-manager';
 import {
     detectWar3Version,
     isShaderPackCurrent,
+    normalizeShaderExtractLayout,
     resolveShaderZipName,
     writeShaderPackMarker,
     type War3VersionInfo,
@@ -72,6 +73,7 @@ export async function ensureVersionedShaders(
     await fs.ensureDir(shadersDir);
     // Full pack extract (same as asset-sync); object/post toggles may strip files afterwards.
     await AssetSyncService.extractZip(resolved.zipPath, shadersDir);
+    await normalizeShaderExtractLayout(shadersDir);
     await writeShaderPackMarker(shadersDir, resolved.zipName);
 
     // Re-apply Intel/AMD bloom override if enabled
@@ -128,6 +130,7 @@ async function applyIntelAmdBloomFix(war3Path: string, enabled: boolean): Promis
 async function extractSpecificFiles(zipPath: string, outputDir: string, filesToExtract: string[]) {
     const yauzl = require('yauzl');
     await fs.ensureDir(outputDir);
+    const wanted = new Set(filesToExtract.map((f) => f.toLowerCase()));
 
     return new Promise<void>((resolve, reject) => {
         yauzl.open(zipPath, { lazyEntries: true }, (err: any, zipfile: any) => {
@@ -138,9 +141,14 @@ async function extractSpecificFiles(zipPath: string, outputDir: string, filesToE
             zipfile.readEntry();
             zipfile.on('entry', (entry: any) => {
                 const fileName = entry.fileName.replace(/\\/g, '/');
-                const isTarget = filesToExtract.some(
-                    (f) => fileName.endsWith('ps/' + f) || fileName.endsWith('ps\\' + f)
-                );
+                const baseName = path.basename(fileName);
+                // Match both `ps/hd.bls` and root-level `hd.bls` (shaders2.03.zip layout)
+                const isTarget =
+                    !fileName.endsWith('/') &&
+                    wanted.has(baseName.toLowerCase()) &&
+                    (fileName.toLowerCase().includes('/ps/') ||
+                        fileName.toLowerCase().startsWith('ps/') ||
+                        !fileName.includes('/'));
 
                 if (isTarget) {
                     zipfile.openReadStream(entry, (err2: any, readStream: any) => {
@@ -149,7 +157,8 @@ async function extractSpecificFiles(zipPath: string, outputDir: string, filesToE
                             return;
                         }
 
-                        const out = path.join(outputDir, fileName);
+                        // Always land under shaders/ps/<file>
+                        const out = path.join(outputDir, 'ps', baseName);
 
                         fs.ensureDir(path.dirname(out))
                             .then(() => {
