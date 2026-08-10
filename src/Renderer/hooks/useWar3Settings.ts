@@ -30,12 +30,12 @@ export interface ModSettings {
   half: boolean;         // 半透明效果
   ui: 'classic' | 'quenching' | 'carnival'; // UI风格
   cam: boolean;          // 自定义相机
-  glow: boolean;         // 缩减光晕
+  glow: boolean;         // 英雄光晕弱光晕（true=弱, false=强）
   terrain: 'original' | 'latest' | 'retro' | 'v16' | 'v18'; // 地形
   tree: 'original' | 'tall' | 'short' | 'retro' | 'v16' | 'v18'; // 树木
   envRender: boolean;    // 环境渲染
   modelEnhance: boolean; // 模型加强
-  useLegacyWar3Shaders: boolean; // 使用 2.02 shaders（否则 2.03）
+  useLegacyWar3Shaders: boolean; // 由魔兽版本自动决定（<2.0.3 → shaders2.02），不再手动切换
   useIntelAmdShaderFix: boolean; // Intel/AMD bloomextract 修复
   visionModPath: string; // VisionMod目录
   modEnabled: boolean;   // MOD总开关
@@ -72,7 +72,7 @@ export const reaxel_War3Settings = reaxel(() => {
       glow: false,
       terrain: 'latest' as const,
       tree: 'tall' as const,
-      envRender: true,
+      envRender: false,
       modelEnhance: false,
       useLegacyWar3Shaders: false,
       useIntelAmdShaderFix: false,
@@ -263,7 +263,11 @@ export const reaxel_War3Settings = reaxel(() => {
       // 检测植被模式
       const detectedFoliage = await detectFoliageMode(war3Path);
       console.log(`[useWar3Settings] Detected foliage: ${detectedFoliage}`);
-      loadedSettings.foliage = detectedFoliage;
+      if (detectedTerrain === 'retro') {
+        loadedSettings.foliage = false;
+      } else if (detectedFoliage) {
+        loadedSettings.foliage = true;
+      }
 
       // 检测物体着色器
       const detectedObjectShader = await detectObjectShaderMode(war3Path);
@@ -285,8 +289,24 @@ export const reaxel_War3Settings = reaxel(() => {
       console.log(`[useWar3Settings] Detected glow: ${detectedGlow}`);
       loadedSettings.glow = detectedGlow;
 
+      // 着色器包：按检测到的魔兽版本自动选择（不再使用手动「旧版魔兽」开关）
+      if (window.electronAPI?.detectWar3Version) {
+        const versionInfo = await window.electronAPI.detectWar3Version(war3Path);
+        console.log('[useWar3Settings] Detected War3 version:', versionInfo);
+        loadedSettings.useLegacyWar3Shaders = !!versionInfo?.useLegacyShaders;
+        if (window.electronAPI.syncVersionedShaders) {
+          await window.electronAPI.syncVersionedShaders(war3Path).catch((err) => {
+            console.warn('[useWar3Settings] syncVersionedShaders failed:', err);
+          });
+        }
+      }
+
       console.log('[useWar3Settings] Final merged settings to be set in store:', loadedSettings);
       setState({ modSettings: loadedSettings });
+
+      if (window.electronAPI?.setConfig) {
+        await window.electronAPI.setConfig('modSettings', loadedSettings);
+      }
 
       await loadCameraSettings(war3Path);
       console.log('[useWar3Settings] loadModSettings COMPLETE\n');
@@ -349,11 +369,16 @@ export const reaxel_War3Settings = reaxel(() => {
    */
   const detectFoliageMode = async (war3Path: string): Promise<boolean> => {
     try {
+      const terrain = await detectTerrainMode(war3Path);
+      if (terrain === 'retro') {
+        return false;
+      }
+
       const retailDir = `${war3Path}/_retail_`;
       const baseDir = (await window.electronAPI?.pathExists(retailDir)) ? retailDir : war3Path;
       const foliageDir = `${baseDir}/environment/foliage`;
       const exists = await window.electronAPI?.pathExists(foliageDir);
-      return exists;
+      return !!exists;
     } catch (e) {
       console.warn('[useWar3Settings] detectFoliageMode failed:', e);
       return store.modSettings.foliage;
@@ -391,6 +416,19 @@ export const reaxel_War3Settings = reaxel(() => {
   };
 
   // 保存MOD设置
+  const requiresFullPackageChange = (newSettings: Partial<ModSettings>): boolean => {
+    if (newSettings.terrain !== undefined && newSettings.terrain !== 'original') {
+      return true;
+    }
+    if (newSettings.tree !== undefined && newSettings.tree !== 'original') {
+      return true;
+    }
+    if (newSettings.water !== undefined) {
+      return true;
+    }
+    return false;
+  };
+
   const saveModSettings = async (war3Path: string, newSettings: Partial<ModSettings>) => {
     console.log('[useWar3Settings] saveModSettings called:', { war3Path, newSettings });
     setState({ isLoading: true });
@@ -399,7 +437,28 @@ export const reaxel_War3Settings = reaxel(() => {
     await new Promise(resolve => setTimeout(resolve, 0));
 
     try {
-      const updatedSettings = { ...store.modSettings, ...newSettings };
+      if (requiresFullPackageChange(newSettings) && window.electronAPI?.getFullPackageStatus) {
+        const installed = await window.electronAPI.getFullPackageStatus(war3Path);
+        if (!installed) {
+          throw new Error('完整包未安装，无法修改地形、树木或水面设置');
+        }
+      }
+
+      const previousLighting = store.modSettings.lighting;
+      const previousLightingBrightness = store.modSettings.lightingBrightness ?? 3;
+      const previousTerrain =
+        newSettings.terrain !== undefined ? store.modSettings.terrain : undefined;
+      let updatedSettings = { ...store.modSettings, ...newSettings };
+
+      // Retro terrain never uses foliage
+      if (updatedSettings.terrain === 'retro') {
+        updatedSettings = { ...updatedSettings, foliage: false };
+      }
+      // Cannot enable foliage while on retro terrain
+      if (newSettings.foliage === true && updatedSettings.terrain === 'retro') {
+        updatedSettings = { ...updatedSettings, foliage: false };
+      }
+
       console.log('[useWar3Settings] Updated settings state:', updatedSettings);
 
       setState({ modSettings: updatedSettings });
@@ -432,15 +491,24 @@ export const reaxel_War3Settings = reaxel(() => {
           const updatePromise = window.electronAPI.updateMdlLighting(
             war3Path,
             updatedSettings.lighting,
-            updatedSettings.lightingBrightness
+            updatedSettings.lightingBrightness,
+            previousLighting,
+            previousLightingBrightness
           );
 
-          // 15秒超时
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Update MDL lighting timeout')), 15000)
-          );
-
-          const result = await Promise.race([updatePromise, timeoutPromise]);
+          const result = await new Promise<boolean>((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('Update MDL lighting timeout')), 45000);
+            updatePromise.then(
+              (value) => {
+                clearTimeout(timer);
+                resolve(value);
+              },
+              (err) => {
+                clearTimeout(timer);
+                reject(err);
+              }
+            );
+          });
           console.log('[useWar3Settings] updateMdlLighting result:', result);
         } else {
           console.warn('[useWar3Settings] window.electronAPI.updateMdlLighting is undefined');
@@ -478,7 +546,8 @@ export const reaxel_War3Settings = reaxel(() => {
           const updateTerrainPromise = window.electronAPI.updateTerrainSettings(
             war3Path,
             updatedSettings.terrain,
-            updatedSettings.water
+            updatedSettings.water,
+            previousTerrain
           );
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Update terrain settings timeout')), 45000)
@@ -487,7 +556,17 @@ export const reaxel_War3Settings = reaxel(() => {
           await Promise.race([updateTerrainPromise, timeoutPromise]);
           // 切换完成后，重新检测实际文件状态以更新高亮
           const detectedTerrainAfter = await detectTerrainMode(war3Path);
-          setState({ modSettings: { ...store.modSettings, terrain: detectedTerrainAfter } });
+          const detectedFoliageAfter =
+            detectedTerrainAfter === 'retro' ? false : await detectFoliageMode(war3Path);
+          const afterTerrain = {
+            ...store.modSettings,
+            terrain: detectedTerrainAfter,
+            foliage: detectedFoliageAfter,
+          };
+          setState({ modSettings: afterTerrain });
+          if (window.electronAPI?.setConfig) {
+            await window.electronAPI.setConfig('modSettings', afterTerrain);
+          }
           console.log('[useWar3Settings] updateTerrainSettings completed');
         } else {
           console.warn('[useWar3Settings] window.electronAPI.updateTerrainSettings is undefined');
@@ -536,17 +615,29 @@ export const reaxel_War3Settings = reaxel(() => {
 
       // 如果修改了植被设置，执行植被效果更新
       if (newSettings.foliage !== undefined) {
-        console.log(`\n>>> [FOLIAGE-FRONTEND] Setting change requested: ${newSettings.foliage}`);
-        if (window.electronAPI?.updateFoliageSettings) {
-          console.log('[useWar3Settings] Calling updateFoliageSettings API...');
-          const updateFoliagePromise = window.electronAPI.updateFoliageSettings(war3Path, updatedSettings.foliage);
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Update foliage settings timeout')), 60000)
-          );
-          await Promise.race([updateFoliagePromise, timeoutPromise]);
-          const detectedFoliageAfter = await detectFoliageMode(war3Path);
-          console.log(`[useWar3Settings] updateFoliageSettings completed. Detected: ${detectedFoliageAfter}`);
-          setState({ modSettings: { ...store.modSettings, foliage: detectedFoliageAfter } });
+        if (updatedSettings.terrain === 'retro') {
+          console.log('[useWar3Settings] Retro terrain: forcing foliage off');
+          if (window.electronAPI?.updateFoliageSettings) {
+            await window.electronAPI.updateFoliageSettings(war3Path, false, 'retro');
+          }
+          setState({ modSettings: { ...store.modSettings, foliage: false } });
+        } else {
+          console.log(`\n>>> [FOLIAGE-FRONTEND] Setting change requested: ${newSettings.foliage}`);
+          if (window.electronAPI?.updateFoliageSettings) {
+            console.log('[useWar3Settings] Calling updateFoliageSettings API...');
+            const updateFoliagePromise = window.electronAPI.updateFoliageSettings(
+              war3Path,
+              updatedSettings.foliage,
+              updatedSettings.terrain
+            );
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Update foliage settings timeout')), 60000)
+            );
+            await Promise.race([updateFoliagePromise, timeoutPromise]);
+            const detectedFoliageAfter = await detectFoliageMode(war3Path);
+            console.log(`[useWar3Settings] updateFoliageSettings completed. Detected: ${detectedFoliageAfter}`);
+            setState({ modSettings: { ...store.modSettings, foliage: detectedFoliageAfter } });
+          }
         }
       }
 
@@ -570,11 +661,23 @@ export const reaxel_War3Settings = reaxel(() => {
         }
       }
 
-      // 如果修改了“使用旧版魔兽”兼容设置，切换 shaders 版本
+      // 旧版着色器开关已废弃：始终按魔兽版本自动同步
       if (newSettings.useLegacyWar3Shaders !== undefined) {
-        console.log(`\n>>> [SHADER-FRONTEND] Legacy shader version change requested: ${newSettings.useLegacyWar3Shaders}`);
-        if (window.electronAPI?.updateLegacyWar3Shader) {
-          await window.electronAPI.updateLegacyWar3Shader(war3Path, updatedSettings.useLegacyWar3Shaders);
+        console.log('\n>>> [SHADER-FRONTEND] Legacy shader toggle ignored; syncing from War3 version');
+        if (window.electronAPI?.syncVersionedShaders) {
+          const result = await window.electronAPI.syncVersionedShaders(war3Path);
+          if (result?.version) {
+            const synced = {
+              ...updatedSettings,
+              useLegacyWar3Shaders: !!result.version.useLegacyShaders,
+            };
+            setState({ modSettings: synced });
+            if (window.electronAPI?.setConfig) {
+              await window.electronAPI.setConfig('modSettings', synced);
+            }
+          }
+        } else if (window.electronAPI?.updateLegacyWar3Shader) {
+          await window.electronAPI.updateLegacyWar3Shader(war3Path);
         }
       }
 
@@ -724,9 +827,10 @@ angle=${store.cameraSettings.angleOfAttack}
       const retailDir = `${war3Path}/_retail_`;
       const baseDir = (await window.electronAPI?.pathExists(retailDir)) ? retailDir : war3Path;
       const terrainDir = `${baseDir}/terrainart`;
-      const terrainExists = await window.electronAPI?.pathExists(terrainDir);
+      const terrainSlkPath = `${terrainDir}/terrain.slk`;
+      const terrainSlkExists = await window.electronAPI?.pathExists(terrainSlkPath);
 
-      if (!terrainExists) return 'original';
+      if (!terrainSlkExists) return 'original';
 
       const metaPath = `${terrainDir}/meta.que`;
       const metaExists = await window.electronAPI?.pathExists(metaPath);

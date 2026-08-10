@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Typography, Button, Space, Row, Col, message, Spin, Modal } from 'antd';
+import { Typography, Button, Space, Row, Col, message, Spin } from 'antd';
 import { useTranslation } from '../../utils/i18n';
 import { OverlayModal } from './OverlayModal';
 import { useWar3Settings } from '../../hooks/useWar3Settings';
@@ -29,8 +29,9 @@ const BASIC_SETTINGS_DESC: React.CSSProperties = {
   margin: 0
 };
 const BASIC_SETTINGS_CONTROL_BTN: React.CSSProperties = {
-  height: 28,
-  fontSize: '12px',
+  height: 36,
+  fontSize: '13px',
+  paddingInline: 18,
   alignSelf: 'flex-start'
 };
 
@@ -54,6 +55,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     image: null
   });
   const isClassicMode = modSettings?.classicMode || false;
+  const [antiHarmonyEnabled, setAntiHarmonyEnabled] = useState(false);
+  const [antiHarmonyBusy, setAntiHarmonyBusy] = useState(false);
+  const [war3VersionLabel, setWar3VersionLabel] = useState('');
 
   const categories = [
     { id: 'game', name: t('settings.category.game') },
@@ -103,6 +107,94 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     } finally {
       hideLoading();
     }
+  };
+
+  useEffect(() => {
+    if (!open || !currentInstallation?.path) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const enabled = await window.electronAPI?.getAntiHarmonyStatus?.(currentInstallation.path);
+        if (!cancelled) {
+          setAntiHarmonyEnabled(!!enabled);
+        }
+      } catch {
+        if (!cancelled) {
+          setAntiHarmonyEnabled(false);
+        }
+      }
+
+      try {
+        const info = await window.electronAPI?.detectWar3Version?.(currentInstallation.path);
+        if (cancelled) {
+          return;
+        }
+        if (!info?.version) {
+          setWar3VersionLabel(t('settings.basic.legacyShaders.unknown'));
+          return;
+        }
+        const packKey =
+          info.shaderZip === 'shaders1.xx.zip'
+            ? 'settings.basic.legacyShaders.pack.pre200'
+            : info.shaderZip === 'shaders2.02.zip'
+              ? 'settings.basic.legacyShaders.pack.legacy'
+              : 'settings.basic.legacyShaders.pack.modern';
+        setWar3VersionLabel(
+          t('settings.basic.legacyShaders.status')
+            .replace('{version}', info.version)
+            .replace('{pack}', t(packKey))
+        );
+      } catch {
+        if (!cancelled) {
+          setWar3VersionLabel(t('settings.basic.legacyShaders.unknown'));
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, currentInstallation?.path, t]);
+
+  const handleAntiHarmonyChange = (enabled: boolean) => {
+    if (!currentInstallation?.path || antiHarmonyBusy || isClassicMode) {
+      return;
+    }
+    if (enabled === antiHarmonyEnabled) {
+      return;
+    }
+
+    const war3Path = currentInstallation.path;
+    const onProgress = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { percent?: number; message?: string } | undefined;
+      const percent = typeof detail?.percent === 'number' ? detail.percent : undefined;
+      showLoading(
+        detail?.message
+          ? `${t('settings.antiharmony.updating')} ${detail.message}`
+          : t('settings.antiharmony.updating'),
+        percent
+      );
+    };
+
+    setTimeout(async () => {
+      try {
+        setAntiHarmonyBusy(true);
+        showLoading(t('settings.antiharmony.updating'), 0);
+        window.addEventListener('anti-harmony-progress', onProgress as EventListener);
+        await window.electronAPI?.setAntiHarmonyEnabled?.(war3Path, enabled);
+        setAntiHarmonyEnabled(enabled);
+        message.success(enabled ? t('settings.antiharmony.success.on') : t('settings.antiharmony.success.off'));
+      } catch (error) {
+        console.error('Anti-harmony toggle failed:', error);
+        const msg = error instanceof Error ? error.message : t('settings.antiharmony.failed');
+        message.error(msg);
+      } finally {
+        window.removeEventListener('anti-harmony-progress', onProgress as EventListener);
+        setAntiHarmonyBusy(false);
+        hideLoading();
+      }
+    }, 0);
   };
 
   const handleSettingChange = async (key: string, value: any) => {
@@ -226,13 +318,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
 
   const getSettingStatus = (key: string) => {
     // 1. Full Package Check (Highest Priority)
-    const requiresFullPackage = ['water', 'glow', 'terrain', 'tree'];
+    const requiresFullPackage = ['water'];
     if (requiresFullPackage.includes(key) && !isFullPackageInstalled) {
       return { disabled: true, reason: t('main.status.full_not_installed') };
     }
 
     // 2. Classic Mode Check
-    const restrictedInClassic = ['foliage', 'objectShader', 'postProcessing', 'half', 'modelEnhance', 'water', 'terrain', 'tree', 'lighting', 'lightingBrightness', 'glow', 'useLegacyWar3Shaders', 'useIntelAmdShaderFix'];
+    const restrictedInClassic = ['foliage', 'objectShader', 'postProcessing', 'half', 'modelEnhance', 'water', 'terrain', 'tree', 'lighting', 'lightingBrightness', 'useIntelAmdShaderFix'];
     if (restrictedInClassic.includes(key) && isClassicMode) {
       return { disabled: true, reason: t('settings.basic.classicMode.disabled') };
     }
@@ -244,6 +336,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
       return { disabled: true, reason: t('settings.status.visionmod_required') };
     }
 
+    // 4. Retro terrain: foliage not available
+    if (key === 'foliage' && modSettings.terrain === 'retro') {
+      return { disabled: true, reason: t('settings.foliage.retro.disabled') };
+    }
+
+    return { disabled: false, reason: null };
+  };
+
+  const getModResourceStatus = () => {
+    if (!isFullPackageInstalled) {
+      return { disabled: true, reason: t('main.status.full_not_installed') };
+    }
+    if (isClassicMode) {
+      return { disabled: true, reason: t('settings.basic.classicMode.disabled') };
+    }
     return { disabled: false, reason: null };
   };
 
@@ -312,10 +419,42 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
           <Col span={12}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.glow.title')}</h3>
             <Space>
-              {renderSettingButton(t('settings.btn.turnon'), modSettings.glow, true, () => handleSettingChange('glow', true), () => setPreviewInfo({ title: t('settings.glow.title'), desc: t('settings.glow.on.desc'), image: './assets/quenching/ui4.png' }), sGlow.disabled)}
-              {renderSettingButton(t('settings.btn.turnoff'), modSettings.glow, false, () => handleSettingChange('glow', false), () => setPreviewInfo({ title: t('settings.glow.title'), desc: t('settings.glow.off.desc'), image: './assets/quenching/ui4.png' }), sGlow.disabled)}
+              {renderSettingButton(t('settings.glow.strong'), modSettings.glow, false, () => handleSettingChange('glow', false), () => setPreviewInfo({ title: t('settings.glow.title'), desc: t('settings.glow.strong.desc'), image: './assets/quenching/ui4.png' }), sGlow.disabled)}
+              {renderSettingButton(t('settings.glow.weak'), modSettings.glow, true, () => handleSettingChange('glow', true), () => setPreviewInfo({ title: t('settings.glow.title'), desc: t('settings.glow.weak.desc'), image: './assets/quenching/ui4.png' }), sGlow.disabled)}
             </Space>
             {renderStatusPlaceholder(sGlow.reason)}
+          </Col>
+          <Col span={12}>
+            <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.antiharmony.title')}</h3>
+            <Space>
+              {renderSettingButton(
+                t('settings.btn.turnon'),
+                antiHarmonyEnabled,
+                true,
+                () => handleAntiHarmonyChange(true),
+                () =>
+                  setPreviewInfo({
+                    title: t('settings.antiharmony.title'),
+                    desc: t('settings.antiharmony.on.desc'),
+                    image: './assets/quenching/set7.png',
+                  }),
+                isClassicMode || antiHarmonyBusy
+              )}
+              {renderSettingButton(
+                t('settings.btn.turnoff'),
+                antiHarmonyEnabled,
+                false,
+                () => handleAntiHarmonyChange(false),
+                () =>
+                  setPreviewInfo({
+                    title: t('settings.antiharmony.title'),
+                    desc: t('settings.antiharmony.off.desc'),
+                    image: './assets/quenching/set7.png',
+                  }),
+                isClassicMode || antiHarmonyBusy
+              )}
+            </Space>
+            {renderStatusPlaceholder(isClassicMode ? t('settings.basic.classicMode.disabled') : null)}
           </Col>
           <Col span={12}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.half.title')}</h3>
@@ -349,6 +488,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
   const renderGameSettings = () => {
     const sTerrain = getSettingStatus('terrain');
     const sTree = getSettingStatus('tree');
+    const sTerrainMod = getModResourceStatus();
+    const sTreeMod = getModResourceStatus();
     const sLighting = getSettingStatus('lighting');
     const sLightingBrightness = getSettingStatus('lightingBrightness');
     const sUi = getSettingStatus('ui'); // not used yet but good to have
@@ -409,24 +550,24 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.terrain.style')}</h3>
             <Space wrap>
               {renderSettingButton(t('settings.terrain.original'), modSettings.terrain, 'original', () => handleSettingChange('terrain', 'original'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.original'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.tree.height.16'), modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.tree.height.18'), modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.tree.height.16'), modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.tree.height.18'), modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
             </Space>
-            {renderStatusPlaceholder(sTerrain.reason)}
+            {renderStatusPlaceholder(sTerrainMod.reason || sTerrain.reason)}
           </Col>
           <Col span={24}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.tree.style')}</h3>
             <Space wrap>
               {renderSettingButton(t('settings.tree.original'), modSettings.tree, 'original', () => handleSettingChange('tree', 'original'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.original'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.tree.tall'), modSettings.tree, 'tall', () => handleSettingChange('tree', 'tall'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.tall'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.tree.short'), modSettings.tree, 'short', () => handleSettingChange('tree', 'short'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.short'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.tree.height.18'), modSettings.tree, 'v18', () => handleSettingChange('tree', 'v18'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.tree.height.16'), modSettings.tree, 'v16', () => handleSettingChange('tree', 'v16'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set2.png' }), sTree.disabled)}
-              {renderSettingButton(t('settings.terrain.retro'), modSettings.tree, 'retro', () => handleSettingChange('tree', 'retro'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set2.png' }), sTree.disabled)}
+              {renderSettingButton(t('settings.tree.tall'), modSettings.tree, 'tall', () => handleSettingChange('tree', 'tall'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.tall'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
+              {renderSettingButton(t('settings.tree.short'), modSettings.tree, 'short', () => handleSettingChange('tree', 'short'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.short'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
+              {renderSettingButton(t('settings.tree.height.18'), modSettings.tree, 'v18', () => handleSettingChange('tree', 'v18'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
+              {renderSettingButton(t('settings.tree.height.16'), modSettings.tree, 'v16', () => handleSettingChange('tree', 'v16'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
+              {renderSettingButton(t('settings.terrain.retro'), modSettings.tree, 'retro', () => handleSettingChange('tree', 'retro'), () => setPreviewInfo({ title: t('settings.tree.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set2.png' }), sTreeMod.disabled || sTree.disabled)}
             </Space>
-            {renderStatusPlaceholder(sTree.reason)}
+            {renderStatusPlaceholder(sTreeMod.reason || sTree.reason)}
           </Col>
           <Col span={24}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.lighting')}</h3>
@@ -462,7 +603,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
   };
 
   const renderBasicSettings = () => {
-    const sLegacyShaders = getSettingStatus('useLegacyWar3Shaders');
     const sIntelAmdShaderFix = getSettingStatus('useIntelAmdShaderFix');
 
     return (
@@ -502,11 +642,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
           <h3 style={BASIC_SETTINGS_TITLE}>{t('settings.basic.legacyShaders.title')}</h3>
           <Space direction="vertical" size={6} style={{ width: '100%' }}>
             <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.legacyShaders.desc')}</div>
-            <Space size={6}>
-              {renderSettingButton(t('settings.btn.turnon'), modSettings.useLegacyWar3Shaders, true, () => handleSettingChange('useLegacyWar3Shaders', true), undefined, sLegacyShaders.disabled)}
-              {renderSettingButton(t('settings.btn.turnoff'), modSettings.useLegacyWar3Shaders, false, () => handleSettingChange('useLegacyWar3Shaders', false), undefined, sLegacyShaders.disabled)}
-            </Space>
-            {renderStatusPlaceholder(sLegacyShaders.reason)}
+            <div style={{ ...BASIC_SETTINGS_DESC, color: '#bbb' }}>
+              {war3VersionLabel}
+            </div>
+            {renderStatusPlaceholder(null)}
           </Space>
         </div>
 
@@ -527,7 +666,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
           <Space direction="vertical" size={6} style={{ width: '100%' }}>
             <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.resetRendering.desc')}</div>
             <Button
-              size="small"
               disabled={isClassicMode}
               onClick={() => { playSmall(); handleResetRendering(); }}
               onMouseEnter={() => playHover()}
@@ -548,7 +686,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.deleteMod.desc')}</div>
             <Button
               danger
-              size="small"
               disabled={isClassicMode}
               onClick={() => { playSmall(); handleDeleteMod(); }}
               onMouseEnter={() => playHover()}

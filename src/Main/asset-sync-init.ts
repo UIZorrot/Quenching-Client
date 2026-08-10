@@ -3,7 +3,8 @@ import { configManager } from './services/config-manager';
 import { AssetSyncService } from './services/asset-sync';
 import { cleanupShadersOnStartup } from './ipc/shader-handlers';
 import { cleanupScriptsOnStartup } from './ipc/script-handlers';
-import { cleanupFoliageOnStartup } from './ipc/foliage-handlers';
+import { syncFoliageOnStartup } from './ipc/foliage-handlers';
+import { syncBlightOnStartup } from './services/blight-service';
 
 console.log('[AssetSync Init] Module loaded');
 
@@ -24,7 +25,8 @@ app.whenReady().then(async () => {
             if (modSettings) {
                 await cleanupShadersOnStartup(war3Path, modSettings);
                 await cleanupScriptsOnStartup(war3Path, modSettings);
-                await cleanupFoliageOnStartup(war3Path, modSettings);
+                await syncFoliageOnStartup(war3Path, modSettings);
+                await syncBlightOnStartup(war3Path, modSettings);
             }
         } else {
             console.warn('[AssetSync Init] War3Path not configured. Skipping asset synchronization.');

@@ -1,14 +1,8 @@
-import { ipcMain, app } from 'electron';
+import { ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs-extra';
 import yauzl from 'yauzl';
-
-async function getAssetsDir(): Promise<string> {
-    if (process.env.NODE_ENV === 'development') {
-        return path.join(app.getAppPath(), 'assets');
-    }
-    return path.join(process.resourcesPath, 'assets');
-}
+import { AssetSyncService } from '../services/asset-sync';
 
 /**
  * 通用解压函数
@@ -74,7 +68,7 @@ export function registerScriptHandlers() {
 
             if (enabled) {
                 console.log('[Script] Enabling envRender... Extracting from zip-scripts.zip');
-                const assetsDir = await getAssetsDir();
+                const assetsDir = await AssetSyncService.getAssetsDir();
                 const zipPath = path.join(assetsDir, 'quenching', 'zip-scripts.zip');
 
                 if (!(await fs.pathExists(zipPath))) {
@@ -108,7 +102,8 @@ export function registerScriptHandlers() {
  * 启动时根据设置清理环境渲染脚本
  */
 export async function cleanupScriptsOnStartup(war3Path: string, modSettings: any) {
-    if (modSettings.envRender === false) {
+    // 默认关闭：未显式开启时清掉本地 scripts，避免旧默认开启残留
+    if (modSettings.envRender !== true) {
         console.log('[Script] Cleaning up environment rendering scripts on startup');
         const retailPath = path.join(war3Path, '_retail_');
         const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;

@@ -18,6 +18,7 @@ import { registerFoliageHandlers } from '../ipc/foliage-handlers';
 import { registerShaderHandlers } from '../ipc/shader-handlers';
 import { registerScriptHandlers } from '../ipc/script-handlers';
 import { registerGlowHandlers } from '../ipc/glow-handlers';
+import { registerAntiHarmonyHandlers } from '../ipc/anti-harmony-handlers';
 import { registerVisionHandlers } from '../ipc/vision-handlers';
 import { registerModManagementHandlers } from '../ipc/mod-management-handlers';
 import { registerClassicSkinHandlers } from '../ipc/classic-skin-handlers';
@@ -45,6 +46,7 @@ export function registerAllAPIs() {
   registerShaderHandlers();
   registerScriptHandlers();
   registerGlowHandlers();
+  registerAntiHarmonyHandlers();
   registerVisionHandlers();
   registerModManagementHandlers();
   registerClassicSkinHandlers();

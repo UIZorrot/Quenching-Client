@@ -85,18 +85,54 @@ interface ElectronAPI {
   getConfig: (key: string) => Promise<any>;
   setConfig: (key: string, value: any) => Promise<void>;
   applyTheme: (themeId: string) => Promise<boolean>;
-  updateMdlLighting: (war3Path: string, lightingMode: string, lightingBrightness?: number) => Promise<boolean>;
+  updateMdlLighting: (
+    war3Path: string,
+    lightingMode: string,
+    lightingBrightness?: number,
+    previousLightingMode?: string,
+    previousLightingBrightness?: number
+  ) => Promise<boolean>;
   updateUISettings: (war3Path: string, uiMode: string) => Promise<boolean>;
-  updateTerrainSettings: (war3Path: string, terrainMode: string, waterMode?: string) => Promise<boolean>;
+  updateTerrainSettings: (war3Path: string, terrainMode: string, waterMode?: string, previousTerrainMode?: string) => Promise<boolean>;
   updateTreeSettings: (war3Path: string, treeMode: string) => Promise<boolean>;
   updateWaterSettings: (war3Path: string, waterMode: string) => Promise<boolean>;
-  updateFoliageSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
+  updateFoliageSettings: (war3Path: string, enabled: boolean, terrainMode?: string) => Promise<boolean>;
   updateObjectShader: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updatePostProcessing: (war3Path: string, enabled: boolean) => Promise<boolean>;
-  updateLegacyWar3Shader: (war3Path: string, enabled: boolean) => Promise<boolean>;
+  /** @deprecated Always auto-syncs from War3 version; `enabled` ignored. */
+  updateLegacyWar3Shader: (war3Path: string, enabled?: boolean) => Promise<boolean>;
+  syncVersionedShaders: (war3Path?: string) => Promise<{
+    success: boolean;
+    zipName?: string;
+    version?: {
+      version: string;
+      parts: number[];
+      source: string;
+      useLegacyShaders: boolean;
+      usePre200Shaders: boolean;
+      shaderZip: string;
+    };
+  }>;
+  detectWar3Version: (war3Path?: string) => Promise<{
+    version: string;
+    parts: number[];
+    source: string;
+    useLegacyShaders: boolean;
+    usePre200Shaders: boolean;
+    shaderZip: string;
+  }>;
   updateIntelAmdShaderFix: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateEnvRenderSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateGlowSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
+  getAntiHarmonyStatus: (war3Path?: string) => Promise<boolean>;
+  setAntiHarmonyEnabled: (
+    war3Path: string | undefined,
+    enabled: boolean
+  ) => Promise<{ success: boolean; enabled: boolean }>;
+  installAntiHarmony: (war3Path?: string) => Promise<{
+    success: boolean;
+    enabled?: boolean;
+  }>;
   updateHalfPortrait: (war3Path: string, visionModPath: string, enabled: boolean) => Promise<boolean>;
   updateModelEnhance: (war3Path: string, visionModPath: string, enabled: boolean) => Promise<boolean>;
 
@@ -128,7 +164,22 @@ interface ElectronAPI {
   applySkin: (unitId: string, changes: any[]) => Promise<boolean>;
   applyBatchSkin: (batchChanges: any[]) => Promise<boolean>;
   disableSkins: () => Promise<boolean>;
+  enableSkins: () => Promise<boolean>;
   isSkinEnabled: () => Promise<boolean>;
+  getRetroSkinStatus: () => Promise<{
+    unitsEnabled: boolean;
+    buildingsEnabled: boolean;
+    unitsDirName: string | null;
+    buildingsDirName: string | null;
+    unitskinExists: boolean;
+  }>;
+  applyRetroSkin: (options: { unitsEnabled?: boolean; buildingsEnabled?: boolean }) => Promise<{
+    unitsEnabled: boolean;
+    buildingsEnabled: boolean;
+    unitsDirName: string | null;
+    buildingsDirName: string | null;
+    unitskinExists: boolean;
+  }>;
   selectModelFile: () => Promise<string | null>;
   selectFile: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => Promise<string | null>;
   selectDirectory: (title?: string) => Promise<string | null>;

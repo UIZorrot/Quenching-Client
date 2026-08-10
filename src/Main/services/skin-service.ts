@@ -1,7 +1,8 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { app } from 'electron';
 import { configManager } from './config-manager';
+import { AssetSyncService } from './asset-sync';
+import { assertFullPackageInstalled } from './full-package-service';
 
 export interface SkinChange {
   field: string;
@@ -12,35 +13,17 @@ export interface UnitSkinChange extends SkinChange {
   unitId: string;
 }
 
-export class SkinService {
-  /**
-   * 获取 assets 目录路径
-   */
-  private async getAssetsDir(): Promise<string> {
-    const appPath = app.getAppPath();
-    let assetsDir = '';
-
-    if (process.env.NODE_ENV === 'development') {
-      const possiblePaths = [
-        path.join(process.cwd(), 'assets'),
-        path.join(process.cwd(), 'projects', 'QuenChing-Mod-Client', 'assets'),
-        path.join(appPath, 'assets'),
-        path.join(appPath, 'projects', 'QuenChing-Mod-Client', 'assets')
-      ];
-
-      for (const p of possiblePaths) {
-        if (await fs.pathExists(p)) {
-          assetsDir = p;
-          break;
-        }
-      }
-    } else {
-      assetsDir = path.join(path.dirname(appPath), 'assets');
+export function usesFullPackageSkinResource(changes: SkinChange[]): boolean {
+  return changes.some((change) => {
+    if (change.field !== 'file' && !change.field.startsWith('file:')) {
+      return false;
     }
 
-    return assetsDir;
-  }
-
+    const normalized = change.value.replace(/\\/g, '/').toLowerCase();
+    return normalized === 'cos' || normalized.startsWith('cos/');
+  });
+}
+export class SkinService {
   /**
    * 获取游戏 units 目录
    */
@@ -117,7 +100,7 @@ export class SkinService {
     if (!exists || forceRefresh) {
       await fs.ensureDir(unitsDir);
 
-      const assetsDir = await this.getAssetsDir();
+      const assetsDir = await AssetSyncService.getAssetsDir();
       if (!assetsDir) throw new Error('Assets directory not found');
 
       const sourceFile = path.join(assetsDir, 'quenching', 'unitskin-new.txt');
@@ -143,6 +126,10 @@ export class SkinService {
     }
 
     // 自动检测并初始化 unitskin.txt（若已关闭则先恢复）
+    if (batchChanges.some((batch) => usesFullPackageSkinResource(batch.changes))) {
+      await assertFullPackageInstalled(war3Path);
+    }
+
     await this.enableSkins();
 
     const dirs = await this.getUnitsDir();

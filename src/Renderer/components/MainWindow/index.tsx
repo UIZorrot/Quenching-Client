@@ -144,7 +144,8 @@ export const MainWindow: React.FC = () => {
 
   const refreshFullPackageStatus = async (explicitPath?: string) => {
     const api = window.electronAPI;
-    if (!api || !api.pathExists || !api.readDirectory) {
+    if (!api?.getFullPackageStatus) {
+      setIsFullPackageInstalled(false);
       return;
     }
 
@@ -163,42 +164,10 @@ export const MainWindow: React.FC = () => {
       return;
     }
 
-    const normalizedPath = war3Path.replace(/\\/g, '/');
-    let basePath = normalizedPath;
-
-    if (/\.exe$/i.test(normalizedPath)) {
-      const lastSlash = normalizedPath.lastIndexOf('/');
-      basePath = lastSlash > 0 ? normalizedPath.slice(0, lastSlash) : normalizedPath;
-    }
-
     try {
-      const patchDir = `${basePath}/_retail_/patch`;
-      const qmoffPatchDir = `${basePath}/_retail_/QMoff/patch`;
-
-      const checkDirForKeep = async (dir: string) => {
-        const exists = await api.pathExists(dir);
-        if (!exists) {
-          return false;
-        }
-        const items = await api.readDirectory(dir);
-        return items.some((item: any) =>
-          typeof item.name === 'string' && item.name.toLowerCase() === 'keep.que'
-        );
-      };
-
-      const hasKeepInPatch = await checkDirForKeep(patchDir);
-      const hasKeepInQmoff = await checkDirForKeep(qmoffPatchDir);
-
-      if (hasKeepInPatch || hasKeepInQmoff) {
-        setIsFullPackageInstalled(true);
-        return;
-      }
-
-      const patchExists = (await api.pathExists(patchDir)) && (await api.readDirectory(patchDir)).length > 0;
-      const qmoffPatchExists = (await api.pathExists(qmoffPatchDir)) && (await api.readDirectory(qmoffPatchDir)).length > 0;
-
-      setIsFullPackageInstalled(patchExists || qmoffPatchExists);
-    } catch (error) {
+      const installed = await api.getFullPackageStatus(war3Path);
+      setIsFullPackageInstalled(!!installed);
+    } catch {
       setIsFullPackageInstalled(false);
     }
   };
@@ -498,7 +467,10 @@ export const MainWindow: React.FC = () => {
         } else {
           message.success(t('msg.install.success'));
         }
-        setIsFullPackageInstalled(true);
+        await refreshFullPackageStatus();
+      } else if (result && result.error === 'incompletePackage') {
+        await refreshFullPackageStatus();
+        message.error(t('main.status.full_not_installed'));
       } else if (result && result.error === 'noWar3Path') {
         message.error(t('msg.install.no_path'));
       } else if (result && result.error === 'noZip') {

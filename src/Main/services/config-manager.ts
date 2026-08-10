@@ -9,6 +9,8 @@ interface AppConfig {
     terrainMode: 'classic' | 'hd' | 'custom';
     lightMode: number; // 0-10
     modSettings: any;
+    retroSkinUnits: boolean;
+    retroSkinBuildings: boolean;
     customThemes?: any[];
 }
 
@@ -43,6 +45,14 @@ const schema = {
         type: 'object',
         default: {},
         additionalProperties: true
+    },
+    retroSkinUnits: {
+        type: 'boolean',
+        default: false
+    },
+    retroSkinBuildings: {
+        type: 'boolean',
+        default: false
     },
     customThemes: {
         type: 'array',

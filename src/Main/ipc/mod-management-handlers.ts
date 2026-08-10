@@ -64,7 +64,7 @@ export function registerModManagementHandlers() {
             glow: true,
             terrain: 'latest',
             tree: 'tall',
-            envRender: true,
+            envRender: false,
             modelEnhance: false,
             useLegacyWar3Shaders: false,
             useIntelAmdShaderFix: false,

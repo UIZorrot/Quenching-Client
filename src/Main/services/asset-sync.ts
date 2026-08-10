@@ -3,15 +3,38 @@ import path from 'path';
 import yauzl from 'yauzl';
 import { app } from 'electron';
 import { configManager } from './config-manager';
+import { isFullPackageFolderPresent, isFullPackageInstalled, removeTerrainSlkIfFullPackageMissing, resolveRetailDir } from './full-package-service';
+import {
+  isShaderPackCurrent,
+  normalizeShaderExtractLayout,
+  resolveShaderZipName,
+  writeShaderPackMarker,
+  SHADER_ZIP_PRE200,
+  SHADER_ZIP_LEGACY,
+  SHADER_ZIP_MODERN,
+} from './war3-version';
 import crypto from 'crypto';
 
 // 文件指纹配置：用于验证资源版本
 const ASSET_FINGERPRINTS: Record<string, { file: string; expectedHash: string }> = {
-  'zip-shaders.zip': {
+  [SHADER_ZIP_MODERN]: {
     file: 'ps/hd.bls',
     expectedHash: '' // 留空，首次运行时计算
   },
-  'zip-environment.zip': {
+  [SHADER_ZIP_LEGACY]: {
+    file: 'ps/hd.bls',
+    expectedHash: ''
+  },
+  [SHADER_ZIP_PRE200]: {
+    file: 'ps/hd.bls',
+    expectedHash: ''
+  },
+  // Legacy key kept so old installs still verify until re-synced
+  'zip-shaders.zip': {
+    file: 'ps/hd.bls',
+    expectedHash: ''
+  },
+  'zip-env.zip': {
     file: 'dnc/dnclordaeron/dnclordaeronterrain/dnclordaeronterrain.mdl',
     expectedHash: ''
   },
@@ -20,6 +43,15 @@ const ASSET_FINGERPRINTS: Record<string, { file: string; expectedHash: string }>
     expectedHash: ''
   }
 };
+
+function isShaderZipName(name: string): boolean {
+  return (
+    name === SHADER_ZIP_MODERN ||
+    name === SHADER_ZIP_LEGACY ||
+    name === SHADER_ZIP_PRE200 ||
+    name === 'zip-shaders.zip'
+  );
+}
 
 const CLASSIC_PARKED_DIRS = [
   'environment',
@@ -229,9 +261,81 @@ export class AssetSyncService {
     }
   }
 
+  /**
+   * Restore the baseline tree table when an incomplete package leaves a
+   * previously generated dXX override active. Custom files without Quenching
+   * resource references are left untouched.
+   */
+  private static async restoreTreeOverrideIfFullPackageMissing(war3Path: string): Promise<boolean> {
+    if (await isFullPackageInstalled(war3Path)) {
+      return false;
+    }
+
+    const baseDir = await resolveRetailDir(war3Path);
+    const targetPath = path.join(baseDir, 'units', 'destructableskin.txt');
+    if (!(await fs.pathExists(targetPath))) {
+      return false;
+    }
+
+    const content = await fs.readFile(targetPath, 'utf-8');
+    const hasQuenchingResourceReferences = /(?:doodads[\\/]+que[\\/]+d(?:00|16|18|20)[\\/]|replaceabletextures[\\/]+tree[\\/]+t(?:00|16|18|20)[\\/])/i.test(content);
+    if (!hasQuenchingResourceReferences) {
+      return false;
+    }
+
+    const assetsDir = await this.getAssetsDir();
+    const baselinePath = path.join(assetsDir, 'quenching', 'destructableskin-org.txt');
+    if (await fs.pathExists(baselinePath)) {
+      await fs.copy(baselinePath, targetPath, { overwrite: true });
+      console.warn(`[FullPackage] Restored baseline tree override: ${targetPath}`);
+    } else {
+      await fs.remove(targetPath);
+      console.warn(`[FullPackage] Removed unsafe tree override: ${targetPath}`);
+    }
+
+    return true;
+  }
+  /** Restore a generated retro unitskin when its external model folders are incomplete. */
+  private static async restoreRetroSkinOverrideIfFullPackageMissing(war3Path: string): Promise<boolean> {
+    const baseDir = await resolveRetailDir(war3Path);
+    const targetPath = path.join(baseDir, 'units', 'unitskin.txt');
+    if (!(await fs.pathExists(targetPath))) {
+      return false;
+    }
+
+    const content = await fs.readFile(targetPath, 'utf-8');
+    const usesRetroUnits = /(?:^|[=:])\s*RUnits[\\/]/im.test(content) || /(?:^|[=:])\s*Runits[\\/]/im.test(content);
+    const usesRetroBuildings = /(?:^|[=:])\s*Rbuildings[\\/]/im.test(content);
+    const unitsMissing = usesRetroUnits && !(await isFullPackageFolderPresent(war3Path, 'RUnits'));
+    const buildingsMissing = usesRetroBuildings && !(await isFullPackageFolderPresent(war3Path, 'Rbuildings'));
+    if (!unitsMissing && !buildingsMissing) {
+      return false;
+    }
+
+    const assetsDir = await this.getAssetsDir();
+    const baselinePath = path.join(assetsDir, 'quenching', 'unitskin-new.txt');
+    if (await fs.pathExists(baselinePath)) {
+      await fs.copy(baselinePath, targetPath, { overwrite: true });
+      console.warn(`[FullPackage] Restored baseline retro skin override: ${targetPath}`);
+    } else {
+      await fs.remove(targetPath);
+      console.warn(`[FullPackage] Removed unsafe retro skin override: ${targetPath}`);
+    }
+
+    configManager.set('retroSkinUnits', false);
+    configManager.set('retroSkinBuildings', false);
+    return true;
+  }
   static async syncAssetsBeforeLaunch(war3Path: string): Promise<void> {
     console.log('\n[AssetSync] ===== syncAssetsBeforeLaunch CALLED =====');
     console.log(`[AssetSync] Target War3 Path: ${war3Path}`);
+
+    // A partial package may have left terrainart/terrain.slk behind. The file
+    // references t00/t16/t18/t20 assets; tree overrides likewise require d00/d16/d18/d20 and must not remain active without the
+    // complete package, otherwise the game can crash during terrain loading.
+    await removeTerrainSlkIfFullPackageMissing(war3Path);
+    await this.restoreTreeOverrideIfFullPackageMissing(war3Path);
+    await this.restoreRetroSkinOverrideIfFullPackageMissing(war3Path);
 
     const modSettings = configManager.get('modSettings');
     const isModEnabled = modSettings?.modEnabled !== false; // default true
@@ -255,21 +359,25 @@ export class AssetSyncService {
     console.log(`[AssetSync] Checking core assets in ${war3Path}`);
     console.log(`[AssetSync] Source directory: ${quenchingDir}`);
 
+    // Shader pack is chosen automatically from detected War3 version (< 2.0.3 → 2.02, else 2.03).
+    // Do not use zip-shaders.zip anymore.
+    const shaderZipName = await resolveShaderZipName(war3Path);
     const coreZips = [
-      'zip-environment.zip',
+      'zip-env.zip',
       'zip-scripts.zip',
-      'zip-shaders.zip'
+      shaderZipName,
     ];
 
     const uiType = modSettings?.ui || 'quenching'; // 默认 quenching
 
     let coreZipsToSync = coreZips;
 
-    if (modSettings?.envRender === false) {
+    // envRender 默认关闭：仅在明确开启时同步 zip-scripts.zip
+    if (modSettings?.envRender !== true) {
       coreZipsToSync = coreZipsToSync.filter(name => name !== 'zip-scripts.zip');
     }
 
-    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, EnvRender: ${modSettings?.envRender !== false})`);
+    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, EnvRender: ${modSettings?.envRender === true}, Shaders: ${shaderZipName})`);
 
     for (const name of coreZipsToSync) {
       const zipPath = path.join(quenchingDir, name);
@@ -280,18 +388,18 @@ export class AssetSyncService {
 
       let targetDir = '';
       let qmoffDir = '';
-      if (name === 'zip-environment.zip') {
+      if (name === 'zip-env.zip') {
         targetDir = path.join(war3Path, '_retail_', 'environment');
         qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'environment');
       } else if (name === 'zip-scripts.zip') {
         targetDir = path.join(war3Path, '_retail_', 'scripts');
         qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'scripts');
-      } else if (name === 'zip-shaders.zip') {
+      } else if (isShaderZipName(name)) {
         targetDir = path.join(war3Path, '_retail_', 'shaders');
         qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'shaders');
       }
 
-      if (isClassicMode && (name === 'zip-environment.zip' || name === 'zip-shaders.zip')) {
+      if (isClassicMode && (name === 'zip-env.zip' || isShaderZipName(name))) {
         const activeExists = targetDir && await fs.pathExists(targetDir);
         const backupHasContent = qmoffDir && await this.hasDirectoryContent(qmoffDir);
 
@@ -322,11 +430,15 @@ export class AssetSyncService {
 
         console.log(`[AssetSync] Classic mode: missing QMoff asset for ${name}, extracting backup to ${qmoffDir}...`);
         await this.extractZip(zipPath, qmoffDir);
+        if (isShaderZipName(name)) {
+          await normalizeShaderExtractLayout(qmoffDir);
+          await writeShaderPackMarker(qmoffDir, name);
+        }
 
-        if (name === 'zip-environment.zip' && modSettings?.foliage === false) {
+        if (name === 'zip-env.zip') {
           const foliageDir = path.join(qmoffDir, 'foliage');
           if (await fs.pathExists(foliageDir)) {
-            console.log(`[AssetSync] Classic mode: foliage=false, removing foliage from backup: ${foliageDir}`);
+            console.log(`[AssetSync] Classic mode: removing bundled foliage from zip-env backup: ${foliageDir}`);
             await fs.remove(foliageDir);
           }
         }
@@ -339,6 +451,16 @@ export class AssetSyncService {
         if (!(await fs.pathExists(targetDir))) return false;
         const files = await fs.readdir(targetDir);
         if (files.length === 0) return false;
+
+        // Shader pack must match detected War3 version (not just "folder exists").
+        if (isShaderZipName(name)) {
+          const packOk = await isShaderPackCurrent(targetDir, name);
+          if (!packOk) {
+            console.log(`[AssetSync] Shader pack mismatch in ${targetDir}, will re-extract ${name}`);
+            await fs.remove(targetDir);
+            return false;
+          }
+        }
 
         // 验证文件指纹
         const isValid = await this.verifyAssetFingerprint(name, targetDir);
@@ -355,6 +477,15 @@ export class AssetSyncService {
         if (!(await fs.pathExists(qmoffDir))) return false;
         const files = await fs.readdir(qmoffDir);
         if (files.length === 0) return false;
+
+        if (isShaderZipName(name)) {
+          const packOk = await isShaderPackCurrent(qmoffDir, name);
+          if (!packOk) {
+            console.log(`[AssetSync] Shader pack mismatch in ${qmoffDir}, will re-extract ${name}`);
+            await fs.remove(qmoffDir);
+            return false;
+          }
+        }
 
         // 验证备份文件夹的指纹
         const isValid = await this.verifyAssetFingerprint(name, qmoffDir);
@@ -373,18 +504,17 @@ export class AssetSyncService {
 
       console.log(`[AssetSync] Missing core assets for ${name}, extracting to ${targetDir}...`);
       await this.extractZip(zipPath, targetDir);
+      if (isShaderZipName(name)) {
+        await normalizeShaderExtractLayout(targetDir);
+        await writeShaderPackMarker(targetDir, name);
+      }
 
-      // 【修复】zip-environment.zip 解压后，需要检查用户的植被配置
-      // 如果用户关闭了植被（foliage=false），这里要将解压出来的 foliage 目录删除
-      // 避免类如“关闭植被后重启又显示开启”的状态不一致问题
-      if (name === 'zip-environment.zip') {
-        const foliageEnabled = modSettings?.foliage !== false; // default true
-        if (!foliageEnabled) {
-          const foliageDir = path.join(targetDir, 'foliage');
-          if (await fs.pathExists(foliageDir)) {
-            console.log(`[AssetSync] foliage=false in config, removing foliage dir after extraction: ${foliageDir}`);
-            await fs.remove(foliageDir);
-          }
+      // zip-env.zip 不再负责植被；植被由 zip-foliage-*.zip 按地形模式单独安装
+      if (name === 'zip-env.zip') {
+        const foliageDir = path.join(targetDir, 'foliage');
+        if (await fs.pathExists(foliageDir)) {
+          console.log(`[AssetSync] Removing bundled foliage from zip-env extraction: ${foliageDir}`);
+          await fs.remove(foliageDir);
         }
       }
     }

@@ -4,13 +4,12 @@
 
 具体来说这两个部分影响的都是shaders
 
-使用旧版魔兽
-如果你的魔兽版本是v2.03之前的版本，请打开这个按钮
-
-一般来说解压v2.03的shaders(我们不再使用zip-shaders)
-assets\quenching\shaders2.03.zip
-如果打开了，则解压
-assets\quenching\shaders2.02.zip
+使用旧版魔兽 → 【已改为自动】
+根据检测到的魔兽版本自动选择：
+- < v2.0.0 → assets\quenching\shaders1.xx.zip（来自 1.8/shaders/ps.zip）
+- v2.0.0–v2.0.2 → assets\quenching\shaders2.02.zip
+- ≥ v2.0.3 → assets\quenching\shaders2.03.zip
+（不再使用 zip-shaders.zip，也不再提供手动开关）
 
 使用Intel/AMD显卡
 如果你使用的是集成显卡或者非Nividia显卡，请打开这个按钮

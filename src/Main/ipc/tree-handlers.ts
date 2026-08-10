@@ -1,6 +1,8 @@
-import { ipcMain, app } from 'electron';
+import { ipcMain } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
+import { AssetSyncService } from '../services/asset-sync';
+import { assertTreeModeAvailable } from '../services/full-package-service';
 
 /**
  * 魔兽文本文件处理器 (用于处理 destructableskin.txt 等类似 INI 的文件)
@@ -64,13 +66,6 @@ class War3TextHandler {
     }
 }
 
-async function getAssetsDir(): Promise<string> {
-    if (process.env.NODE_ENV === 'development') {
-        return path.join(app.getAppPath(), 'assets');
-    }
-    return path.join(process.resourcesPath, 'assets');
-}
-
 export function registerTreeHandlers() {
     console.log('[Tree] Tree handlers registered and ready.');
     /**
@@ -87,7 +82,7 @@ export function registerTreeHandlers() {
             const targetPath = path.join(baseDir, 'units', 'destructableskin.txt');
 
             // 找到基准原版文件
-            const assetsDir = await getAssetsDir();
+            const assetsDir = await AssetSyncService.getAssetsDir();
             const sourcePath = path.join(assetsDir, 'quenching', 'destructableskin-org.txt');
 
             console.log(`[Tree] Using baseline: ${sourcePath}`);
@@ -95,6 +90,10 @@ export function registerTreeHandlers() {
             if (!(await fs.pathExists(sourcePath))) {
                 console.error(`[Tree] Baseline file NOT FOUND: ${sourcePath}`);
                 throw new Error(`基准树木配置文件不存在: ${sourcePath}`);
+            }
+
+            if (treeMode !== 'original') {
+                await assertTreeModeAvailable(war3Path, treeMode);
             }
 
             // 无论切换到什么模式，我们都先从原版读取数据

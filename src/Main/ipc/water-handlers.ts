@@ -1,13 +1,8 @@
-import { ipcMain, app } from 'electron';
+import { ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs-extra';
-
-async function getAssetsDir(): Promise<string> {
-    if (process.env.NODE_ENV === 'development') {
-        return path.join(app.getAppPath(), 'assets');
-    }
-    return path.join(process.resourcesPath, 'assets');
-}
+import { AssetSyncService } from '../services/asset-sync';
+import { assertFullPackageInstalled } from '../services/full-package-service';
 
 export function registerWaterHandlers() {
     console.log('[Water] Water handlers registered.');
@@ -16,6 +11,8 @@ export function registerWaterHandlers() {
         console.log(`\n>>> [Water] Updating water to mode: ${waterMode}`);
         try {
             if (!war3Path) throw new Error('未提供魔兽路径');
+
+            await assertFullPackageInstalled(war3Path);
 
             const retailPath = path.join(war3Path, '_retail_');
             const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
@@ -31,7 +28,7 @@ export function registerWaterHandlers() {
             const shoreline1Src = path.join(baseDir, 'textures', 'fx', 'shoreline1.dds');
             const shoreline2Src = path.join(baseDir, 'textures', 'fx', 'shorelineparticlexy.dds');
 
-            const assetsDir = await getAssetsDir();
+            const assetsDir = await AssetSyncService.getAssetsDir();
             const waterTransSlkSrc = path.join(assetsDir, 'quenching', 'water-trans.slk');
             const waterRelSlkSrc = path.join(assetsDir, 'quenching', 'water-rel.slk');
 

@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
+import { assertFullPackageInstalled } from '../services/full-package-service';
 
 /**
  * Classic Mode Skin Handler
@@ -83,6 +84,10 @@ export function registerClassicSkinHandlers() {
      */
     ipcMain.handle('classic-skin:apply', async (event, war3Path: string, change: ClassicSkinChange) => {
         console.log('[ClassicSkin] Applying skin:', change);
+
+        if (change.skinData.file?.replace(/\\/g, '/').toLowerCase().startsWith('cos/')) {
+            await assertFullPackageInstalled(war3Path);
+        }
 
         const unitskinPath = path.join(war3Path, '_retail_', 'units', 'unitskin.txt');
 
