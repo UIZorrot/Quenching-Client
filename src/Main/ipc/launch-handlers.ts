@@ -39,6 +39,15 @@ export function registerLaunchHandlers() {
         }
     });
 
+    ipcMain.handle('campaign:unlock', async () => {
+        try {
+            return await GameLauncher.unlockCampaign();
+        } catch (e: any) {
+            console.error(e);
+            throw e;
+        }
+    });
+
     ipcMain.handle('campaign:extract-w3n', async (event, w3nPath: string) => {
         try {
             if (!w3nPath) {

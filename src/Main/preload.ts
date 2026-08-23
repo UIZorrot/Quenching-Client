@@ -15,6 +15,7 @@ const electronAPI: ElectronAPI = {
   // 游戏启动
   launchGame: (executablePath?: string) => ipcRenderer.invoke('game:launch', executablePath),
   launchMap: (mapPath: string, difficulty: number) => ipcRenderer.invoke('game:launch-map', mapPath, difficulty),
+  unlockCampaign: () => ipcRenderer.invoke('campaign:unlock'),
   extractCampaignW3n: (w3nPath: string) => ipcRenderer.invoke('campaign:extract-w3n', w3nPath),
   listInstalledCampaigns: () => ipcRenderer.invoke('campaign:list-installed'),
   selectGamePath: () => ipcRenderer.invoke('game:select-path'),

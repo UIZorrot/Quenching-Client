@@ -47,6 +47,10 @@ const translations = {
     'campaign.list.mapsCount': '共 {{count}} 张地图',
     'campaign.error.noWar3Path': '请先配置魔兽安装路径。',
     'campaign.error.extract': '解包失败',
+    'campaign.unlock.title': '战役解锁',
+    'campaign.unlock.desc': '启动内置解锁地图，写入战役进度以解锁官方战役。',
+    'campaign.unlock.btn': '战役解锁',
+    'campaign.unlock.success': '已启动战役解锁地图',
     'main.btn.disclaimer': '免责声明',
 
     // 设置界面
@@ -647,6 +651,10 @@ const translations = {
     'campaign.list.mapsCount': '{{count}} map(s)',
     'campaign.error.noWar3Path': 'Configure Warcraft III path first.',
     'campaign.error.extract': 'Extract failed',
+    'campaign.unlock.title': 'Campaign Unlock',
+    'campaign.unlock.desc': 'Launch the built-in unlock map to write campaign progress and unlock official campaigns.',
+    'campaign.unlock.btn': 'Unlock Campaign',
+    'campaign.unlock.success': 'Campaign unlock map launched',
     'main.btn.disclaimer': 'Disclaimer',
 
     // Settings
@@ -1234,6 +1242,10 @@ const translations = {
     'campaign.list.mapsCount': '{{count}} carte(s)',
     'campaign.error.noWar3Path': 'Configurez le chemin Warcraft III.',
     'campaign.error.extract': 'Échec de l’extraction',
+    'campaign.unlock.title': 'Déblocage campagne',
+    'campaign.unlock.desc': 'Lance la carte intégrée pour écrire la progression et débloquer les campagnes officielles.',
+    'campaign.unlock.btn': 'Débloquer la campagne',
+    'campaign.unlock.success': 'Carte de déblocage lancée',
     'main.btn.disclaimer': 'Avis de non-responsabilité',
 
     // Paramètres
@@ -1755,6 +1767,10 @@ const translations = {
     'campaign.list.mapsCount': '{{count}} mapa(s)',
     'campaign.error.noWar3Path': 'Configure o caminho do Warcraft III.',
     'campaign.error.extract': 'Falha ao extrair',
+    'campaign.unlock.title': 'Desbloquear campanha',
+    'campaign.unlock.desc': 'Inicia o mapa embutido para gravar o progresso e desbloquear as campanhas oficiais.',
+    'campaign.unlock.btn': 'Desbloquear campanha',
+    'campaign.unlock.success': 'Mapa de desbloqueio iniciado',
     'main.btn.disclaimer': 'Aviso Legal',
 
     // Configurações
@@ -2276,6 +2292,10 @@ const translations = {
     'campaign.list.mapsCount': 'Карт: {{count}}',
     'campaign.error.noWar3Path': 'Укажите путь к Warcraft III.',
     'campaign.error.extract': 'Ошибка распаковки',
+    'campaign.unlock.title': 'Разблокировка кампании',
+    'campaign.unlock.desc': 'Запускает встроенную карту, чтобы записать прогресс и разблокировать официальные кампании.',
+    'campaign.unlock.btn': 'Разблокировать кампанию',
+    'campaign.unlock.success': 'Карта разблокировки запущена',
     'main.btn.disclaimer': 'Отказ от ответственности',
 
     // Настройки
@@ -2797,6 +2817,10 @@ const translations = {
     'campaign.list.mapsCount': '{{count}} mapa(s)',
     'campaign.error.noWar3Path': 'Configure la ruta de Warcraft III.',
     'campaign.error.extract': 'Error al extraer',
+    'campaign.unlock.title': 'Desbloquear campaña',
+    'campaign.unlock.desc': 'Inicia el mapa integrado para guardar el progreso y desbloquear las campañas oficiales.',
+    'campaign.unlock.btn': 'Desbloquear campaña',
+    'campaign.unlock.success': 'Mapa de desbloqueo iniciado',
     'main.btn.disclaimer': 'Aviso Legal',
 
     // Ajustes
@@ -3318,6 +3342,10 @@ const translations = {
     'campaign.list.mapsCount': '맵 {{count}}개',
     'campaign.error.noWar3Path': 'Warcraft III 경로를 설정하세요.',
     'campaign.error.extract': '압축 해제 실패',
+    'campaign.unlock.title': '캠페인 해금',
+    'campaign.unlock.desc': '내장 해금 맵을 실행해 진행도를 기록하고 공식 캠페인을 해금합니다.',
+    'campaign.unlock.btn': '캠페인 해금',
+    'campaign.unlock.success': '캠페인 해금 맵을 실행했습니다',
     'main.btn.disclaimer': '면책 조항',
 
     // 설정

@@ -60,6 +60,7 @@ interface ElectronAPI {
   // 游戏启动
   launchGame: (executablePath?: string) => Promise<boolean>;
   launchMap: (mapPath: string, difficulty: number) => Promise<boolean>;
+  unlockCampaign: () => Promise<boolean>;
   extractCampaignW3n: (w3nPath: string) => Promise<{
     success: boolean;
     outputDir: string;

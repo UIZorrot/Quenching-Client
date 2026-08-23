@@ -208,4 +208,91 @@ export class GameLauncher {
             throw e;
         }
     }
+
+    /**
+     * Unlock official campaign progress by launching the built-in cfix.w3x map
+     * (same flow as the legacy client: mapdiff 1 + WorldEdit profile + fixedseed).
+     */
+    static async unlockCampaign(): Promise<boolean> {
+        const isMac = process.platform === 'darwin';
+        const gamePath = configManager.get('war3Path');
+
+        if (!gamePath || !fs.existsSync(gamePath)) {
+            throw new Error("Warcraft III path is not configured or does not exist.");
+        }
+
+        let exePath = '';
+        if (isMac) {
+            const possibleMacExes = [
+                path.join(gamePath, 'Warcraft III.app'),
+                path.join(gamePath, '_retail_', 'Warcraft III.app'),
+            ];
+            for (const p of possibleMacExes) {
+                if (fs.existsSync(p)) {
+                    exePath = p;
+                    break;
+                }
+            }
+        } else {
+            const possibleWinExes = [
+                path.join(gamePath, '_retail_', 'x86_64', 'Warcraft III.exe'),
+                path.join(gamePath, 'x86_64', 'Warcraft III.exe'),
+                path.join(gamePath, 'Warcraft III.exe')
+            ];
+            for (const p of possibleWinExes) {
+                if (fs.existsSync(p)) {
+                    exePath = p;
+                    break;
+                }
+            }
+        }
+
+        if (!exePath || !fs.existsSync(exePath)) {
+            throw new Error(`Could not find Warcraft III executable in: ${gamePath}`);
+        }
+
+        let rootGameDir = gamePath;
+        const assetsDir = await AssetSyncService.getAssetsDir();
+        const sourceMap = path.join(assetsDir, 'quenching', 'cfix.w3x');
+        if (!(await fs.pathExists(sourceMap))) {
+            throw new Error(`Campaign unlock map not found: ${sourceMap}`);
+        }
+
+        const exeDir = path.dirname(exePath);
+        const targetMap = path.join(exeDir, 'cfix.w3x');
+        await fs.copy(sourceMap, targetMap, { overwrite: true });
+
+        await AssetSyncService.syncAssetsBeforeLaunch(rootGameDir);
+        console.log(`Launching campaign unlock map from: ${exePath} -> ${targetMap}`);
+
+        const loadFile = isMac ? targetMap : './cfix.w3x';
+        const args = [
+            '-launch',
+            '-loadfile', loadFile,
+            '-mapdiff', '1',
+            '-testmapprofile', 'WorldEdit',
+            '-fixedseed', '1'
+        ];
+
+        try {
+            if (isMac) {
+                const child = spawn('open', [exePath, '--args', ...args], {
+                    detached: true,
+                    stdio: 'ignore'
+                });
+                child.unref();
+            } else {
+                const child = spawn(exePath, args, {
+                    detached: true,
+                    cwd: exeDir,
+                    stdio: 'ignore'
+                });
+                child.unref();
+            }
+            return true;
+        } catch (e) {
+            console.error("Failed to launch campaign unlock map", e);
+            throw e;
+        }
+    }
 }
