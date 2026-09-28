@@ -13,7 +13,7 @@
 import { matchMonitors } from './getScreensInfo/matchPyScreenWithElectron';
 import { windowOnScreen } from './onMoveScreen';
 import { getTextScaleFactor } from './getWindowsTextScale';
-import { convertActualSizeToScaleSize, getPhysicalScreens, getShortSide, HoFCachedGetPhysicalScreens } from './utils';
+import { getPhysicalScreens } from './utils';
 import { getWindowsDisplayScale } from './getWindowsDisplayScale';
 // 使用相对路径导入，避免模块解析错误
 import { reaxel_MainProcessHub } from '../../reaxels/main-process-hub';
@@ -21,10 +21,10 @@ import type { Display } from 'electron';
 import { app, screen } from 'electron';
 import { mainWindowResolutionPresets } from './resolution-presets';
 
-/*app在4k分辨率下的基础宽高*/
+/*同一套逻辑像素画布。Windows 和 macOS 都按工作区缩放，避免 4K 把按钮裁出窗口。*/
 const baseAppBounds = {
-	width: 1920,
-	height: 1350,
+	width: 1440,
+	height: 900,
 };
 // 移除顶层await，在需要时异步获取
 let windowsTextScale: number = 1; // 默认值
@@ -66,42 +66,18 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 			const targetDisplay = display || screen.getPrimaryDisplay();
 
 
-			// Windows平台下使用固定大小，避免因物理屏幕检测导致的窗口大小异常
-			if (process.platform === 'win32') {
-				const fixedScale = 0.75; // 约 1440x1012
-				return {
-					width: Math.round((options.devtoolsWidth ? (baseAppBounds.width + options.devtoolsWidth) : baseAppBounds.width) * fixedScale),
-					height: Math.round(baseAppBounds.height * fixedScale),
-				};
-			}
-
-			const currentPhysicalScreen = (await HoFCachedGetPhysicalScreens({ store, setState })()).find((itm, index, arr) => {
-				if (arr.length === 1) return true;
-				if (itm.is_primary) {
-					return true;
-				}
-				else {
-					/*需要完善显示器匹配逻辑*/
-					debugger;
-				}
-			});
-			const { shortSide, value } = getShortSide(targetDisplay);
-			let percent = .9;
-
-			//近距离使用大屏幕无缩放的场景
-			if (
-				getWindowsDisplayScale(targetDisplay) < 1.2 &&
-				currentPhysicalScreen.ppi < 103 &&
-				currentPhysicalScreen.width * currentPhysicalScreen.height >= 3840 * 2160 &&
-				(currentPhysicalScreen.width_mm > 950 || currentPhysicalScreen.height_mm > 534)
-			) {
-				percent = .6;
-			}
-
-			return convertActualSizeToScaleSize({
-				width: (options.devtoolsWidth ? (baseAppBounds.width + options.devtoolsWidth) : baseAppBounds.width) * percent,
-				height: baseAppBounds.height * percent,
-			});
+			// Electron 的 workAreaSize 在 Windows 和 macOS 上都是逻辑像素，已包含系统缩放。
+			const work = targetDisplay.workAreaSize;
+			const contentWidth = options.devtoolsWidth ? baseAppBounds.width + options.devtoolsWidth : baseAppBounds.width;
+			const scale = Math.min(
+				1,
+				(work.width * 0.92) / contentWidth,
+				(work.height * 0.92) / baseAppBounds.height,
+			);
+			return {
+				width: Math.min(work.width, Math.round(contentWidth * scale)),
+				height: Math.min(work.height, Math.round(baseAppBounds.height * scale)),
+			};
 		} catch (e) {
 			console.error(e);
 			throw new Error(e);
@@ -110,17 +86,13 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 
 	const resetMainWindowBounds = async (display?: Display) => {
 		const targetDisplay = display || screen.getPrimaryDisplay();
-		const { height, width } = await calcActualAppSize();
-		const physicalScreen = await getCurrentPhysicalScreen(targetDisplay);
-		if (!physicalScreen) {
-			return;
-		}
+		const { height, width } = await calcActualAppSize(targetDisplay);
+		const area = targetDisplay.workArea;
 		reaxel_MainProcessHub().mainWindow?.setBounds({
 			width,
 			height,
-			x: physicalScreen.width / 2 - width / 2,
-			y: physicalScreen.height / 2 - height / 2,
-
+			x: Math.round(area.x + (area.width - width) / 2),
+			y: Math.round(area.y + (area.height - height) / 2),
 		}, true);
 	};
 
@@ -139,9 +111,10 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 	const centralWindowBounds = async (display?: Display) => {
 		const targetDisplay = display || screen.getPrimaryDisplay();
 		const { width, height } = await calcActualAppSize(targetDisplay);
+		const area = targetDisplay.workArea;
 		reaxel_MainProcessHub().mainWindow?.setPosition(
-			(targetDisplay.size.width - width) / 2,
-			(targetDisplay.size.height - height) / 2,
+			Math.round(area.x + (area.width - width) / 2),
+			Math.round(area.y + (area.height - height) / 2),
 		)
 	}
 	// obsReaction( () => {
@@ -153,8 +126,6 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 	app.whenReady().then(async () => {
 		// 初始化文本缩放因子
 		await initTextScale();
-		// 打印缩放信息
-		await logScaleInfo();
 
 		const electronScreen = screen;
 
@@ -166,7 +137,7 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 			console.log(`scaleFactor: ${display.scaleFactor}`);
 			console.log(`textScaleRatio: ${windowsTextScale}`);
 			console.log(`displayScaleRatio: ${display.scaleFactor / windowsTextScale}\n\n`);
-			resetMainWindowBounds();
+			resetMainWindowBounds(display);
 		});
 
 	});
@@ -199,19 +170,6 @@ export const reaxel_ScreenAdapter = reaxel(() => {
 });
 
 
-// 移除顶层的异步调用，在初始化时打印
-const logScaleInfo = async () => {
-	try {
-		const displayScale = await getWindowsDisplayScale();
-		console.log(JSON.stringify({
-			'文本缩放比率': windowsTextScale,
-			'系统缩放比率': displayScale,
-		}, null, 3));
-	} catch (error) {
-		console.warn('Failed to get scale info:', error);
-	}
-};
-
 /**
  * 定义用户使用的设备及场景
  */
@@ -243,4 +201,3 @@ class SceneType extends ScreenType {
 		});
 	}
 }
-

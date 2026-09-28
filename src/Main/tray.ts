@@ -1,27 +1,23 @@
 const { absAssetsPath } = reaxel_ElectronENV();
 
 app.whenReady().then(() => {
+	if (process.env.QUENCHING_TEST_CONFIG_DIR) return;
 	const trayIconPath = path.join(absAssetsPath, 'quenching/1.ico');
 	const tray = new Tray(trayIconPath);
 
 	const rebuildMenu = () => {
 		const lang = configManager.get('language') || 'zh-CN';
-		const isEn = lang === 'en-US';
-		const isKo = lang === 'ko-KR';
-
-		let showLabel = '显示主窗口';
-		let exitLabel = '退出';
-		let tooltip = '淬火试炼 - Quenching Mod Client';
-
-		if (isEn) {
-			showLabel = 'Show Main Window';
-			exitLabel = 'Quit';
-			tooltip = 'Quenching Mod Client';
-		} else if (isKo) {
-			showLabel = '기본 창 표시';
-			exitLabel = '종료';
-			tooltip = 'Quenching Mod Client';
-		}
+		const labels: Record<string, { show: string; exit: string }> = {
+			'zh-CN': { show: '显示主窗口', exit: '退出' },
+			'en-US': { show: 'Show Main Window', exit: 'Quit' },
+			'ko-KR': { show: '메인 창 표시', exit: '종료' },
+			'fr-FR': { show: 'Afficher la fenêtre principale', exit: 'Quitter' },
+			'pt-BR': { show: 'Mostrar janela principal', exit: 'Sair' },
+			'ru-RU': { show: 'Показать главное окно', exit: 'Выход' },
+			'es-ES': { show: 'Mostrar ventana principal', exit: 'Salir' },
+		};
+		const { show: showLabel, exit: exitLabel } = labels[lang] || labels['zh-CN'];
+		const tooltip = lang === 'zh-CN' ? '淬火试炼 - Quenching Mod Client' : 'Quenching Mod Client';
 
 		const contextMenu = Menu.buildFromTemplate([
 			{
@@ -57,17 +53,12 @@ app.whenReady().then(() => {
 		}
 	});
 
-	// 监听语言变化 (通过 setConfig 的 IPC 调用)
-	ipcMain.on('config:set', (event, key, value) => {
-		if (key === 'language') {
-			rebuildMenu();
-		}
-	});
+	configManager.onDidChange('language', rebuildMenu);
 });
 
 import { quit } from './useQuitEvent';
 import { reaxel_MainProcessHub } from '#main/reaxels/main-process-hub';
 import { reaxel_ElectronENV } from '#main/reaxels/runtime-paths';
-import { Tray, Menu, app, ipcMain } from 'electron';
+import { Tray, Menu, app } from 'electron';
 import path from 'node:path';
 import { configManager } from './services/config-manager';

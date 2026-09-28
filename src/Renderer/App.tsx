@@ -6,34 +6,14 @@ import { GlobalLoadingProvider } from './components/GlobalLoadingProvider';
 
 const App: React.FC = () => {
   useEffect(() => {
-    const setupAllowLocalFiles = async () => {
-      try {
-        const anyWindow = window as any;
-        const platform = anyWindow.platform;
-        const api = anyWindow.electronAPI;
-
-        if (!platform || !api) return;
-
-        if (platform.isWindows) {
-          const keyPath = 'HKEY_CURRENT_USER\\Software\\Blizzard Entertainment\\Warcraft III';
-          try {
-            await api.writeRegistry(keyPath, 'Allow Local Files', '1', 'REG_DWORD');
-          } catch {}
-          try {
-            await api.writeRegistry(keyPath, 'Quenching', '1.31', 'REG_SZ');
-          } catch {}
-        } else if (platform.isMacOS) {
-          const command = 'defaults write "com.blizzard.Warcraft III" "Allow Local Files" -int 1';
-          try {
-            await api.executeCommand(command);
-          } catch {}
-        }
-      } catch (error) {
-        console.error('Failed to setup Allow Local Files:', error);
-      }
-    };
-
-    setupAllowLocalFiles();
+    // Run after the launcher has mounted; the IPC returns immediately and
+    // registration errors are logged in the main process only.
+    const timer = window.setTimeout(() => {
+      void window.electronAPI?.ensureLocalFiles().catch((error) => {
+        console.warn('Could not schedule local-file registration:', error);
+      });
+    }, 1000);
+    return () => window.clearTimeout(timer);
   }, []);
 
   return (

@@ -1,8 +1,16 @@
+import { getSelectedGameChannel, getSelectedGameFolder, hasGameChannelDirectory } from './game-channel';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs-extra';
 import { configManager } from './config-manager';
 import { AssetSyncService } from './asset-sync';
+import { syncBundledResourceFiles } from './managed-resource-files';
+
+async function assertSelectedGameBuild(gamePath: string): Promise<void> {
+    if (!(await hasGameChannelDirectory(gamePath, getSelectedGameChannel()))) {
+        throw new Error(`${getSelectedGameFolder()} is not installed in the selected Warcraft III folder`);
+    }
+}
 
 export class GameLauncher {
 
@@ -11,7 +19,7 @@ export class GameLauncher {
      * Reforged resolves them from _retail_. Mirrors legacy client copy step after per-map merge.
      */
     private static async syncCampaignAssetFoldersToRetail(campaignRoot: string, gamePath: string): Promise<void> {
-        const retailPath = path.join(gamePath, '_retail_');
+        const retailPath = path.join(gamePath, getSelectedGameFolder());
         if (!(await fs.pathExists(retailPath))) {
             console.warn('[GameLauncher] _retail_ not found; skip campaign folder sync');
             return;
@@ -20,8 +28,7 @@ export class GameLauncher {
             const src = path.join(campaignRoot, folderName);
             const dest = path.join(retailPath, folderName);
             if (await fs.pathExists(src)) {
-                await fs.remove(dest).catch(() => { });
-                await fs.copy(src, dest, { overwrite: true });
+                await syncBundledResourceFiles(dest, [{ source: src }], [{ source: src }], '.quenching-campaign-files');
             }
         }
     }
@@ -32,19 +39,19 @@ export class GameLauncher {
     static async launchGame(executablePath?: string): Promise<boolean> {
         const isMac = process.platform === 'darwin';
         let exePath = executablePath;
+        const gamePath = configManager.get('war3Path');
+
+        if (!gamePath || !fs.existsSync(gamePath)) {
+            throw new Error("Warcraft III path is not configured or does not exist.");
+        }
+        await assertSelectedGameBuild(gamePath);
 
         if (!exePath) {
-            let gamePath = configManager.get('war3Path');
-
-            if (!gamePath || !fs.existsSync(gamePath)) {
-                throw new Error("Warcraft III path is not configured or does not exist.");
-            }
-
             if (isMac) {
                 // macOS logic
                 const possibleMacExes = [
-                    path.join(gamePath, 'Warcraft III.app'),
-                    path.join(gamePath, '_retail_', 'Warcraft III.app'),
+                    path.join(gamePath, getSelectedGameFolder(), 'Warcraft III.app'),
+                    ...(getSelectedGameChannel() === 'retail' ? [path.join(gamePath, 'Warcraft III.app')] : []),
                 ];
                 for (const p of possibleMacExes) {
                     if (fs.existsSync(p)) {
@@ -55,10 +62,12 @@ export class GameLauncher {
             } else {
                 // Windows logic
                 const possibleWinExes = [
-                    path.join(gamePath, '_retail_', 'x86_64', 'Warcraft III.exe'),
-                    path.join(gamePath, 'x86_64', 'Warcraft III.exe'),
-                    path.join(gamePath, 'Warcraft III Launcher.exe'),
-                    path.join(gamePath, 'Warcraft III.exe')
+                    path.join(gamePath, getSelectedGameFolder(), 'x86_64', 'Warcraft III.exe'),
+                    ...(getSelectedGameChannel() === 'retail' ? [
+                        path.join(gamePath, 'x86_64', 'Warcraft III.exe'),
+                        path.join(gamePath, 'Warcraft III Launcher.exe'),
+                        path.join(gamePath, 'Warcraft III.exe'),
+                    ] : []),
                 ];
                 for (const p of possibleWinExes) {
                     if (fs.existsSync(p)) {
@@ -70,8 +79,8 @@ export class GameLauncher {
         }
 
         if (!exePath || !fs.existsSync(exePath)) {
-            if (isMac && gamePath && fs.existsSync(path.join(gamePath, '_retail_'))) {
-                const retailApp = path.join(gamePath, '_retail_', 'Warcraft III.app');
+            if (isMac && gamePath && fs.existsSync(path.join(gamePath, getSelectedGameFolder()))) {
+                const retailApp = path.join(gamePath, getSelectedGameFolder(), 'Warcraft III.app');
                 if (fs.existsSync(retailApp)) {
                     exePath = retailApp;
                 }
@@ -82,23 +91,7 @@ export class GameLauncher {
             throw new Error(`Could not find Warcraft III executable at: ${exePath || 'configured path'}`);
         }
 
-        // Determine root game directory for asset sync
-        let rootGameDir = path.dirname(exePath);
-        if (isMac) {
-            // If user selected .app, the root is one level up
-            if (exePath.endsWith('.app')) {
-                rootGameDir = path.dirname(exePath);
-            }
-            // If in _retail_, go up
-            if (rootGameDir.endsWith('_retail_')) {
-                rootGameDir = path.dirname(rootGameDir);
-            }
-        } else {
-            if (rootGameDir.endsWith('x86_64')) rootGameDir = path.dirname(rootGameDir);
-            if (rootGameDir.endsWith('_retail_')) rootGameDir = path.dirname(rootGameDir);
-        }
 
-        await AssetSyncService.syncAssetsBeforeLaunch(rootGameDir);
         console.log(`Launching game from: ${exePath}`);
 
         try {
@@ -134,12 +127,13 @@ export class GameLauncher {
         if (!gamePath || !fs.existsSync(gamePath)) {
             throw new Error("Warcraft III path is not configured or does not exist.");
         }
+        await assertSelectedGameBuild(gamePath);
 
         let exePath = '';
         if (isMac) {
             const possibleMacExes = [
-                path.join(gamePath, 'Warcraft III.app'),
-                path.join(gamePath, '_retail_', 'Warcraft III.app'),
+                path.join(gamePath, getSelectedGameFolder(), 'Warcraft III.app'),
+                ...(getSelectedGameChannel() === 'retail' ? [path.join(gamePath, 'Warcraft III.app')] : []),
             ];
             for (const p of possibleMacExes) {
                 if (fs.existsSync(p)) {
@@ -149,9 +143,11 @@ export class GameLauncher {
             }
         } else {
             const possibleWinExes = [
-                path.join(gamePath, '_retail_', 'x86_64', 'Warcraft III.exe'),
-                path.join(gamePath, 'x86_64', 'Warcraft III.exe'),
-                path.join(gamePath, 'Warcraft III.exe')
+                path.join(gamePath, getSelectedGameFolder(), 'x86_64', 'Warcraft III.exe'),
+                ...(getSelectedGameChannel() === 'retail' ? [
+                    path.join(gamePath, 'x86_64', 'Warcraft III.exe'),
+                    path.join(gamePath, 'Warcraft III.exe'),
+                ] : []),
             ];
             for (const p of possibleWinExes) {
                 if (fs.existsSync(p)) {
@@ -165,10 +161,7 @@ export class GameLauncher {
             throw new Error(`Could not find Warcraft III executable in: ${gamePath}`);
         }
 
-        // Determine root game directory for asset sync
-        let rootGameDir = gamePath;
 
-        await AssetSyncService.syncAssetsBeforeLaunch(rootGameDir);
         console.log(`Launching map from: ${exePath} with map: ${mapPath}`);
 
         const mapDir = path.dirname(mapPath);
@@ -205,6 +198,95 @@ export class GameLauncher {
             return true;
         } catch (e) {
             console.error("Failed to launch game process", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Unlock official campaign progress by launching the built-in cfix.w3x map
+     * (same flow as the legacy client: mapdiff 1 + WorldEdit profile + fixedseed).
+     */
+    static async unlockCampaign(): Promise<boolean> {
+        const isMac = process.platform === 'darwin';
+        const gamePath = configManager.get('war3Path');
+
+        if (!gamePath || !fs.existsSync(gamePath)) {
+            throw new Error("Warcraft III path is not configured or does not exist.");
+        }
+        await assertSelectedGameBuild(gamePath);
+
+        let exePath = '';
+        if (isMac) {
+            const possibleMacExes = [
+                path.join(gamePath, getSelectedGameFolder(), 'Warcraft III.app'),
+                ...(getSelectedGameChannel() === 'retail' ? [path.join(gamePath, 'Warcraft III.app')] : []),
+            ];
+            for (const p of possibleMacExes) {
+                if (fs.existsSync(p)) {
+                    exePath = p;
+                    break;
+                }
+            }
+        } else {
+            const possibleWinExes = [
+                path.join(gamePath, getSelectedGameFolder(), 'x86_64', 'Warcraft III.exe'),
+                ...(getSelectedGameChannel() === 'retail' ? [
+                    path.join(gamePath, 'x86_64', 'Warcraft III.exe'),
+                    path.join(gamePath, 'Warcraft III.exe'),
+                ] : []),
+            ];
+            for (const p of possibleWinExes) {
+                if (fs.existsSync(p)) {
+                    exePath = p;
+                    break;
+                }
+            }
+        }
+
+        if (!exePath || !fs.existsSync(exePath)) {
+            throw new Error(`Could not find Warcraft III executable in: ${gamePath}`);
+        }
+
+
+        const assetsDir = await AssetSyncService.getAssetsDir();
+        const sourceMap = path.join(assetsDir, 'quenching', 'camp', 'cfix.w3x');
+        if (!(await fs.pathExists(sourceMap))) {
+            throw new Error(`Campaign unlock map not found: ${sourceMap}`);
+        }
+
+        const exeDir = path.dirname(exePath);
+        const targetMap = path.join(exeDir, 'cfix.w3x');
+        await fs.copy(sourceMap, targetMap, { overwrite: true });
+
+        console.log(`Launching campaign unlock map from: ${exePath} -> ${targetMap}`);
+
+        const loadFile = isMac ? targetMap : './cfix.w3x';
+        const args = [
+            '-launch',
+            '-loadfile', loadFile,
+            '-mapdiff', '1',
+            '-testmapprofile', 'WorldEdit',
+            '-fixedseed', '1'
+        ];
+
+        try {
+            if (isMac) {
+                const child = spawn('open', [exePath, '--args', ...args], {
+                    detached: true,
+                    stdio: 'ignore'
+                });
+                child.unref();
+            } else {
+                const child = spawn(exePath, args, {
+                    detached: true,
+                    cwd: exeDir,
+                    stdio: 'ignore'
+                });
+                child.unref();
+            }
+            return true;
+        } catch (e) {
+            console.error("Failed to launch campaign unlock map", e);
             throw e;
         }
     }

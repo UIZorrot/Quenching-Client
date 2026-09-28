@@ -25,6 +25,18 @@ html, body {
   background-color: rgba(0, 0, 0, 0.8) !important;
 }
 
+.ant-modal-wrap:has(.ant-modal-confirm) {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+
+  .ant-modal {
+    top: 0;
+    padding-bottom: 0;
+    margin: 0 auto;
+  }
+}
+
 .ant-modal {
   .ant-modal-content {
     background: rgba(0, 0, 0, 0.95);
@@ -44,6 +56,19 @@ html, body {
   .ant-modal-footer {
     background: rgba(255, 215, 0, 0.05);
     border-top: 1px solid rgba(255, 215, 0, 0.2);
+  }
+}
+
+.ant-modal-confirm {
+  .ant-modal-content {
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+  }
+
+  .ant-modal-confirm-title,
+  .ant-modal-confirm-content,
+  .ant-modal-confirm-paragraph {
+    color: #fff !important;
   }
 }
 

@@ -13,17 +13,33 @@ export const getPyScreensInfo = async () => {
 	const { absAssetsPath } = reaxel_ElectronENV();
 	return new Promise<PhysicalScreen[]>((resolve, reject) => {
 		const cp = spawn(path.join(absAssetsPath, 'py_screen_info/screen_info.exe'));
-		cp.stdout.on('data', (data: Buffer) => {
-			try {
-				resolve(JSON.parse(data.toString()));
-			} catch (e) {
-				reject(new Error(`Failed to parse py_screen_info output: ${e.message}`));
-			}
+		const chunks: Buffer[] = [];
+		let bytes = 0;
+		let settled = false;
+		const finish = (error?: Error, screens?: PhysicalScreen[]) => {
+			if (settled) return;
+			settled = true;
+			clearTimeout(timer);
+			if (error) reject(error);
+			else resolve(screens || []);
+		};
+		const timer = setTimeout(() => {
 			cp.kill();
+			finish(new Error('py_screen_info timed out'));
+		}, 15000);
+		cp.stdout.on('data', (data: Buffer) => {
+			bytes += data.length;
+			if (bytes > 1024 * 1024) {
+				cp.kill();
+				finish(new Error('py_screen_info output exceeded 1 MiB'));
+			} else chunks.push(data);
 		});
-		cp.stdout.on('error', (e) => {
-			console.error();
-			reject(e);
+		cp.on('error', (error) => finish(error));
+		cp.on('close', (code) => {
+			if (settled) return;
+			if (code !== 0) return finish(new Error(`py_screen_info exited with code ${code}`));
+			try { finish(undefined, JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
+			catch (error: any) { finish(new Error(`Failed to parse py_screen_info output: ${error?.message || String(error)}`)); }
 		});
 	});
 }

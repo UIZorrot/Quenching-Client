@@ -24,8 +24,8 @@ export interface NewsCategory {
 const defaultNews: NewsItem[] = [];
 
 const newsUrls: Record<'cn' | 'en', string> = {
-  cn: 'https://www.tianxiazhengyi.net/newscn.md',
-  en: 'https://www.tianxiazhengyi.net/newsen.md'
+  cn: 'https://qm.txzy.net/newscn.md',
+  en: 'https://qm.txzy.net/newsen.md'
 };
 
 const parseMarkdown = (md: string): NewsItem[] => {
@@ -98,50 +98,19 @@ export const reaxel_News = reaxel(() => {
     setState({ isLoading: true });
 
     try {
-      console.log(`[reaxel_News] Fetching news for ${lang}...`);
       const remoteNews = await window.electronAPI?.fetchNews(lang);
       if (remoteNews && remoteNews.length > 0) {
-        console.log(`[reaxel_News] Successfully fetched ${remoteNews.length} news items from remote.`);
         setState({
           news: remoteNews,
           lastUpdated: new Date().toISOString(),
           errorMessage: ''
         });
       } else {
-        console.warn('[reaxel_News] No news items returned from remote API');
-        try {
-          const url = newsUrls[lang];
-          console.log(`[reaxel_News] Fallback fetching via renderer: ${url}`);
-          const res = await fetch(url, { cache: 'no-store' });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const text = await res.text();
-          const items = parseMarkdown(text);
-          if (items.length > 0) {
-            console.log(`[reaxel_News] Fallback fetch succeeded with ${items.length} items.`);
-            setState({ news: items, lastUpdated: new Date().toISOString(), errorMessage: '' });
-          } else {
-            const placeholder: NewsItem = {
-              id: `news-placeholder-${Date.now()}`,
-              title: '暂无新闻',
-              content: '暂未获取到远程新闻，可能是源格式变化或网络问题。稍后重试，或访问官网查看最新动态。',
-              date: new Date().toISOString().split('T')[0],
-              type: 'announcement',
-              author: 'System'
-            };
-            setState({ news: [placeholder], errorMessage: '' });
-          }
-        } catch (e) {
-          console.error('[reaxel_News] Fallback fetch failed:', e);
-          const placeholder: NewsItem = {
-            id: `news-placeholder-${Date.now()}`,
-            title: '暂无新闻',
-            content: '暂未获取到远程新闻，可能是网络策略（CSP）限制或网络异常。请稍后重试。',
-            date: new Date().toISOString().split('T')[0],
-            type: 'announcement',
-            author: 'System'
-          };
-          setState({ news: [placeholder], errorMessage: '' });
-        }
+        setState({ news: [{
+          id: 'news-unavailable', title: '暂无新闻',
+          content: '新闻源暂不可用，请稍后重试。',
+          date: new Date().toISOString().slice(0, 10), type: 'announcement', author: 'System'
+        }], errorMessage: '' });
       }
     } catch (error) {
       console.error('[reaxel_News] Error fetching news:', error);

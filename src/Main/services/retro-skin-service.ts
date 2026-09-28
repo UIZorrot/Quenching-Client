@@ -1,6 +1,8 @@
+import { getSelectedGameFolder } from './game-channel';
 import fs from 'fs-extra';
 
 import path from 'path';
+import os from 'node:os';
 
 import { configManager } from './config-manager';
 
@@ -8,6 +10,9 @@ import { skinService } from './skin-service';
 
 import { AssetSyncService } from './asset-sync';
 import { assertFullPackageInstalled } from './full-package-service';
+import { preserveVersionSkins } from '../../shared/skin-versions';
+import { installBundledResourceFile } from './managed-resource-files';
+import { storedSkinPath, switchUnitSkinProfile } from './unit-skin-profile';
 
 
 
@@ -63,7 +68,7 @@ export class RetroSkinService {
 
 
 
-    const retailPath = path.join(war3Path, '_retail_');
+    const retailPath = path.join(war3Path, getSelectedGameFolder());
 
     return (await fs.pathExists(retailPath)) ? retailPath : war3Path;
 
@@ -415,30 +420,49 @@ export class RetroSkinService {
 
 
 
-    configManager.set('retroSkinUnits', unitsEnabled);
-
-    configManager.set('retroSkinBuildings', buildingsEnabled);
-
-
-
     const unitskinPath = path.join(baseDir, 'units', 'unitskin.txt');
 
     const disabledPath = path.join(baseDir, 'units', 'unitskin-dis.txt');
 
+    const assetsDir = await AssetSyncService.getAssetsDir();
+    const selectedProfile = unitsEnabled || buildingsEnabled ? 'hd-retro' : 'hd';
+    await switchUnitSkinProfile(baseDir, path.join(assetsDir, 'quenching'), selectedProfile);
+    const parkedDisabled = storedSkinPath(baseDir, selectedProfile, true);
+    const skinIsDisabled = !(await fs.pathExists(unitskinPath)) && await fs.pathExists(parkedDisabled);
+    const previousPath = skinIsDisabled ? parkedDisabled
+      : await fs.pathExists(unitskinPath) ? unitskinPath : disabledPath;
+    const previous = await fs.pathExists(previousPath) ? await fs.readFile(previousPath, 'utf8') : '';
+    const selections = (configManager.get('skinSelections') || {})[path.resolve(configManager.get('war3Path')).toLowerCase()] || {};
+    const unitsDir = path.dirname(unitskinPath);
+    const normalSource = path.join(assetsDir, 'quenching', 'skin', 'unitskin-new.txt');
+    const retroSource = path.join(assetsDir, 'quenching', 'skin', 'unitskin-old.txt');
+    const normalTemplate = await this.readAssetTemplate('skin/unitskin-new.txt');
 
+    if (await fs.pathExists(disabledPath) && !(await fs.pathExists(unitskinPath))) {
+      await skinService.enableSkins();
+    }
+
+    const writeGeneratedSkin = async (content: string): Promise<void> => {
+      if (skinIsDisabled) {
+        await fs.outputFile(parkedDisabled, content, 'utf8');
+        return;
+      }
+      const staging = await fs.mkdtemp(path.join(os.tmpdir(), 'quenching-retro-skin-'));
+      try {
+        const generated = path.join(staging, 'unitskin.txt');
+        await fs.writeFile(generated, content, 'utf8');
+        await installBundledResourceFile(unitsDir, 'unitskin.txt', generated,
+          [normalSource, retroSource], '.quenching-skin-template');
+      } finally {
+        await fs.remove(staging);
+      }
+    };
 
     if (!unitsEnabled && !buildingsEnabled) {
-
-      if (await fs.pathExists(unitskinPath)) {
-
-        await fs.remove(unitskinPath);
-
-      }
-
       console.log('[RetroSkinService] Both retro toggles off, restoring normal unitskin.txt');
-
-      await skinService.enableSkins();
-
+      await writeGeneratedSkin(preserveVersionSkins(normalTemplate, previous, { hd: selections.hd }));
+      configManager.set('retroSkinUnits', unitsEnabled);
+      configManager.set('retroSkinBuildings', buildingsEnabled);
       return this.getStatus();
 
     }
@@ -463,9 +487,7 @@ export class RetroSkinService {
 
 
 
-    const normalTemplate = await this.readAssetTemplate('unitskin-new.txt');
-
-    const retroTemplate = await this.readAssetTemplate('unitskin-old.txt');
+    const retroTemplate = await this.readAssetTemplate('skin/unitskin-old.txt');
 
     const normalSections = this.parseSections(normalTemplate);
 
@@ -491,19 +513,9 @@ export class RetroSkinService {
 
 
 
-    await fs.ensureDir(path.dirname(unitskinPath));
-
-
-
-    if (await fs.pathExists(disabledPath)) {
-
-      await fs.remove(disabledPath);
-
-    }
-
-
-
-    await fs.writeFile(unitskinPath, mergedContent, 'utf-8');
+    await writeGeneratedSkin(preserveVersionSkins(mergedContent, previous, { hd: selections.hd }));
+    configManager.set('retroSkinUnits', unitsEnabled);
+    configManager.set('retroSkinBuildings', buildingsEnabled);
 
     console.log(
 

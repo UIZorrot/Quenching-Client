@@ -1,7 +1,10 @@
+import { getSelectedGameFolder } from '../services/game-channel';
 import { ipcMain } from 'electron';
 import path from 'path';
+import { rm } from 'node:fs/promises';
 import fs from 'fs-extra';
-import { AssetSyncService } from '../services/asset-sync';
+import { AssetSyncService, getKnownShaderResourceRoots } from '../services/asset-sync';
+import { extractZipArchive } from '../services/zip-extraction';
 import { configManager } from '../services/config-manager';
 import {
     detectWar3Version,
@@ -11,38 +14,62 @@ import {
     writeShaderPackMarker,
     type War3VersionInfo,
 } from '../services/war3-version';
+import { getQuenchingResourcePath, getShaderResourcePath, resolveModProfile } from '../services/mod-profile';
+import { syncProfileResources } from '../services/asset-sync';
+import { syncBundledResourceFiles } from '../services/managed-resource-files';
+import { getInstalledModState } from '../services/mod-update-service';
+import { readCurrentModVersion } from '../services/mod-integrity-service';
+const SHADER_PROFILE_MARKER = '.quenching-shader-profile';
 
 const OBJECT_SHADER_FILES = [
-    'cliffblightmiscterrain.bls',
-    'foliage.bls',
-    'hd.bls',
-    'sd_on_hd.bls',
-    'terrain.bls',
+    'ps/cliffblightmiscterrain.bls',
+    'ps/foliage.bls',
+    'ps/hd.bls',
+    'ps/sd_on_hd.bls',
+    'ps/terrain.bls',
+    'vs/cliffblightmiscterrain.bls',
+    'vs/foliage.bls',
+    'vs/hd.bls',
+    'vs/terrain.bls',
 ];
 
 const POST_PROCESSING_FILES = [
-    'tonemap.bls',
-    'gaussianblur.bls',
-    'fog.bls',
-    'bloomextract.bls',
+    'ps/fog.bls',
+    'ps/volumetricfog.bls',
+    'ps/bloomcombine.bls',
+    'ps/bloomextract.bls',
+    'ps/gaussianblur.bls',
+    // Kept for supported legacy packs which use tonemap instead.
+    'ps/tonemap.bls',
 ];
 
 const INTEL_AMD_BLOOM_FILE = 'bloomextract.bls';
 
 async function resolveShadersBaseDir(war3Path: string): Promise<string> {
-    const retailPath = path.join(war3Path, '_retail_');
+    const retailPath = path.join(war3Path, getSelectedGameFolder());
     return (await fs.pathExists(retailPath)) ? retailPath : war3Path;
 }
 
-async function resolveVersionedShaderZipPath(war3Path: string): Promise<{ zipName: string; zipPath: string } | null> {
+async function resolveVersionedShaderZipPath(war3Path: string): Promise<{ zipName: string; zipPath: string; isDirectory: boolean } | null> {
     const assetsDir = await AssetSyncService.getAssetsDir();
+    const modSettings = configManager.get('modSettings') || {};
+    const profile = await resolveModProfile(war3Path, {
+        versionSelection: modSettings.versionSelection,
+        graphicsSelection: modSettings.graphicsSelection,
+        classicMode: modSettings.classicMode === true,
+    });
+    const quenchingDir = path.join(assetsDir, 'quenching');
+    const sourceDir = getShaderResourcePath(quenchingDir, profile, modSettings.lighting || 'standard');
+    if (await fs.pathExists(sourceDir)) {
+        return { zipName: profile.shaderPack, zipPath: sourceDir, isDirectory: true };
+    }
     const zipName = await resolveShaderZipName(war3Path);
     const zipPath = path.join(assetsDir, 'quenching', zipName);
     if (!(await fs.pathExists(zipPath))) {
         console.warn(`[Shader] Versioned shader zip not found: ${zipPath}`);
         return null;
     }
-    return { zipName, zipPath };
+    return { zipName, zipPath, isDirectory: false };
 }
 
 /**
@@ -54,6 +81,10 @@ export async function ensureVersionedShaders(
     options?: { force?: boolean }
 ): Promise<{ success: boolean; zipName?: string; version?: War3VersionInfo }> {
     const version = await detectWar3Version(war3Path);
+    if (!(await readCurrentModVersion(war3Path)) && (await getInstalledModState(war3Path))?.sequence === 34) {
+        console.log('[Shader] Legacy 3.4 package detected; postponing shader profile sync until after the 3.5 patch.');
+        return { success: false, version };
+    }
     const resolved = await resolveVersionedShaderZipPath(war3Path);
     if (!resolved) {
         return { success: false, version };
@@ -69,11 +100,23 @@ export async function ensureVersionedShaders(
     }
 
     console.log(`[Shader] Applying versioned shaders: ${resolved.zipName} (War3 ${version.version || 'unknown'})`);
-    await fs.remove(shadersDir).catch(() => { });
-    await fs.ensureDir(shadersDir);
-    // Full pack extract (same as asset-sync); object/post toggles may strip files afterwards.
-    await AssetSyncService.extractZip(resolved.zipPath, shadersDir);
-    await normalizeShaderExtractLayout(shadersDir);
+    if (resolved.isDirectory) {
+        const modSettings = configManager.get('modSettings') || {};
+        await syncProfileResources(war3Path, path.join(await AssetSyncService.getAssetsDir(), 'quenching'), modSettings);
+    } else {
+        const staging = await fs.mkdtemp(path.join(path.dirname(shadersDir), '.quenching-shaders-'));
+        try {
+            await AssetSyncService.extractZip(resolved.zipPath, staging);
+            await normalizeShaderExtractLayout(staging);
+            const quenchingDir = path.join(await AssetSyncService.getAssetsDir(), 'quenching');
+            // Shader overlays are client-managed; do not retain unknown files
+            // from a previous shader pack when applying a new profile.
+            await fs.remove(shadersDir);
+            await syncBundledResourceFiles(shadersDir, [{ source: staging }], getKnownShaderResourceRoots(quenchingDir), SHADER_PROFILE_MARKER);
+        } finally {
+            await rm(staging, { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
+        }
+    }
     await writeShaderPackMarker(shadersDir, resolved.zipName);
 
     // Re-apply Intel/AMD bloom override if enabled
@@ -100,20 +143,21 @@ async function applyLegacyShaderVersion(war3Path: string, _useLegacyWar3Shaders?
 }
 
 async function applyIntelAmdBloomFix(war3Path: string, enabled: boolean): Promise<boolean> {
-    const baseDir = await resolveShadersBaseDir(war3Path);
-    const psDir = path.join(baseDir, 'shaders', 'ps');
-    const bloomPath = path.join(psDir, INTEL_AMD_BLOOM_FILE);
     const assetsDir = await AssetSyncService.getAssetsDir();
 
-    await fs.ensureDir(psDir);
-
     if (enabled) {
-        const source = path.join(assetsDir, 'quenching', INTEL_AMD_BLOOM_FILE);
+        const resolved = await resolveVersionedShaderZipPath(war3Path);
+        const source = resolved?.isDirectory
+            ? path.join(resolved.zipPath, ...(resolved.zipName === 'shaders-300-hd' ? [] : ['ps']), INTEL_AMD_BLOOM_FILE)
+            : path.join(assetsDir, 'quenching', 'tx', INTEL_AMD_BLOOM_FILE);
         if (!(await fs.pathExists(source))) {
             console.warn(`[Shader] Intel/AMD bloom fix file not found: ${source}`);
             return false;
         }
-        await fs.copy(source, bloomPath, { overwrite: true });
+        const baseDir = await resolveShadersBaseDir(war3Path);
+        const target = path.join(baseDir, 'shaders', 'ps', INTEL_AMD_BLOOM_FILE);
+        await fs.ensureDir(path.dirname(target));
+        await fs.copy(source, target, { overwrite: true });
         return true;
     }
 
@@ -123,59 +167,122 @@ async function applyIntelAmdBloomFix(war3Path: string, enabled: boolean): Promis
         return false;
     }
 
-    await extractSpecificFiles(resolved.zipPath, path.join(baseDir, 'shaders'), [INTEL_AMD_BLOOM_FILE]);
+    await installShaderFiles(war3Path, resolved, [`ps/${INTEL_AMD_BLOOM_FILE}`]);
     return true;
 }
 
 async function extractSpecificFiles(zipPath: string, outputDir: string, filesToExtract: string[]) {
-    const yauzl = require('yauzl');
-    await fs.ensureDir(outputDir);
-    const wanted = new Set(filesToExtract.map((f) => f.toLowerCase()));
-
-    return new Promise<void>((resolve, reject) => {
-        yauzl.open(zipPath, { lazyEntries: true }, (err: any, zipfile: any) => {
-            if (err || !zipfile) {
-                reject(err);
-                return;
-            }
-            zipfile.readEntry();
-            zipfile.on('entry', (entry: any) => {
-                const fileName = entry.fileName.replace(/\\/g, '/');
-                const baseName = path.basename(fileName);
-                // Match both `ps/hd.bls` and root-level `hd.bls` (shaders2.03.zip layout)
-                const isTarget =
-                    !fileName.endsWith('/') &&
-                    wanted.has(baseName.toLowerCase()) &&
-                    (fileName.toLowerCase().includes('/ps/') ||
-                        fileName.toLowerCase().startsWith('ps/') ||
-                        !fileName.includes('/'));
-
-                if (isTarget) {
-                    zipfile.openReadStream(entry, (err2: any, readStream: any) => {
-                        if (err2 || !readStream) {
-                            reject(err2);
-                            return;
-                        }
-
-                        // Always land under shaders/ps/<file>
-                        const out = path.join(outputDir, 'ps', baseName);
-
-                        fs.ensureDir(path.dirname(out))
-                            .then(() => {
-                                const ws = fs.createWriteStream(out);
-                                readStream.pipe(ws);
-                                ws.on('close', () => zipfile.readEntry());
-                            })
-                            .catch(reject);
-                    });
-                } else {
-                    zipfile.readEntry();
+    if (await fs.pathExists(zipPath) && (await fs.stat(zipPath)).isDirectory()) {
+        const wanted = new Set(filesToExtract.map((f) => f.toLowerCase()));
+        const stack = [zipPath];
+        while (stack.length) {
+            const current = stack.pop()!;
+            for (const entry of await fs.readdir(current, { withFileTypes: true })) {
+                const full = path.join(current, entry.name);
+                if (entry.isDirectory()) stack.push(full);
+                else if (wanted.has(entry.name.toLowerCase())) {
+                    const relative = path.relative(zipPath, full).replace(/\\/g, '/').toLowerCase();
+                    const key = relative.includes('/') ? relative : `ps/${relative}`;
+                    if (!wanted.has(key)) continue;
+                    const target = path.join(outputDir, key);
+                    await fs.ensureDir(path.dirname(target));
+                    await fs.copy(full, target, { overwrite: true });
                 }
-            });
-            zipfile.on('end', () => resolve());
-            zipfile.on('error', (e: any) => reject(e));
-        });
+            }
+        }
+        return;
+    }
+    const wanted = new Set(filesToExtract.map(file => file.toLowerCase()));
+    await extractZipArchive(zipPath, outputDir, {
+        mapFile: (name) => {
+            const normalized = name.replace(/\\/g, '/');
+            const lower = normalized.toLowerCase().replace(/^\.\//, '');
+            const parts = lower.split('/');
+            if (parts.length === 1 && wanted.has(`ps/${parts[0]}`)) return `ps/${parts[0]}`;
+            if (parts.length === 2 && (parts[0] === 'ps' || parts[0] === 'vs') && wanted.has(lower)) return lower;
+            return null;
+        },
     });
+}
+
+async function stageProfileShaderFiles(
+    resolved: { zipName: string; zipPath: string; isDirectory: boolean },
+    files: string[],
+    outputDir: string,
+): Promise<number> {
+    if (!resolved.isDirectory) {
+        await extractSpecificFiles(resolved.zipPath, outputDir, files);
+        let copied = 0;
+        for (const file of files) {
+            if (await fs.pathExists(path.join(outputDir, file))) copied++;
+        }
+        return copied;
+    }
+
+    const assetsDir = await AssetSyncService.getAssetsDir();
+    const quenchingDir = path.join(assetsDir, 'quenching');
+    const candidatesFor = (key: string): string[] => {
+        const [stage, name] = key.split('/');
+        const candidates: string[] = [];
+        if (resolved.zipName === 'shaders-300-hd') {
+            if (stage === 'ps') {
+                candidates.push(path.join(resolved.zipPath, name));
+                for (const variant of ['standard', 'melee', 'rpg']) {
+                    candidates.push(path.join(quenchingDir, 'shaders', 'shaders-300-hd', 'ps', variant, name));
+                }
+            } else {
+                candidates.push(path.join(quenchingDir, 'shaders', 'shaders-300-hd', 'vs', name));
+            }
+        } else {
+            candidates.push(path.join(resolved.zipPath, stage, name));
+            if (stage === 'ps' && resolved.zipName === 'shaders-300-de') {
+                candidates.push(path.join(resolved.zipPath, name));
+            }
+        }
+
+        for (const root of getKnownShaderResourceRoots(quenchingDir)) {
+            if (root.targetPrefix === stage) candidates.push(path.join(root.source, name));
+            else if (!root.targetPrefix) candidates.push(path.join(root.source, stage, name));
+        }
+        return [...new Set(candidates)];
+    };
+
+    let copied = 0;
+    for (const key of files) {
+        const source = candidatesFor(key).find(candidate => fs.existsSync(candidate));
+        if (!source) continue; // Older packs can omit optional stages or effects.
+        const target = path.join(outputDir, key);
+        await fs.ensureDir(path.dirname(target));
+        await fs.copy(source, target, { overwrite: true });
+        copied++;
+    }
+    return copied;
+}
+
+async function installShaderFiles(
+    war3Path: string,
+    resolved: { zipName: string; zipPath: string; isDirectory: boolean },
+    files: string[],
+): Promise<void> {
+    const baseDir = await resolveShadersBaseDir(war3Path);
+    const shadersDir = path.join(baseDir, 'shaders');
+    const staging = await fs.mkdtemp(path.join(baseDir, '.quenching-shader-effect-'));
+    try {
+        const copied = await stageProfileShaderFiles(resolved, files, staging);
+        if (copied === 0) throw new Error(`当前着色器配置没有可用的资源文件: ${files.join(', ')}`);
+        await fs.ensureDir(shadersDir);
+        await fs.copy(staging, shadersDir, { overwrite: true });
+    } finally {
+        await rm(staging, { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
+    }
+}
+
+async function removeShaderFiles(war3Path: string, files: string[]): Promise<void> {
+    const baseDir = await resolveShadersBaseDir(war3Path);
+    const shadersDir = path.join(baseDir, 'shaders');
+    for (const file of files) {
+        await fs.remove(path.join(shadersDir, file));
+    }
 }
 
 export function registerShaderHandlers() {
@@ -198,25 +305,18 @@ export function registerShaderHandlers() {
         console.log(`[Shader] Updating object shader: ${enabled}`);
 
         const baseDir = await resolveShadersBaseDir(war3Path);
-        const psDir = path.join(baseDir, 'shaders', 'ps');
 
         if (enabled) {
             const resolved = await resolveVersionedShaderZipPath(war3Path);
             if (!resolved) {
                 return false;
             }
-            const targetDir = path.join(baseDir, 'shaders');
-            await extractSpecificFiles(resolved.zipPath, targetDir, OBJECT_SHADER_FILES);
-            await writeShaderPackMarker(targetDir, resolved.zipName);
+            await installShaderFiles(war3Path, resolved, OBJECT_SHADER_FILES);
+            await writeShaderPackMarker(path.join(baseDir, 'shaders'), resolved.zipName);
             return true;
         }
 
-        for (const file of OBJECT_SHADER_FILES) {
-            const filePath = path.join(psDir, file);
-            if (await fs.pathExists(filePath)) {
-                await fs.remove(filePath);
-            }
-        }
+        await removeShaderFiles(war3Path, OBJECT_SHADER_FILES);
         return true;
     });
 
@@ -224,16 +324,14 @@ export function registerShaderHandlers() {
         console.log(`[Shader] Updating post processing: ${enabled}`);
 
         const baseDir = await resolveShadersBaseDir(war3Path);
-        const psDir = path.join(baseDir, 'shaders', 'ps');
 
         if (enabled) {
             const resolved = await resolveVersionedShaderZipPath(war3Path);
             if (!resolved) {
                 return false;
             }
-            const targetDir = path.join(baseDir, 'shaders');
-            await extractSpecificFiles(resolved.zipPath, targetDir, POST_PROCESSING_FILES);
-            await writeShaderPackMarker(targetDir, resolved.zipName);
+            await installShaderFiles(war3Path, resolved, POST_PROCESSING_FILES);
+            await writeShaderPackMarker(path.join(baseDir, 'shaders'), resolved.zipName);
 
             const modSettings = configManager.get('modSettings') || {};
             if (modSettings.useIntelAmdShaderFix === true) {
@@ -242,12 +340,7 @@ export function registerShaderHandlers() {
             return true;
         }
 
-        for (const file of POST_PROCESSING_FILES) {
-            const filePath = path.join(psDir, file);
-            if (await fs.pathExists(filePath)) {
-                await fs.remove(filePath);
-            }
-        }
+        await removeShaderFiles(war3Path, POST_PROCESSING_FILES);
         return true;
     });
 
@@ -267,20 +360,14 @@ export function registerShaderHandlers() {
 export async function cleanupShadersOnStartup(war3Path: string, modSettings: any) {
     await ensureVersionedShaders(war3Path);
 
-    const psDir = path.join(war3Path, '_retail_', 'shaders', 'ps');
-
     if (modSettings.objectShader === false) {
         console.log('[Shader] Cleaning up object shaders on startup');
-        for (const file of OBJECT_SHADER_FILES) {
-            await fs.remove(path.join(psDir, file)).catch(() => { });
-        }
+        await removeShaderFiles(war3Path, OBJECT_SHADER_FILES);
     }
 
     if (modSettings.postProcessing === false) {
         console.log('[Shader] Cleaning up post processing shaders on startup');
-        for (const file of POST_PROCESSING_FILES) {
-            await fs.remove(path.join(psDir, file)).catch(() => { });
-        }
+        await removeShaderFiles(war3Path, POST_PROCESSING_FILES);
     } else if (modSettings.useIntelAmdShaderFix === true) {
         await applyIntelAmdBloomFix(war3Path, true);
     }

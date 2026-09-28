@@ -1,6 +1,44 @@
 // Electron API类型定义
 
+interface ClientUpdateStatus {
+  decision: 'available' | 'upToDate' | 'blocked' | 'unavailable' | 'incompatible';
+  currentVersion: string;
+  targetVersion?: string;
+  reason: string;
+  downloadBytes?: number;
+}
+
+interface ClientUpdateProgress {
+  message: string;
+  completed: number;
+  total: number;
+}
+
+interface ThirdPartyFeature {
+  id: string;
+  blocked: boolean;
+  selected: boolean;
+}
+
+interface ThirdPartySlot {
+  id: number;
+  name: string;
+  imported: boolean;
+  enabled: boolean;
+  stagingPath?: string;
+  topLevel?: string[];
+  features?: ThirdPartyFeature[];
+}
+
+interface ThirdPartyState {
+  slots: ThirdPartySlot[];
+  activeSlotId: number | null;
+}
+
 interface ElectronAPI {
+  getClientUpdateStatus: () => Promise<ClientUpdateStatus>;
+  applyClientUpdate: () => Promise<{ restarting: boolean }>;
+  onClientUpdateProgress: (callback: (progress: ClientUpdateProgress) => void) => () => void;
   // 文件操作
   readFile: (filePath: string) => Promise<string>;
   writeFile: (filePath: string, content: string) => Promise<boolean>;
@@ -59,7 +97,9 @@ interface ElectronAPI {
 
   // 游戏启动
   launchGame: (executablePath?: string) => Promise<boolean>;
+  ensureLocalFiles: () => Promise<boolean>;
   launchMap: (mapPath: string, difficulty: number) => Promise<boolean>;
+  unlockCampaign: () => Promise<boolean>;
   extractCampaignW3n: (w3nPath: string) => Promise<{
     success: boolean;
     outputDir: string;
@@ -97,6 +137,7 @@ interface ElectronAPI {
   updateTreeSettings: (war3Path: string, treeMode: string) => Promise<boolean>;
   updateWaterSettings: (war3Path: string, waterMode: string) => Promise<boolean>;
   updateFoliageSettings: (war3Path: string, enabled: boolean, terrainMode?: string) => Promise<boolean>;
+  updateBlightSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateObjectShader: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updatePostProcessing: (war3Path: string, enabled: boolean) => Promise<boolean>;
   /** @deprecated Always auto-syncs from War3 version; `enabled` ignored. */
@@ -137,13 +178,23 @@ interface ElectronAPI {
   updateModelEnhance: (war3Path: string, visionModPath: string, enabled: boolean) => Promise<boolean>;
 
   getFullPackageStatus: (war3Path?: string) => Promise<boolean>;
-  installFullPackage: (zipPath: string) => Promise<FullPackageInstallResult>;
-  syncAssets: () => Promise<void>;
+  getInstallSpaceStatus: (zipPath?: string) => Promise<InstallSpaceStatus | null>;
+  switchGameChannel: (channel: 'retail' | 'ptr') => Promise<boolean>;
+  getBranchModStates: () => Promise<Record<'retail' | 'ptr', { available: boolean; installed: boolean; enabled: boolean }>>;
+  setBranchModEnabled: (channel: 'retail' | 'ptr', enabled: boolean) => Promise<{ needsZip: boolean; states: Record<'retail' | 'ptr', { available: boolean; installed: boolean; enabled: boolean }> }>;
+  installFullPackage: (zipPath: string, channel?: 'retail' | 'ptr') => Promise<FullPackageInstallResult>;
+  syncAssets: (war3Path?: string) => Promise<void>;
 
   // Mod Management
-  deleteMod: (war3Path: string) => Promise<{ success: boolean }>;
+  deleteMod: (war3Path: string) => Promise<{ success: boolean; removed: number; preserved: string[] }>;
   resetRenderingComponents: (war3Path: string) => Promise<{ success: boolean }>;
   toggleClassicMode: (war3Path: string, enable: boolean) => Promise<{ success: boolean; classicMode: boolean }>;
+  getThirdPartyState: (war3Path: string) => Promise<ThirdPartyState>;
+  importThirdPartyZip: (war3Path: string, id: number, zipPath: string) => Promise<ThirdPartyState>;
+  importThirdPartyDirectory: (war3Path: string, id: number, directory: string) => Promise<ThirdPartyState>;
+  setThirdPartyEnabled: (war3Path: string, id: number, enabled: boolean) => Promise<ThirdPartyState>;
+  setThirdPartyFeature: (war3Path: string, id: number, featureId: string, enabled: boolean) => Promise<ThirdPartyState>;
+  setThirdPartyName: (war3Path: string, id: number, name: string) => Promise<ThirdPartyState>;
 
   // Classic Mode Skin System
   applyClassicSkin: (war3Path: string, change: {
@@ -162,6 +213,8 @@ interface ElectronAPI {
 
   // 涂装系统
   applySkin: (unitId: string, changes: any[]) => Promise<boolean>;
+  getVersionSkinPanel: (artSet: import('../shared/skin-versions').SkinArtSet) => Promise<{ selections: import('../shared/skin-versions').SkinSelections; originals: Record<string, import('../shared/skin-versions').VersionSkinChange[]> }>;
+  applyVersionSkins: (artSet: import('../shared/skin-versions').SkinArtSet, choices: import('../shared/skin-versions').VersionSkinChoice[]) => Promise<import('../shared/skin-versions').SkinSelections>;
   applyBatchSkin: (batchChanges: any[]) => Promise<boolean>;
   disableSkins: () => Promise<boolean>;
   enableSkins: () => Promise<boolean>;
@@ -183,10 +236,113 @@ interface ElectronAPI {
   selectModelFile: () => Promise<string | null>;
   selectFile: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => Promise<string | null>;
   selectDirectory: (title?: string) => Promise<string | null>;
+  readModelResource: (path: string, basePath?: string, artSet?: 'sd' | 'hd' | 'de') => Promise<{
+    data: string;
+    mimeType: string;
+    resolvedPath: string;
+  }>;
+  listCustomSkins: (targetId?: string) => Promise<CustomSkinRecord[]>;
+  inspectCustomSkinModel: (modelPath: string) => Promise<{
+    modelPath: string;
+    references: string[];
+    siblingCandidates: string[];
+    unresolved: string[];
+  }>;
+  createCustomSkin: (input: CreateCustomSkinInput) => Promise<CustomSkinRecord>;
 
   // 新闻操作
   fetchNews: (lang?: 'cn' | 'en') => Promise<any[]>;
   fetchVersion: () => Promise<string>;
+
+  // MOD 增量更新
+  getModUpdateStatus: (war3Path: string) => Promise<ModUpdateStatus>;
+  applyModUpdate: (war3Path: string) => Promise<ModUpdateResult>;
+  getInstalledModState: (war3Path: string) => Promise<InstalledModState | null>;
+  verifyModIntegrity: (war3Path: string, fullHash?: boolean) => Promise<ModIntegrityReport>;
+}
+
+interface ModUpdateArtifact {
+  id?: string;
+  size: number;
+  sha256: string;
+  sources: Array<string | { parts: Array<{ url: string; size: number; sha256: string }> }>;
+}
+
+interface ModPatchArtifact extends ModUpdateArtifact {
+  fromSequence: number;
+  toSequence: number;
+}
+
+interface InstalledModState {
+  product: 'quenching-mod';
+  sequence: number;
+  version: string;
+  displayVersion?: string;
+  installedAt: string;
+  files: string[];
+  filesDigest: string;
+}
+
+interface ModUpdateStatus {
+  decision: 'upToDate' | 'patch' | 'requiresFullPackage' | 'unknownInstallation' | 'unavailable';
+  current: InstalledModState | null;
+  target: { sequence: number; version: string; displayVersion: string } | null;
+  patch?: ModPatchArtifact;
+  fullPackage?: ModUpdateArtifact;
+  reason: string;
+  manifestSource?: string;
+  integrity?: ModIntegrityReport;
+}
+
+interface ModIntegrityReport {
+  ok: boolean;
+  version: string | null;
+  sequence: number | null;
+  mode: 'presence' | 'full';
+  expectedFiles: number;
+  checkedFiles: number;
+  missing: string[];
+  sizeMismatch: string[];
+  hashMismatch: string[];
+  issueCount: number;
+  issuesTruncated: boolean;
+  source?: string;
+  reason?: string;
+}
+
+interface ModUpdateResult {
+  status: ModUpdateStatus;
+  applied: boolean;
+  downloadedFrom?: string;
+  error?: string;
+}
+
+interface CustomSkinRecord {
+  artSet: 'sd' | 'hd' | 'de';
+  id: string;
+  targetId: string;
+  category: 'unit' | 'building' | 'hero';
+  race?: string;
+  name: string;
+  source: 'game-paths' | 'external';
+  config: { field: string; value: string }[];
+  preview?: string;
+  createdAt: string;
+}
+
+interface CreateCustomSkinInput {
+  artSet: 'sd' | 'hd' | 'de';
+  targetId: string;
+  category: 'unit' | 'building' | 'hero';
+  race?: string;
+  name: string;
+  source: 'game-paths' | 'external';
+  modelPath?: string;
+  modelPathHd?: string;
+  iconPath?: string;
+  disabledIconPath?: string;
+  unitSound?: string;
+  textureBindings?: Record<string, string>;
 }
 
 interface FileStats {
@@ -282,6 +438,15 @@ interface FullPackageInstallResult {
   success: boolean;
   skipped?: boolean;
   error?: string;
+  freeBytes?: number;
+  requiredBytes?: number;
+}
+
+interface InstallSpaceStatus {
+  freeBytes: number;
+  requiredBytes: number;
+  insufficient: boolean;
+  estimate: boolean;
 }
 
 // 全局类型声明

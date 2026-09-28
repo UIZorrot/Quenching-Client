@@ -1,12 +1,8 @@
-import { app, BrowserWindow, Menu, Tray, nativeImage } from 'electron';
+import { app, BrowserWindow, Menu, Tray, dialog, nativeImage } from 'electron';
 import path from 'path';
 import { registerAllAPIs } from './api';
-import { cleanupShadersOnStartup } from './ipc/shader-handlers';
-import { cleanupScriptsOnStartup } from './ipc/script-handlers';
-import { syncFoliageOnStartup } from './ipc/foliage-handlers';
-import { syncBlightOnStartup } from './services/blight-service';
-import { AssetSyncService } from './services/asset-sync';
 import { configManager } from './services/config-manager';
+import { assertNoInterruptedLegacyChannelSwitch } from './services/game-channel-switch';
 
 // =====================================================================
 // 【修复】搜狗输入法/中文输入法兼容性 & 单实例锁（必须在 app.whenReady 之前执行）
@@ -82,6 +78,7 @@ function createWindow(): void {
   mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
     console.error('Failed to load:', errorCode, errorDescription);
   });
+
 
   mainWindow.webContents.on('render-process-gone', (event, details) => {
     console.error('Renderer process gone:', details.reason);
@@ -170,13 +167,27 @@ function createTray(): void {
 }
 
 // 应用准备就绪
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Recover any interrupted folder renames before IPC or startup asset sync can touch the game.
+  const configuredGamePath = configManager.get('war3Path');
+  if (configuredGamePath) {
+    try {
+      await assertNoInterruptedLegacyChannelSwitch(configuredGamePath);
+    } catch (error) {
+      console.error('[Main] Channel-switch recovery requires attention:', error);
+      dialog.showErrorBox('魔兽目录需要人工检查',
+        '发现旧版分支搬运的中断记录。为保护你的文件，客户端不会自动移动、删除或覆盖目录；请先人工检查。');
+      app.quit();
+      return;
+    }
+  }
   // 注册所有API
   registerAllAPIs();
 
   // 尽早创建窗口和托盘，保证以最快速度展示主页，不被资源检查等过程阻塞
   createWindow();
   createTray();
+
 
   // macOS 下点击 Dock 图标重新创建窗口
   app.on('activate', () => {
@@ -187,35 +198,6 @@ app.whenReady().then(() => {
     }
   });
 
-  // 后台异步执行资源检查，避免阻塞主线程显示窗口
-  setTimeout(async () => {
-    console.log('\n==================== [AssetSync] Startup Check Begin ====================');
-    try {
-      const war3Path = configManager.get('war3Path');
-      console.log(`[Main] Current War3Path from config: ${war3Path}`);
-
-      if (war3Path) {
-        console.log('[Main] War3Path detected, starting asset synchronization...');
-        await AssetSyncService.syncAssetsBeforeLaunch(war3Path);
-        console.log('[Main] Asset synchronization completed.');
-
-        // 启动时清理已禁用的着色器/脚本/植被文件（根据配置）
-        const modSettings = configManager.get('modSettings');
-        if (modSettings) {
-          await cleanupShadersOnStartup(war3Path, modSettings);
-          await cleanupScriptsOnStartup(war3Path, modSettings);
-          await syncFoliageOnStartup(war3Path, modSettings);
-          await syncBlightOnStartup(war3Path, modSettings);
-        }
-      } else {
-        console.warn('[Main] War3Path not configured. Skipping asset synchronization.');
-        console.warn('[Main] Please configure the Warcraft III path in settings to enable asset sync.');
-      }
-    } catch (error) {
-      console.error('[Main] Failed to sync core assets on startup:', error);
-    }
-    console.log('==================== [AssetSync] Startup Check Complete ====================\n');
-  }, 100);
 });
 
 // 所有窗口关闭时退出应用（除了 macOS）

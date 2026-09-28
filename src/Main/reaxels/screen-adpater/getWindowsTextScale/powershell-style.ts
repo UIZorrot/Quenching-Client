@@ -1,19 +1,15 @@
-export const getWindowsTextScaleByPS = () => {
-	try {
-		const result = execSync(
-			'powershell -Command "[Windows.UI.ViewManagement.UISettings]::new().TextScaleFactor"',
-			{ encoding: 'utf8', timeout: 5000 }
-		).toString().trim();
+import { execFile } from 'child_process';
 
-		const scaleFactor = parseFloat(result);
-		if (isNaN(scaleFactor) || scaleFactor < 1) {
-			throw new Error(`Invalid scale factor: ${result}`);
+export const getWindowsTextScaleByPS = (): Promise<number> => new Promise((resolve, reject) => {
+	execFile(
+		'powershell.exe',
+		['-NoProfile', '-NonInteractive', '-Command', '[Windows.UI.ViewManagement.UISettings]::new().TextScaleFactor'],
+		{ encoding: 'utf8', timeout: 2000, windowsHide: true },
+		(error, stdout) => {
+			if (error) return reject(error);
+			const scaleFactor = Number.parseFloat(stdout.trim());
+			if (!Number.isFinite(scaleFactor) || scaleFactor < 1) return reject(new Error('Invalid text scale factor'));
+			resolve(scaleFactor);
 		}
-
-		return scaleFactor;
-	} catch (error) {
-		throw new Error(`PowerShell command failed: ${error.message}`);
-	}
-};
-
-import { execSync } from 'child_process';
+	);
+});

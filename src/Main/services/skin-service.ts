@@ -1,8 +1,12 @@
+import { getSelectedGameFolder } from './game-channel';
 import fs from 'fs-extra';
 import path from 'path';
 import { configManager } from './config-manager';
 import { AssetSyncService } from './asset-sync';
 import { assertFullPackageInstalled } from './full-package-service';
+import { installBundledResourceFile } from './managed-resource-files';
+import { activeSkinProfile, skinProfileForGraphics, storedSkinPath, unitSkinTemplate } from './unit-skin-profile';
+import type { EffectiveGraphics } from '../../shared/mod-profile';
 
 export interface SkinChange {
   field: string;
@@ -20,6 +24,9 @@ export function usesFullPackageSkinResource(changes: SkinChange[]): boolean {
     }
 
     const normalized = change.value.replace(/\\/g, '/').toLowerCase();
+    if (normalized === 'cos/custom' || normalized.startsWith('cos/custom/')) {
+      return false;
+    }
     return normalized === 'cos' || normalized.startsWith('cos/');
   });
 }
@@ -31,7 +38,7 @@ export class SkinService {
     const war3Path = configManager.get('war3Path');
     if (!war3Path) return null;
 
-    const retailPath = path.join(war3Path, '_retail_');
+    const retailPath = path.join(war3Path, getSelectedGameFolder());
     const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
     return { baseDir, unitsDir: path.join(baseDir, 'units') };
   }
@@ -47,11 +54,12 @@ export class SkinService {
     const disabledPath = path.join(dirs.unitsDir, 'unitskin-dis.txt');
 
     if (await fs.pathExists(unitskinPath)) {
-      if (await fs.pathExists(disabledPath)) {
-        await fs.remove(disabledPath);
-      }
-      await fs.move(unitskinPath, disabledPath, { overwrite: true });
-      console.log('[SkinService] Disabled skins: unitskin.txt -> unitskin-dis.txt');
+      await fs.remove(disabledPath);
+      const profile = await activeSkinProfile(dirs.baseDir) || 'hd';
+      const parked = storedSkinPath(dirs.baseDir, profile, true);
+      await fs.ensureDir(path.dirname(parked));
+      await fs.move(unitskinPath, parked, { overwrite: true });
+      console.log('[SkinService] Disabled skins: unitskin.txt -> QMoff skin profile');
     }
 
     return true;
@@ -68,8 +76,17 @@ export class SkinService {
     const disabledPath = path.join(dirs.unitsDir, 'unitskin-dis.txt');
 
     if (!(await fs.pathExists(unitskinPath)) && (await fs.pathExists(disabledPath))) {
-      await fs.move(disabledPath, unitskinPath, { overwrite: true });
+      await fs.move(disabledPath, unitskinPath, { overwrite: false });
       console.log('[SkinService] Enabled skins: unitskin-dis.txt -> unitskin.txt');
+    } else if (await fs.pathExists(unitskinPath)) {
+      await fs.remove(disabledPath);
+    } else {
+      const profile = await activeSkinProfile(dirs.baseDir) || 'hd';
+      const parked = storedSkinPath(dirs.baseDir, profile, true);
+      if (await fs.pathExists(parked)) {
+        await fs.ensureDir(dirs.unitsDir);
+        await fs.move(parked, unitskinPath, { overwrite: true });
+      }
     }
 
     await this.ensureUnitSkinExists(forceRefresh);
@@ -96,6 +113,8 @@ export class SkinService {
     if (await fs.pathExists(disabledPath) && !exists) {
       return;
     }
+    const currentProfile = await activeSkinProfile(baseDir);
+    if (!exists && currentProfile && await fs.pathExists(storedSkinPath(baseDir, currentProfile, true))) return;
 
     if (!exists || forceRefresh) {
       await fs.ensureDir(unitsDir);
@@ -103,10 +122,15 @@ export class SkinService {
       const assetsDir = await AssetSyncService.getAssetsDir();
       if (!assetsDir) throw new Error('Assets directory not found');
 
-      const sourceFile = path.join(assetsDir, 'quenching', 'unitskin-new.txt');
+      const settings = configManager.get('modSettings') || {};
+      const configured = settings.resolvedGraphics || settings.graphicsSelection;
+      const graphics: EffectiveGraphics = configured === 'sd' || configured === 'de' ? configured : 'hd';
+      const profile = await activeSkinProfile(baseDir) || skinProfileForGraphics(graphics,
+        configManager.get('retroSkinUnits') === true, configManager.get('retroSkinBuildings') === true);
+      const sourceFile = unitSkinTemplate(path.join(assetsDir, 'quenching'), profile);
       if (await fs.pathExists(sourceFile)) {
         console.log(`[SkinService] Initializing unitskin.txt with quenching template from ${sourceFile}`);
-        await fs.copy(sourceFile, unitskinPath, { overwrite: true });
+        await installBundledResourceFile(unitsDir, 'unitskin.txt', sourceFile, [sourceFile], '.quenching-skin-template');
       } else {
         console.warn(`[SkinService] Quenching template missing: ${sourceFile}`);
       }

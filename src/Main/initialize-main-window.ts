@@ -6,6 +6,9 @@ import { useOpenDevtools } from '#generic/modify-electron/open-devtools';
 import { dev } from 'electron-is';
 import { BrowserWindow, BrowserWindowConstructorOptions, screen } from 'electron';
 import path from 'path';
+import net from 'node:net';
+import { startupTelemetry } from './services/startup-telemetry';
+import { acknowledgeClientUpdate } from './services/client-update-service';
 
 
 const { runInExcutable, absAppRunningPath, absAssetsPath } = reaxel_ElectronENV();
@@ -16,17 +19,34 @@ const appAttributes = {
 }
 const devtoolsWidth = 1300;
 
+function isDevServerAvailable(port: number): Promise<boolean> {
+	return new Promise(resolve => {
+		const socket = net.connect({ host: '127.0.0.1', port });
+		let settled = false;
+		const finish = (available: boolean) => {
+			if (settled) return;
+			settled = true;
+			socket.destroy();
+			resolve(available);
+		};
+		socket.once('connect', () => finish(true));
+		socket.once('error', () => finish(false));
+		socket.setTimeout(350, () => finish(false));
+	});
+}
+
 export const initializeMainWindow = async (
 	options: BrowserWindowConstructorOptions & ExtraOptions = {
 
 	}
 ): Promise<BrowserWindow> => {
 	const defaultExtraOptions: ExtraOptions = {
-		openDevTools: dev(),
+		openDevTools: dev() && process.env.QUENCHING_DEVTOOLS === '1',
 	}
 	const { calcActualAppSize } = reaxel_ScreenAdapter();
 	const actualAppSize = await calcActualAppSize();
 	const defaultOptions: BrowserWindowConstructorOptions = {
+		show: !process.env.QUENCHING_TEST_CONFIG_DIR,
 		webPreferences: {
 			devTools: true,
 			contextIsolation: true,
@@ -52,16 +72,26 @@ export const initializeMainWindow = async (
 	const mainWindow = new BrowserWindow(options);
 	// console.log('screen.getPrimaryDisplay().scaleFactor:',screen.getPrimaryDisplay().scaleFactor);
 	// 加载 index.html
-	if (__NODE_ENV__ === 'development' && !runInExcutable) {
-		// 尝试连接到webpack dev server，如果失败则加载本地文件
-		try {
-			await mainWindow.loadURL(`https://127.0.0.1:${__DEV_PORT__}`);
-		} catch (error) {
-			console.warn('Failed to connect to webpack dev server, loading local file:', error);
-			mainWindow.loadFile("dist/renderer/index.html");
+	try {
+		if (__NODE_ENV__ === 'development' && !runInExcutable) {
+			if (await isDevServerAvailable(Number(__DEV_PORT__))) {
+				try {
+					await mainWindow.loadURL(`https://127.0.0.1:${__DEV_PORT__}`);
+				} catch (error) {
+					console.warn('[Window] Dev server load failed; using local build:', error instanceof Error ? error.message : String(error));
+					await mainWindow.loadFile('dist/renderer/index.html');
+				}
+			} else {
+				await mainWindow.loadFile('dist/renderer/index.html');
+			}
+		} else {
+			await mainWindow.loadFile("dist/renderer/index.html");
 		}
-	} else {
-		mainWindow.loadFile("dist/renderer/index.html");
+		await acknowledgeClientUpdate();
+		startupTelemetry.markStartupSuccess();
+	} catch (error) {
+		startupTelemetry.recordStartupFailure(error);
+		throw error;
 	}
 
 	useQuitHook(mainWindow);
@@ -87,4 +117,3 @@ export const initializeMainWindow = async (
 type ExtraOptions = Partial<{
 	openDevTools: boolean,
 }>
-

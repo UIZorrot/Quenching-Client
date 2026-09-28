@@ -1,72 +1,209 @@
+import { getSelectedGameChannel, getChannelModEnabled, hasGameChannelDirectory } from './game-channel';
 import fs from 'fs-extra';
 import path from 'path';
-import yauzl from 'yauzl';
+import { extractZipArchive } from './zip-extraction';
+import { rm } from 'node:fs/promises';
 import { app } from 'electron';
 import { configManager } from './config-manager';
-import { isFullPackageFolderPresent, isFullPackageInstalled, removeTerrainSlkIfFullPackageMissing, resolveRetailDir } from './full-package-service';
-import {
-  isShaderPackCurrent,
-  normalizeShaderExtractLayout,
-  resolveShaderZipName,
-  writeShaderPackMarker,
-  SHADER_ZIP_PRE200,
-  SHADER_ZIP_LEGACY,
-  SHADER_ZIP_MODERN,
-} from './war3-version';
-import crypto from 'crypto';
+import { isFullPackageInstalled, resolveRetailDir } from './full-package-service';
+import { getQuenchingResourcePath, getShaderResourcePath, resolveModProfile } from './mod-profile';
+import { isThirdPartyQuenchingPaused, markKnownQuenching } from './third-party-resources';
+import { BundledResourceRoot, createResourceSourceCache, installBundledResourceFile, syncBundledResourceFiles } from './managed-resource-files';
+import { getInstalledModState } from './mod-update-service';
+import { readCurrentModVersion } from './mod-integrity-service';
+import { skinProfileForGraphics, switchUnitSkinProfile, unitSkinTemplate } from './unit-skin-profile';
+import { syncClientWebUIFiles } from './webui-assets-service';
+import { copyPostProcessingConfigIfMissing, POST_PROCESSING_CONFIG_FILE } from './post-processing-config';
+import { gameChannelFolder } from '../../shared/game-channel';
+import { normalizeWar3RootPath } from './war3-path';
 
-// 文件指纹配置：用于验证资源版本
-const ASSET_FINGERPRINTS: Record<string, { file: string; expectedHash: string }> = {
-  [SHADER_ZIP_MODERN]: {
-    file: 'ps/hd.bls',
-    expectedHash: '' // 留空，首次运行时计算
-  },
-  [SHADER_ZIP_LEGACY]: {
-    file: 'ps/hd.bls',
-    expectedHash: ''
-  },
-  [SHADER_ZIP_PRE200]: {
-    file: 'ps/hd.bls',
-    expectedHash: ''
-  },
-  // Legacy key kept so old installs still verify until re-synced
-  'zip-shaders.zip': {
-    file: 'ps/hd.bls',
-    expectedHash: ''
-  },
-  'zip-env.zip': {
-    file: 'dnc/dnclordaeron/dnclordaeronterrain/dnclordaeronterrain.mdl',
-    expectedHash: ''
-  },
-  'zip-scripts.zip': {
-    file: 'blizzard.j',
-    expectedHash: ''
-  }
-};
+const PROFILE_ENV_MARKER = '.quenching-public-environment';
+const PROFILE_SHADER_MARKER = '.quenching-shader-profile';
+const PROFILE_DNC_MARKER = '.quenching-dnc-profile';
+const PROFILE_SKIN_MARKER = '.quenching-profile-skin';
 
-function isShaderZipName(name: string): boolean {
-  return (
-    name === SHADER_ZIP_MODERN ||
-    name === SHADER_ZIP_LEGACY ||
-    name === SHADER_ZIP_PRE200 ||
-    name === 'zip-shaders.zip'
-  );
+async function writeProfileMarker(dir: string, name: string): Promise<void> {
+  await fs.ensureDir(dir);
+  await fs.writeFile(path.join(dir, name), `${new Date().toISOString()}\n`, 'utf8');
 }
 
-const CLASSIC_PARKED_DIRS = [
-  'environment',
-  'buildings',
-  'campaign',
-  'doodads',
-  'fonts',
-  'patch',
-  'replaceabletextures',
-  'shaders',
-  'splats',
-  'terrainart',
-  'textures',
-  'units'
-];
+export function getKnownShaderResourceRoots(quenchingDir: string): BundledResourceRoot[] {
+  const hd = getQuenchingResourcePath(quenchingDir, 'shaders300Hd');
+  return [
+    { source: getQuenchingResourcePath(quenchingDir, 'shaders136') },
+    { source: getQuenchingResourcePath(quenchingDir, 'shaders200') },
+    { source: getQuenchingResourcePath(quenchingDir, 'shaders203') },
+    ...(['shaders136', 'shaders200'] as const).flatMap(pack =>
+      ['AMDshader', 'NVshader'].map(variant => ({
+        source: path.join(getQuenchingResourcePath(quenchingDir, pack), 'ps', variant),
+        targetPrefix: 'ps',
+      }))),
+    { source: getQuenchingResourcePath(quenchingDir, 'shaders300De') },
+    { source: path.join(hd, 'vs'), targetPrefix: 'vs' },
+    ...['standard', 'melee', 'rpg'].map(name => ({ source: path.join(hd, 'ps', name), targetPrefix: 'ps' })),
+  ];
+}
+
+export async function syncProfileResources(
+  war3Path: string,
+  quenchingDir: string,
+  modSettings: any,
+  onProgress?: (step: string, percent: number) => void,
+): Promise<void> {
+  const profile = await resolveModProfile(war3Path, {
+    versionSelection: modSettings?.versionSelection,
+    graphicsSelection: modSettings?.graphicsSelection,
+    classicMode: modSettings?.classicMode === true,
+  });
+  const retailDir = await resolveRetailDir(war3Path);
+  const environmentDir = path.join(retailDir, 'environment');
+  const dncDir = path.join(environmentDir, 'dnc');
+  const shadersDir = path.join(retailDir, 'shaders');
+  const unitsDir = path.join(retailDir, 'units');
+  const dncSource = getQuenchingResourcePath(
+    quenchingDir,
+    profile.dncPack === 'dnc20' ? 'dnc20' : profile.dncPack === 'dnc30-hd' ? 'dnc30Hd' : 'dnc30De'
+  );
+  const shaderSource = getShaderResourcePath(quenchingDir, profile, modSettings?.lighting || 'standard');
+  const skinProfile = skinProfileForGraphics(profile.graphics,
+    configManager.get('retroSkinUnits') === true, configManager.get('retroSkinBuildings') === true);
+  const sourceCache = createResourceSourceCache();
+
+  // A Home profile change must not be reported as successful when its pack is
+  // absent. Check before replacing the active profile resources.
+  for (const [label, source] of [
+    ['DNC', dncSource],
+    ['shader', shaderSource],
+    ...(profile.shaderPack === 'shaders-300-hd'
+      ? [['shader VS', path.join(getQuenchingResourcePath(quenchingDir, 'shaders300Hd'), 'vs')]]
+      : []),
+    ...(profile.graphics === 'de'
+      ? [['DE destructable skin', path.join(quenchingDir, 'skin', 'destructableskin-de.txt')]]
+      : []),
+    ['unit skin', unitSkinTemplate(quenchingDir, skinProfile)],
+  ]) {
+    if (!(await fs.pathExists(source))) {
+      throw new Error(`Missing ${label} resource for ${profile.version}/${profile.graphics}: ${source}`);
+    }
+  }
+
+  console.log(`[AssetSync] Applying profile ${profile.version}/${profile.graphics} (${profile.shaderPack}, ${profile.dncPack})`);
+
+  // Change units and buildings first. The two skin tables remain active in SD
+  // and DE, and unitskin is selected from a separate template per mode.
+  const { parkNonHdUnitsAndBuildings, restoreHdUnitsAndBuildings } = await import('./graphics-layout-service');
+  if (profile.graphics === 'hd') await restoreHdUnitsAndBuildings(war3Path);
+  else await parkNonHdUnitsAndBuildings(war3Path);
+  const skinSwitch = await switchUnitSkinProfile(retailDir, quenchingDir, skinProfile);
+  if (skinProfile === 'hd-retro' && skinSwitch.created) {
+    const { retroSkinService } = await import('./retro-skin-service');
+    await retroSkinService.apply({
+      unitsEnabled: configManager.get('retroSkinUnits') === true,
+      buildingsEnabled: configManager.get('retroSkinBuildings') === true,
+    });
+  }
+  onProgress?.('environment', 30);
+
+  // The public environment package is shared by every profile except 3.0 DE.
+  const environmentMarker = path.join(environmentDir, PROFILE_ENV_MARKER);
+  if (profile.usesPublicEnvironment) {
+    const { restoreHdPublicEnvironment } = await import('./environment-layout-service');
+    const restored = await restoreHdPublicEnvironment(retailDir);
+    const environmentZip = getQuenchingResourcePath(quenchingDir, 'environmentPublic');
+    if (restored) {
+      await writeProfileMarker(environmentDir, PROFILE_ENV_MARKER);
+    } else if (await fs.pathExists(environmentZip)) {
+      const markerExists = await fs.pathExists(environmentMarker);
+      if (!markerExists) {
+        const staging = await fs.mkdtemp(path.join(retailDir, '.quenching-public-environment-'));
+        try {
+          await AssetSyncService.extractZip(environmentZip, staging);
+          // Foliage has its own terrain-specific ZIP profile. Installing the
+          // public environment ZIP's foliage here would overwrite that choice.
+          const publicRoots = ['environmentmap', 'sky'].map(name => ({
+            source: path.join(staging, name), targetPrefix: name,
+          }));
+          await syncBundledResourceFiles(environmentDir, publicRoots, publicRoots, '.quenching-public-environment-files', {
+            removeAbsent: false,
+          });
+          await writeProfileMarker(environmentDir, PROFILE_ENV_MARKER);
+        } finally {
+          await rm(staging, { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
+        }
+      }
+    } else {
+      console.warn(`[AssetSync] Public environment package not found: ${environmentZip}`);
+    }
+  } else {
+    // Park the HD environment; these folders can also contain player files.
+    const { parkHdPublicEnvironment } = await import('./environment-layout-service');
+    await parkHdPublicEnvironment(retailDir);
+    if (await fs.pathExists(environmentMarker)) {
+      await fs.remove(environmentMarker);
+    }
+  }
+
+  const knownDncRoots = [
+    { source: getQuenchingResourcePath(quenchingDir, 'dnc20') },
+    { source: getQuenchingResourcePath(quenchingDir, 'dnc30Hd') },
+    { source: getQuenchingResourcePath(quenchingDir, 'dnc30De') },
+  ];
+  const desiredShaderRoots = profile.shaderPack === 'shaders-300-hd'
+    ? [
+        { source: path.join(getQuenchingResourcePath(quenchingDir, 'shaders300Hd'), 'vs'), targetPrefix: 'vs' },
+        { source: shaderSource, targetPrefix: 'ps' },
+      ]
+    : [{ source: shaderSource }];
+  const knownShaderRoots = getKnownShaderResourceRoots(quenchingDir);
+
+  onProgress?.('dnc', 46);
+  await syncBundledResourceFiles(dncDir, [{ source: dncSource }], knownDncRoots, PROFILE_DNC_MARKER, {
+    sourceCache,
+  });
+
+  onProgress?.('shaders', 60);
+  {
+    // Shader overlays are exclusively client-managed; replace the directory
+    // with the selected bundled profile instead of preserving unknown files.
+    await fs.remove(shadersDir);
+    await syncBundledResourceFiles(shadersDir, desiredShaderRoots, knownShaderRoots, PROFILE_SHADER_MARKER, { sourceCache });
+    await fs.writeFile(path.join(shadersDir, '.quenching-shader-pack'), `${profile.shaderPack}\n`, 'utf8');
+  }
+
+  const previousGraphics = modSettings?.resolvedGraphics;
+  if (previousGraphics !== profile.graphics && (profile.graphics === 'de' || previousGraphics === 'de')) {
+    onProgress?.('skin', 72);
+    const skinSource = path.join(quenchingDir, 'skin',
+      profile.graphics === 'de' ? 'destructableskin-de.txt' : 'destructableskin.txt');
+    await installBundledResourceFile(unitsDir, 'destructableskin.txt', skinSource, [], PROFILE_SKIN_MARKER);
+  }
+
+  onProgress?.('layout', 80);
+  const { syncGraphicsLayout } = await import('./graphics-layout-service');
+  const layout = await syncGraphicsLayout(war3Path, profile.graphics, {
+    classicMode: modSettings?.classicMode === true,
+    waterMode: modSettings?.water,
+    waterAssets: {
+      waterRoot: path.join(quenchingDir, 'water'),
+      tileRoot: path.join(quenchingDir, 'tile'),
+    },
+  });
+
+  if (layout.waterNeedsReapply && modSettings?.water) {
+    onProgress?.('layout-water', 84);
+    const { applyWaterSettings } = await import('../ipc/water-handlers');
+    await applyWaterSettings(war3Path, modSettings.water);
+  }
+
+  // Record the resolved profile only after every requested resource switch succeeds.
+  configManager.set('modSettings', {
+    ...modSettings,
+    versionSelection: profile.versionSelection,
+    graphicsSelection: profile.graphicsSelection,
+    resolvedVersion: profile.version,
+    resolvedGraphics: profile.graphics,
+  });
+}
 
 export class AssetSyncService {
   static async getAssetsDir(): Promise<string> {
@@ -84,273 +221,120 @@ export class AssetSyncService {
     ].filter(Boolean).map(p => path.normalize(p));
 
     const uniqueCandidates = Array.from(new Set(candidates));
-    console.log(`[AssetSync] Searching for assets in:`, uniqueCandidates);
     for (const p of uniqueCandidates) {
-      if (await fs.pathExists(p)) {
-        console.log(`[AssetSync] Found assets at: ${p}`);
+      if ((await fs.stat(p).catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+        throw error;
+      }))?.isDirectory()) {
         return p;
       }
     }
 
-    console.warn(`[AssetSync] Assets directory not found. Falling back to: ${uniqueCandidates[0]}`);
-    return uniqueCandidates[0];
+    throw new Error(`Client assets directory not found (searched ${uniqueCandidates.length} locations)`);
   }
 
-  static async extractZip(zipPath: string, extractPath: string, onProgress?: (percent: number, currentFile: string) => void): Promise<void> {
-    // ... existing extractZip code ...
-    await fs.ensureDir(extractPath);
-    await new Promise<void>((resolve, reject) => {
-      yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
-        if (err || !zipfile) { reject(err); return; }
-
-        const totalEntries = zipfile.entryCount;
-        let extractedEntries = 0;
-
-        zipfile.readEntry();
-        zipfile.on('entry', (entry) => {
-          extractedEntries++;
-          if (onProgress) {
-            const percent = Math.round((extractedEntries / totalEntries) * 100);
-            onProgress(percent, entry.fileName);
-          }
-
-          // 标准化路径，处理可能存在的反斜杠
-          const normalizedFileName = entry.fileName.replace(/\\/g, '/');
-          const fullPath = path.join(extractPath, normalizedFileName);
-
-          if (normalizedFileName.endsWith('/')) {
-            // 目录条目
-            fs.ensureDir(fullPath)
-              .then(() => zipfile.readEntry())
-              .catch(reject);
-          } else {
-            // 文件条目
-            zipfile.openReadStream(entry, (err2, readStream) => {
-              if (err2 || !readStream) {
-                reject(err2);
-                return;
-              }
-
-              fs.ensureDir(path.dirname(fullPath))
-                .then(() => {
-                  const writeStream = fs.createWriteStream(fullPath);
-                  readStream.pipe(writeStream);
-                  writeStream.on('close', () => {
-                    zipfile.readEntry();
-                  });
-                  writeStream.on('error', (err3) => {
-                    reject(err3);
-                  });
-                })
-                .catch(reject);
-            });
-          }
-        });
-        zipfile.on('end', () => resolve());
-        zipfile.on('error', (e) => reject(e));
-      });
+  static async extractZip(
+    zipPath: string,
+    extractPath: string,
+    onProgress?: (percent: number, currentFile: string) => void,
+    options?: { stripLeadingDirectory?: string | string[] }
+  ): Promise<number> {
+    return extractZipArchive(zipPath, extractPath, {
+      ...options,
+      onProgress,
     });
   }
 
-  /**
-   * 计算文件的 MD5 哈希值
-   */
-  private static async calculateFileHash(filePath: string): Promise<string | null> {
-    try {
-      const content = await fs.readFile(filePath);
-      return crypto.createHash('md5').update(content).digest('hex');
-    } catch (error) {
-      console.warn(`[AssetSync] Failed to calculate hash for ${filePath}:`, error.message);
-      return null;
-    }
-  }
-
-  /**
-   * 验证资源文件夹的版本指纹
-   */
-  private static async verifyAssetFingerprint(
-    zipName: string,
-    targetDir: string
-  ): Promise<boolean> {
-    const fingerprintConfig = ASSET_FINGERPRINTS[zipName];
-    if (!fingerprintConfig) {
-      // 没有配置指纹的资源，默认通过
-      return true;
-    }
-
-    const signatureFile = path.join(targetDir, fingerprintConfig.file);
-    if (!(await fs.pathExists(signatureFile))) {
-      console.log(`[AssetSync] Signature file not found: ${signatureFile}`);
+  /** Synchronize client-owned WebUI files independently of graphics/profile settings. */
+  static async syncClientWebUIAssets(war3Path: string): Promise<boolean> {
+    if (await isThirdPartyQuenchingPaused(war3Path)) {
+      console.log('[AssetSync] Third-party support has parked Quenching resources; skipping WebUI sync.');
       return false;
     }
-
-    const actualHash = await this.calculateFileHash(signatureFile);
-    if (!actualHash) {
+    if (!getChannelModEnabled(getSelectedGameChannel())) {
+      console.log('[AssetSync] MOD is disabled for this branch. Skipping WebUI sync.');
       return false;
     }
-
-    // 如果没有设置期望的哈希值，记录当前哈希值
-    if (!fingerprintConfig.expectedHash) {
-      console.log(`[AssetSync] First run for ${zipName}, recording hash: ${actualHash}`);
-      console.log(`[AssetSync] Add this to ASSET_FINGERPRINTS: expectedHash: '${actualHash}'`);
-      return true;
-    }
-
-    if (actualHash !== fingerprintConfig.expectedHash) {
-      console.log(`[AssetSync] Version mismatch for ${zipName}!`);
-      console.log(`[AssetSync] Expected: ${fingerprintConfig.expectedHash}`);
-      console.log(`[AssetSync] Actual:   ${actualHash}`);
-      return false;
-    }
-
-    console.log(`[AssetSync] Version verified for ${zipName}`);
-    return true;
-  }
-
-  private static async hasDirectoryContent(dir: string): Promise<boolean> {
-    if (!(await fs.pathExists(dir))) {
-      return false;
-    }
-
-    const entries = await fs.readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const entryPath = path.join(dir, entry.name);
-      if (entry.isFile()) {
-        return true;
-      }
-      if (entry.isDirectory() && await this.hasDirectoryContent(entryPath)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private static async parkClassicActiveDirs(war3Path: string): Promise<void> {
-    const baseDir = path.join(war3Path, '_retail_');
-    const qmoffDir = path.join(baseDir, 'QMoff');
-
-    for (const dir of CLASSIC_PARKED_DIRS) {
-      const activePath = path.join(baseDir, dir);
-      const parkedPath = path.join(qmoffDir, dir);
-
-      const activeExists = await fs.pathExists(activePath);
-      if (!activeExists) {
-        continue;
-      }
-
-      await fs.ensureDir(qmoffDir);
-
-      const activeHasContent = await this.hasDirectoryContent(activePath);
-      const parkedHasContent = await this.hasDirectoryContent(parkedPath);
-
-      if (!activeHasContent) {
-        console.log(`[AssetSync] Classic mode: removing empty active folder ${activePath}`);
-        await fs.remove(activePath);
-      } else if (parkedHasContent) {
-        console.log(`[AssetSync] Classic mode: removing stray active folder ${activePath}`);
-        await fs.remove(activePath);
-      } else {
-        if (await fs.pathExists(parkedPath)) {
-          console.log(`[AssetSync] Classic mode: removing empty parked folder ${parkedPath}`);
-          await fs.remove(parkedPath);
-        }
-        console.log(`[AssetSync] Classic mode: parking active folder ${activePath} -> ${parkedPath}`);
-        await fs.move(activePath, parkedPath, { overwrite: true });
-      }
-    }
-  }
-
-  /**
-   * Restore the baseline tree table when an incomplete package leaves a
-   * previously generated dXX override active. Custom files without Quenching
-   * resource references are left untouched.
-   */
-  private static async restoreTreeOverrideIfFullPackageMissing(war3Path: string): Promise<boolean> {
-    if (await isFullPackageInstalled(war3Path)) {
-      return false;
-    }
-
-    const baseDir = await resolveRetailDir(war3Path);
-    const targetPath = path.join(baseDir, 'units', 'destructableskin.txt');
-    if (!(await fs.pathExists(targetPath))) {
-      return false;
-    }
-
-    const content = await fs.readFile(targetPath, 'utf-8');
-    const hasQuenchingResourceReferences = /(?:doodads[\\/]+que[\\/]+d(?:00|16|18|20)[\\/]|replaceabletextures[\\/]+tree[\\/]+t(?:00|16|18|20)[\\/])/i.test(content);
-    if (!hasQuenchingResourceReferences) {
+    if (!(await isFullPackageInstalled(war3Path))) {
+      console.log('[AssetSync] No complete package for this branch. Skipping WebUI sync.');
       return false;
     }
 
     const assetsDir = await this.getAssetsDir();
-    const baselinePath = path.join(assetsDir, 'quenching', 'destructableskin-org.txt');
-    if (await fs.pathExists(baselinePath)) {
-      await fs.copy(baselinePath, targetPath, { overwrite: true });
-      console.warn(`[FullPackage] Restored baseline tree override: ${targetPath}`);
-    } else {
-      await fs.remove(targetPath);
-      console.warn(`[FullPackage] Removed unsafe tree override: ${targetPath}`);
-    }
-
+    const quenchingDir = path.join(assetsDir, 'quenching');
+    const targetWebUIDir = path.join(await resolveRetailDir(war3Path), 'webui');
+    const language = configManager.get('language') || 'zh-CN';
+    await syncClientWebUIFiles(targetWebUIDir, quenchingDir, language);
+    console.log(`[AssetSync] Updated WebUI assets for ${language}`);
     return true;
   }
-  /** Restore a generated retro unitskin when its external model folders are incomplete. */
-  private static async restoreRetroSkinOverrideIfFullPackageMissing(war3Path: string): Promise<boolean> {
-    const baseDir = await resolveRetailDir(war3Path);
-    const targetPath = path.join(baseDir, 'units', 'unitskin.txt');
-    if (!(await fs.pathExists(targetPath))) {
-      return false;
+
+  /**
+   * Basic client file. For each branch whose MOD switch is on, install
+   * PostProcessingConfig.txt when that branch does not already have one.
+   * An existing file is left untouched, and a missing full package is not required.
+   */
+  static async ensurePostProcessingConfig(war3Path: string): Promise<void> {
+    const root = normalizeWar3RootPath(war3Path);
+    if (!root) return;
+
+    const source = path.join(await this.getAssetsDir(), 'quenching', POST_PROCESSING_CONFIG_FILE);
+    if (!(await fs.pathExists(source))) {
+      throw new Error(`PostProcessingConfig source missing: ${source}`);
     }
 
-    const content = await fs.readFile(targetPath, 'utf-8');
-    const usesRetroUnits = /(?:^|[=:])\s*RUnits[\\/]/im.test(content) || /(?:^|[=:])\s*Runits[\\/]/im.test(content);
-    const usesRetroBuildings = /(?:^|[=:])\s*Rbuildings[\\/]/im.test(content);
-    const unitsMissing = usesRetroUnits && !(await isFullPackageFolderPresent(war3Path, 'RUnits'));
-    const buildingsMissing = usesRetroBuildings && !(await isFullPackageFolderPresent(war3Path, 'Rbuildings'));
-    if (!unitsMissing && !buildingsMissing) {
-      return false;
+    for (const channel of ['retail', 'ptr'] as const) {
+      if (!getChannelModEnabled(channel)) continue;
+      if (!(await hasGameChannelDirectory(root, channel))) continue;
+      const buildDir = path.join(root, gameChannelFolder(channel));
+      const copied = await copyPostProcessingConfigIfMissing(buildDir, source);
+      if (copied) console.log(`[AssetSync] Installed ${POST_PROCESSING_CONFIG_FILE} into ${gameChannelFolder(channel)}`);
     }
-
-    const assetsDir = await this.getAssetsDir();
-    const baselinePath = path.join(assetsDir, 'quenching', 'unitskin-new.txt');
-    if (await fs.pathExists(baselinePath)) {
-      await fs.copy(baselinePath, targetPath, { overwrite: true });
-      console.warn(`[FullPackage] Restored baseline retro skin override: ${targetPath}`);
-    } else {
-      await fs.remove(targetPath);
-      console.warn(`[FullPackage] Removed unsafe retro skin override: ${targetPath}`);
-    }
-
-    configManager.set('retroSkinUnits', false);
-    configManager.set('retroSkinBuildings', false);
-    return true;
   }
-  static async syncAssetsBeforeLaunch(war3Path: string): Promise<void> {
-    console.log('\n[AssetSync] ===== syncAssetsBeforeLaunch CALLED =====');
+
+  static async syncConfiguredAssets(
+    war3Path: string,
+    onProgress?: (step: string, percent: number) => void,
+  ): Promise<void> {
+    console.log('[AssetSync] Applying explicitly selected resource settings');
     console.log(`[AssetSync] Target War3 Path: ${war3Path}`);
 
-    // A partial package may have left terrainart/terrain.slk behind. The file
-    // references t00/t16/t18/t20 assets; tree overrides likewise require d00/d16/d18/d20 and must not remain active without the
-    // complete package, otherwise the game can crash during terrain loading.
-    await removeTerrainSlkIfFullPackageMissing(war3Path);
-    await this.restoreTreeOverrideIfFullPackageMissing(war3Path);
-    await this.restoreRetroSkinOverrideIfFullPackageMissing(war3Path);
+    if (await isThirdPartyQuenchingPaused(war3Path)) {
+      console.log('[AssetSync] Third-party support has parked Quenching resources; skipping automatic extraction.');
+      return;
+    }
 
     const modSettings = configManager.get('modSettings');
-    const isModEnabled = modSettings?.modEnabled !== false; // default true
+    const isModEnabled = getChannelModEnabled(getSelectedGameChannel());
     const isClassicMode = modSettings?.classicMode === true;
+
+    if (!isModEnabled) {
+      console.log('[AssetSync] MOD is disabled for this branch. Skipping automatic resource changes.');
+      return;
+    }
+
+    if (!(await readCurrentModVersion(war3Path)) && (await getInstalledModState(war3Path))?.sequence === 34) {
+      console.log('[AssetSync] Legacy 3.4 package detected; leaving resources unchanged until its 3.5 patch is applied.');
+      return;
+    }
+
+    if (!(await isFullPackageInstalled(war3Path))) {
+      console.log('[AssetSync] No complete package for this branch. Awaiting ZIP installation; leaving existing files untouched.');
+      return;
+    }
+
+    // WebUI is a client-owned resource, independent of graphics and Classic
+    // mode. Keep it current even when profile synchronization exits early.
+    await this.syncClientWebUIAssets(war3Path);
 
     console.log(`[AssetSync] Mod Enabled: ${isModEnabled}`);
     console.log(`[AssetSync] Classic Mode: ${isClassicMode}`);
 
-    if (!isModEnabled) {
-      console.log('[AssetSync] Mod is disabled. Skipping auto-extraction.');
-      return;
-    }
-
     if (isClassicMode) {
-      await this.parkClassicActiveDirs(war3Path);
+      // The legacy whole-directory parking routine has no crash journal and
+      // cannot distinguish player files. Never run it automatically at launch.
+      console.log('[AssetSync] Classic profile: skipping legacy folder parking and automatic extraction.');
+      return;
     }
 
     const assetsDir = await this.getAssetsDir();
@@ -359,202 +343,18 @@ export class AssetSyncService {
     console.log(`[AssetSync] Checking core assets in ${war3Path}`);
     console.log(`[AssetSync] Source directory: ${quenchingDir}`);
 
-    // Shader pack is chosen automatically from detected War3 version (< 2.0.3 → 2.02, else 2.03).
-    // Do not use zip-shaders.zip anymore.
-    const shaderZipName = await resolveShaderZipName(war3Path);
-    const coreZips = [
-      'zip-env.zip',
-      'zip-scripts.zip',
-      shaderZipName,
-    ];
+    // New resource layout is profile-driven. It replaces the old root-level
+    // zip assumptions while leaving the legacy loop below available for an
+    // older installation whose new resources have not been deployed yet.
+    await syncProfileResources(war3Path, quenchingDir, modSettings || {}, onProgress);
+    await markKnownQuenching(war3Path);
 
-    const uiType = modSettings?.ui || 'quenching'; // 默认 quenching
-
-    let coreZipsToSync = coreZips;
-
-    // envRender 默认关闭：仅在明确开启时同步 zip-scripts.zip
-    if (modSettings?.envRender !== true) {
-      coreZipsToSync = coreZipsToSync.filter(name => name !== 'zip-scripts.zip');
+    if (modSettings?.envRender === true) {
+      const { syncEnvironmentScripts } = await import('../ipc/script-handlers');
+      await syncEnvironmentScripts(war3Path, true);
     }
 
-    console.log(`[AssetSync] Syncing assets (UI Mode: ${uiType}, EnvRender: ${modSettings?.envRender === true}, Shaders: ${shaderZipName})`);
-
-    for (const name of coreZipsToSync) {
-      const zipPath = path.join(quenchingDir, name);
-      if (!(await fs.pathExists(zipPath))) {
-        console.warn(`[AssetSync] Zip not found: ${zipPath}`);
-        continue;
-      }
-
-      let targetDir = '';
-      let qmoffDir = '';
-      if (name === 'zip-env.zip') {
-        targetDir = path.join(war3Path, '_retail_', 'environment');
-        qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'environment');
-      } else if (name === 'zip-scripts.zip') {
-        targetDir = path.join(war3Path, '_retail_', 'scripts');
-        qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'scripts');
-      } else if (isShaderZipName(name)) {
-        targetDir = path.join(war3Path, '_retail_', 'shaders');
-        qmoffDir = path.join(war3Path, '_retail_', 'QMoff', 'shaders');
-      }
-
-      if (isClassicMode && (name === 'zip-env.zip' || isShaderZipName(name))) {
-        const activeExists = targetDir && await fs.pathExists(targetDir);
-        const backupHasContent = qmoffDir && await this.hasDirectoryContent(qmoffDir);
-
-        if (activeExists) {
-          await fs.ensureDir(path.dirname(qmoffDir));
-          const activeHasContent = await this.hasDirectoryContent(targetDir);
-
-          if (!activeHasContent) {
-            console.log(`[AssetSync] Classic mode: removing empty active asset ${targetDir}`);
-            await fs.remove(targetDir);
-          } else if (backupHasContent) {
-            console.log(`[AssetSync] Classic mode: removing stray active asset ${targetDir}`);
-            await fs.remove(targetDir);
-          } else {
-            if (await fs.pathExists(qmoffDir)) {
-              console.log(`[AssetSync] Classic mode: removing empty parked asset ${qmoffDir}`);
-              await fs.remove(qmoffDir);
-            }
-            console.log(`[AssetSync] Classic mode: moving active asset ${targetDir} -> ${qmoffDir}`);
-            await fs.move(targetDir, qmoffDir, { overwrite: true });
-          }
-        }
-
-        if (await this.hasDirectoryContent(qmoffDir)) {
-          console.log(`[AssetSync] Classic mode: ${name} is parked in QMoff. Skipping active extraction.`);
-          continue;
-        }
-
-        console.log(`[AssetSync] Classic mode: missing QMoff asset for ${name}, extracting backup to ${qmoffDir}...`);
-        await this.extractZip(zipPath, qmoffDir);
-        if (isShaderZipName(name)) {
-          await normalizeShaderExtractLayout(qmoffDir);
-          await writeShaderPackMarker(qmoffDir, name);
-        }
-
-        if (name === 'zip-env.zip') {
-          const foliageDir = path.join(qmoffDir, 'foliage');
-          if (await fs.pathExists(foliageDir)) {
-            console.log(`[AssetSync] Classic mode: removing bundled foliage from zip-env backup: ${foliageDir}`);
-            await fs.remove(foliageDir);
-          }
-        }
-
-        continue;
-      }
-
-      const hasBase = await (async () => {
-        if (!targetDir) return false;
-        if (!(await fs.pathExists(targetDir))) return false;
-        const files = await fs.readdir(targetDir);
-        if (files.length === 0) return false;
-
-        // Shader pack must match detected War3 version (not just "folder exists").
-        if (isShaderZipName(name)) {
-          const packOk = await isShaderPackCurrent(targetDir, name);
-          if (!packOk) {
-            console.log(`[AssetSync] Shader pack mismatch in ${targetDir}, will re-extract ${name}`);
-            await fs.remove(targetDir);
-            return false;
-          }
-        }
-
-        // 验证文件指纹
-        const isValid = await this.verifyAssetFingerprint(name, targetDir);
-        if (!isValid) {
-          console.log(`[AssetSync] Outdated asset detected in ${targetDir}, will re-extract`);
-          await fs.remove(targetDir);
-          return false;
-        }
-        return true;
-      })();
-
-      const hasQmoff = await (async () => {
-        if (!qmoffDir) return false;
-        if (!(await fs.pathExists(qmoffDir))) return false;
-        const files = await fs.readdir(qmoffDir);
-        if (files.length === 0) return false;
-
-        if (isShaderZipName(name)) {
-          const packOk = await isShaderPackCurrent(qmoffDir, name);
-          if (!packOk) {
-            console.log(`[AssetSync] Shader pack mismatch in ${qmoffDir}, will re-extract ${name}`);
-            await fs.remove(qmoffDir);
-            return false;
-          }
-        }
-
-        // 验证备份文件夹的指纹
-        const isValid = await this.verifyAssetFingerprint(name, qmoffDir);
-        if (!isValid) {
-          console.log(`[AssetSync] Outdated backup asset detected in ${qmoffDir}, will re-extract`);
-          await fs.remove(qmoffDir);
-          return false;
-        }
-        return true;
-      })();
-
-      if (hasBase || hasQmoff) {
-        console.log(`[AssetSync] Assets for ${name} found (active or backup). Skipping.`);
-        continue;
-      }
-
-      console.log(`[AssetSync] Missing core assets for ${name}, extracting to ${targetDir}...`);
-      await this.extractZip(zipPath, targetDir);
-      if (isShaderZipName(name)) {
-        await normalizeShaderExtractLayout(targetDir);
-        await writeShaderPackMarker(targetDir, name);
-      }
-
-      // zip-env.zip 不再负责植被；植被由 zip-foliage-*.zip 按地形模式单独安装
-      if (name === 'zip-env.zip') {
-        const foliageDir = path.join(targetDir, 'foliage');
-        if (await fs.pathExists(foliageDir)) {
-          console.log(`[AssetSync] Removing bundled foliage from zip-env extraction: ${foliageDir}`);
-          await fs.remove(foliageDir);
-        }
-      }
-    }
-
-    // --- WebUI 资源同步 (任何情况下都执行，从不重置) ---
-    const targetWebUIDir = path.join(war3Path, '_retail_', 'webui');
-    // 1. 确保 webui 文件夹存在 (不删除现有文件夹，只确保存在)
-    await fs.ensureDir(targetWebUIDir);
-
-    // 2. 根据语言选择同步 QuenchingOn.png
-    const language = configManager.get('language');
-    const isChinese = language === 'zh-CN';
-    const quenchingOnSource = path.join(quenchingDir, isChinese ? 'QuenchingOnCN.png' : 'QuenchingOnEN.png');
-    const quenchingOnTarget = path.join(targetWebUIDir, 'QuenchingOn.png');
-
-    if (await fs.pathExists(quenchingOnSource)) {
-      try {
-        await fs.copy(quenchingOnSource, quenchingOnTarget, { overwrite: true });
-        console.log(`[AssetSync] Copied WebUI Image (${language}): ${path.basename(quenchingOnSource)} -> QuenchingOn.png`);
-      } catch (err) {
-        console.error(`[AssetSync] Failed to copy WebUI image:`, err);
-      }
-    } else {
-      console.warn(`[AssetSync] WebUI source image not found: ${quenchingOnSource}`);
-    }
-
-    // 3. 同步其他 WebUI 文件 (如 index.html)
-    const otherWebUIFiles = ['index.html'];
-    for (const file of otherWebUIFiles) {
-      const sourceFile = path.join(quenchingDir, file);
-      if (await fs.pathExists(sourceFile)) {
-        const targetFile = path.join(targetWebUIDir, file);
-        try {
-          await fs.copy(sourceFile, targetFile, { overwrite: true });
-          console.log(`[AssetSync] Copied WebUI file: ${file} -> ${targetFile}`);
-        } catch (err) {
-          console.error(`[AssetSync] Failed to copy WebUI file ${file}:`, err);
-        }
-      }
-    }
+    // Profile resources above replace the unsafe legacy whole-directory ZIP loop.
 
   }
 }

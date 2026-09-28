@@ -1,6 +1,18 @@
+import { getSelectedGameFolder } from './game-channel';
 import path from 'path';
 import fs from 'fs-extra';
 import { configManager } from './config-manager';
+import { resolveUiZipName } from './war3-version';
+import { syncBundledResourceFiles } from './managed-resource-files';
+
+const UI_MARKER = '.quenching-managed-ui.json';
+
+function knownUiRoots(stagingPath: string) {
+    return [
+        { source: stagingPath },
+        ...['ui-org', 'ui-que', 'ui-blz'].map(name => ({ source: path.join(stagingPath, name) })),
+    ];
+}
 
 export class UIService {
     /**
@@ -25,7 +37,7 @@ export class UIService {
      */
     static async patchInstalledUiFeedbackForClassicMode(war3Path: string): Promise<void> {
         const normalizedPath = path.normalize(war3Path);
-        const retailPath = path.join(normalizedPath, '_retail_');
+        const retailPath = path.join(normalizedPath, getSelectedGameFolder());
         const baseDir = (await fs.pathExists(retailPath)) ? retailPath : normalizedPath;
         const uiFeedback = path.join(baseDir, 'ui', 'feedback');
 
@@ -36,10 +48,11 @@ export class UIService {
 
         const { AssetSyncService } = require('./asset-sync');
         const assetsDir = await AssetSyncService.getAssetsDir();
-        const zipPath = path.join(assetsDir, 'quenching', 'zip-ui.zip');
+        const zipName = await resolveUiZipName(war3Path);
+        const zipPath = path.join(assetsDir, 'quenching', zipName);
 
         if (!(await fs.pathExists(zipPath))) {
-            console.warn(`[UIService] zip-ui.zip not found at ${zipPath}, skip classic feedback patch`);
+            console.warn(`[UIService] ${zipName} not found at ${zipPath}, skip classic feedback patch`);
             return;
         }
 
@@ -51,8 +64,12 @@ export class UIService {
 
             const patchedFeedback = path.join(stagingPath, 'feedback');
             if (await fs.pathExists(patchedFeedback)) {
-                await fs.remove(uiFeedback);
-                await fs.copy(patchedFeedback, uiFeedback, { overwrite: true });
+                await syncBundledResourceFiles(
+                    path.join(baseDir, 'ui'),
+                    [{ source: patchedFeedback, targetPrefix: 'feedback' }],
+                    knownUiRoots(stagingPath), UI_MARKER,
+                    { removeAbsent: false },
+                );
                 console.log('[UIService] Patched installed ui/feedback for classic mode');
             }
         } finally {
@@ -77,7 +94,7 @@ export class UIService {
             }
 
             const normalizedPath = path.normalize(war3Path);
-            const retailPath = path.join(normalizedPath, '_retail_');
+            const retailPath = path.join(normalizedPath, getSelectedGameFolder());
             const baseDir = await fs.pathExists(retailPath) ? retailPath : normalizedPath;
             const uiPath = path.join(baseDir, 'ui');
 
@@ -94,21 +111,22 @@ export class UIService {
 
             const { AssetSyncService } = require('./asset-sync');
             const assetsDir = await AssetSyncService.getAssetsDir();
-            const zipPath = path.join(assetsDir, 'quenching', 'zip-ui.zip');
+            const zipName = await resolveUiZipName(war3Path);
+            const zipPath = path.join(assetsDir, 'quenching', zipName);
 
             if (!(await fs.pathExists(zipPath))) {
-                throw new Error(`zip-ui.zip not found at ${zipPath}`);
+                throw new Error(`${zipName} not found at ${zipPath}`);
             }
 
             await fs.ensureDir(baseDir);
             stagingPath = await fs.mkdtemp(path.join(baseDir, '.ui-staging-'));
 
-            console.log(`[UIService] Extracting clean zip-ui.zip from ${zipPath} to staging...`);
+            console.log(`[UIService] Extracting clean ${zipName} from ${zipPath} to staging...`);
             await AssetSyncService.extractZip(zipPath, stagingPath);
 
             const sourceRoot = path.join(stagingPath, sourceDirName);
             if (!(await fs.pathExists(sourceRoot))) {
-                throw new Error(`UI source folder ${sourceDirName} not found in zip-ui.zip`);
+                throw new Error(`UI source folder ${sourceDirName} not found in ${zipName}`);
             }
 
             const subFolders = ['feedback', 'console', 'framedef', 'webui'];
@@ -131,14 +149,7 @@ export class UIService {
                 await this.applyClassicFeedbackCompat(stagingPath);
             }
 
-            const dirsToReplace = ['console', 'feedback', 'framedef', 'webui', 'ui-org', 'ui-que', 'ui-blz'];
-            await fs.ensureDir(uiPath);
-            for (const dir of dirsToReplace) {
-                const targetDir = path.join(uiPath, dir);
-                await fs.remove(targetDir).catch(err => console.warn(`Failed to remove ${targetDir}:`, err));
-            }
-
-            await fs.copy(stagingPath, uiPath, { overwrite: true });
+            await syncBundledResourceFiles(uiPath, [{ source: stagingPath }], knownUiRoots(stagingPath), UI_MARKER);
 
             console.log(`[UIService] Successfully updated UI to ${uiMode}`);
             return true;

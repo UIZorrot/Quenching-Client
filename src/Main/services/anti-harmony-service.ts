@@ -1,3 +1,4 @@
+import { getSelectedGameFolder } from './game-channel';
 import fs from 'fs-extra';
 import path from 'path';
 import { configManager } from './config-manager';
@@ -43,7 +44,7 @@ function normalizeWar3Root(war3Path: string): string {
 
 export async function resolveRetailDir(war3Path: string): Promise<string> {
     const root = normalizeWar3Root(war3Path);
-    const retail = path.join(root, '_retail_');
+    const retail = path.join(root, getSelectedGameFolder());
     if (await fs.pathExists(retail)) {
         return retail;
     }
@@ -52,7 +53,7 @@ export async function resolveRetailDir(war3Path: string): Promise<string> {
 
 function getCascOpenCandidates(war3Path: string): string[] {
     const root = normalizeWar3Root(war3Path);
-    return [root, path.join(root, '_retail_')];
+    return [root, path.join(root, getSelectedGameFolder())];
 }
 
 export function getAntiHarmonyMarkerPath(retailDir: string): string {
@@ -252,9 +253,9 @@ async function safeMove(from: string, to: string): Promise<boolean> {
     }
     await fs.ensureDir(path.dirname(to));
     if (await fs.pathExists(to)) {
-        await fs.remove(to);
+        throw new Error(`防和谐资源目标已存在，未覆盖: ${to}`);
     }
-    await fs.move(from, to);
+    await fs.move(from, to, { overwrite: false });
     return true;
 }
 

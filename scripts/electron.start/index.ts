@@ -28,7 +28,8 @@ const electronProcess = spawn(absolutelyElectronExe, ['.', '--inspect=5858'], {
 	cwd: absolutelyPath_subproject, // 设置当前工作目录为 subproject 路径
 	stdio: 'inherit', // 忽略 stdin, 监听 stdout 和 stderr
 	env: {
-		NODE_OPTIONS: '--enable-source-maps'
+		...process.env,
+		NODE_OPTIONS: [process.env.NODE_OPTIONS, '--enable-source-maps'].filter(Boolean).join(' ')
 	}
 });
 

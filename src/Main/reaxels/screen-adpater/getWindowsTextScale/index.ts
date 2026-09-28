@@ -1,4 +1,11 @@
-export const getTextScaleFactor = async (): Promise<number> => {
+let cachedTextScale: Promise<number> | null = null;
+
+export const getTextScaleFactor = (): Promise<number> => {
+	if (!cachedTextScale) cachedTextScale = detectTextScaleFactor();
+	return cachedTextScale;
+};
+
+const detectTextScaleFactor = async (): Promise<number> => {
 	// 在非 Windows 平台上直接返回默认值
 	if (process.platform !== 'win32') {
 		console.log('[TextScale] Non-Windows platform detected, using default scale factor 1.0');
@@ -13,7 +20,7 @@ export const getTextScaleFactor = async (): Promise<number> => {
 			return result;
 		}
 	} catch (e) {
-		console.warn(`无法通过py_screeninfo获取主屏幕的textScaleFactor:`, e.message);
+		// py_screeninfo does not report text scaling on every Windows system.
 	}
 
 	try {
@@ -22,20 +29,19 @@ export const getTextScaleFactor = async (): Promise<number> => {
 			return result;
 		}
 	} catch (e) {
-		console.warn(`无法通过注册表获取主屏幕的textScaleFactor:`, e.message);
+		// Continue to the PowerShell fallback.
 	}
 
 	try {
-		const result = getWindowsTextScaleByPS();
+		const result = await getWindowsTextScaleByPS();
 		if (checkValidScale(result)) {
 			return result;
 		}
 	} catch (e) {
-		console.warn(`无法通过PowerShell获取主屏幕的textScaleFactor:`, e.message);
+		// Continue with the documented default when Windows does not expose this value.
 	}
 
 	// 所有方法都失败，返回默认值
-	console.warn('所有获取文本缩放因子的方法都失败，使用默认值 1.0');
 	return 1.0;
 };
 
@@ -47,4 +53,3 @@ function checkValidScale(scale: number) {
 import { getWindowsTextScaleByPS } from './powershell-style';
 import { getWindowsTextScaleByReg } from './registry-style';
 import { getTextScaleFactorByPyScreensInfo } from './spawn-pyscreen-style';
-

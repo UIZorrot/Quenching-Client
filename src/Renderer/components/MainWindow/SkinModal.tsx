@@ -1,903 +1,252 @@
-import React, { useState, useMemo } from 'react';
-import { Card, Typography, Button, Space, Row, Col, Image, message, Switch } from 'antd';
-import { useTranslation } from '../../utils/i18n';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Switch, message } from 'antd';
+import { ModelPreview } from './ModelPreview';
+import { CustomSkinEditor } from './CustomSkinEditor';
 import { OverlayModal } from './OverlayModal';
-import { SKIN_CONFIG, HeroSkinConfig, CUSTOM_SKIN_CONFIG, UnitSkinChange } from '../../assets/data/skin-config';
-
-/** Group flat warband rows into skin:apply-batch payload */
-function buildBatchChangesFromWarbandConfig(config: UnitSkinChange[]) {
-    const groupedChanges: Record<string, { field: string; value: string }[]> = {};
-    config.forEach((c) => {
-        if (!groupedChanges[c.unitId]) {
-            groupedChanges[c.unitId] = [];
-        }
-        groupedChanges[c.unitId].push({ field: c.field, value: c.value });
-    });
-    return Object.keys(groupedChanges).map((unitId) => ({
-        unitId,
-        changes: groupedChanges[unitId],
-    }));
-}
-import { useSound } from '../../hooks/useSound';
-import { useWar3Settings } from '../../hooks/useWar3Settings';
+import { SKIN_CONFIG } from '../../assets/data/skin-config';
+import { builtInSkins, PanelSkin, skinTargets, warbandChoices } from '../../assets/data/skin-panel-catalog';
+import { SkinSelections, VersionSkinChange, VersionSkinChoice, scopedSkin } from '../../../shared/skin-versions';
+import { activeSkinArtSet } from '../../../shared/active-skin-art-set';
 import { useWar3Detector } from '../../hooks/useWar3Detector';
+import { useWar3Settings } from '../../hooks/useWar3Settings';
+import { useSound } from '../../hooks/useSound';
+import * as styles from './SkinModal.module.less';
 
-const { Text } = Typography;
-
-function heroSkinKey(raceId: string, heroId: string): string {
-    return `${raceId}:${heroId}`;
-}
-
-interface SkinModalProps {
-    open: boolean;
-    onClose: () => void;
-    isFullPackageInstalled?: boolean;
-}
+interface SkinModalProps { open: boolean; onClose: () => void; isFullPackageInstalled?: boolean }
+type Category = 'hero' | 'unit' | 'building';
+type UnitMode = 'single' | 'warband' | 'retro';
+const races = [
+  { id: 'hum', name: '人类', icon: 'human-icon-pressed.png', glow: 'rgba(75,142,255,.85)', teamColor: 1 },
+  { id: 'orc', name: '兽人', icon: 'orc-icon-pressed.png', glow: 'rgba(255,70,62,.85)', teamColor: 0 },
+  { id: 'ud', name: '不死族', icon: 'undead-icon-pressed.png', glow: 'rgba(175,94,255,.9)', teamColor: 3 },
+  { id: 'ne', name: '暗夜精灵', icon: 'nightelf-icon-pressed.png', glow: 'rgba(64,217,213,.85)', teamColor: 2 },
+  { id: 'neutral', name: '中立', icon: 'random-icon-.png', glow: 'rgba(178,183,190,.72)', teamColor: 8 },
+] as const;
+const categories: { id: Category; name: string; icon: string }[] = [
+  { id: 'hero', name: '英雄', icon: 'skin-nav-hero.png' },
+  { id: 'unit', name: '单位', icon: 'skin-nav-unit.png' },
+  { id: 'building', name: '建筑', icon: 'skin-nav-building.png' },
+];
+const asset = (name?: string) => `./assets/quenching/${name || 'logo.png'}`;
+const needsPackage = (config: VersionSkinChange[]) => config.some(change => /^file(?::|$)/.test(change.field) && /^cos[\\/](?!custom[\\/])/i.test(change.value));
+const modelFrom = (original: VersionSkinChange[], changes: VersionSkinChange[], artSet: 'sd' | 'hd' | 'de') =>
+  scopedSkin([...original, ...changes], artSet).find(change => change.field === `file:${artSet}`)?.value;
 
 export const SkinModal: React.FC<SkinModalProps> = ({ open, onClose, isFullPackageInstalled = false }) => {
-    const { t } = useTranslation();
-    const { playSmall, playHover } = useSound();
-    const { modSettings } = useWar3Settings();
-    const { currentInstallation } = useWar3Detector();
-    const isClassicMode = modSettings?.classicMode || false;
-    const war3Path = currentInstallation?.path || '';
-    const [selectedRace, setSelectedRace] = useState<string>('hum');
-    const [selectedCategory, setSelectedCategory] = useState<string>('hero');
-    const [selectedHeroId, setSelectedHeroId] = useState<string>('');
-    const [heroSkinByKey, setHeroSkinByKey] = useState<Record<string, string>>({});
-    const [warbandSkinByRace, setWarbandSkinByRace] = useState<Record<string, string>>({});
-    const [selectedCustomUnitId, setSelectedCustomUnitId] = useState<string>('');
-    const [customSkins, setCustomSkins] = useState<Record<string, string>>({});
-    const [skinEnabled, setSkinEnabled] = useState(true);
-    const [retroUnitsEnabled, setRetroUnitsEnabled] = useState(false);
-    const [retroBuildingsEnabled, setRetroBuildingsEnabled] = useState(false);
-    const [retroUnitsDirName, setRetroUnitsDirName] = useState<string | null>(null);
-    const [retroBuildingsDirName, setRetroBuildingsDirName] = useState<string | null>(null);
-    const [retroApplying, setRetroApplying] = useState(false);
+  const { currentInstallation } = useWar3Detector();
+  const { modSettings, settings } = useWar3Settings();
+  const { playSmall, playHover } = useSound();
+  const artSet = activeSkinArtSet(modSettings.graphicsSelection, settings.hd, modSettings.classicMode, settings.detectedGraphics);
+  const [raceId, setRaceId] = useState('hum');
+  const [category, setCategory] = useState<Category>('hero');
+  const [unitMode, setUnitMode] = useState<UnitMode>('single');
+  const [targetId, setTargetId] = useState('');
+  const [previewId, setPreviewId] = useState('');
+  const [presetId, setPresetId] = useState('');
+  const [custom, setCustom] = useState<CustomSkinRecord[]>([]);
+  const [selections, setSelections] = useState<SkinSelections>({});
+  const [originals, setOriginals] = useState<Record<string, VersionSkinChange[]>>({});
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [enabled, setEnabled] = useState(true);
+  const [retro, setRetro] = useState({ unitsEnabled: false, buildingsEnabled: false, unitsDirName: null as string | null, buildingsDirName: null as string | null });
 
-    const isRetroTab = selectedCategory === 'retro';
-    const isRetroActive = retroUnitsEnabled || retroBuildingsEnabled;
-    const panelDisabled = !skinEnabled;
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setLoading(true); setError(''); setOriginals({});
+    Promise.all([window.electronAPI.getVersionSkinPanel(artSet), window.electronAPI.listCustomSkins(), window.electronAPI.isSkinEnabled(), window.electronAPI.getRetroSkinStatus()])
+      .then(([panel, saved, active, status]) => {
+        if (cancelled) return;
+        setSelections(panel.selections); setOriginals(panel.originals); setCustom(saved); setEnabled(active); setRetro(status);
+      })
+      .catch((e: Error) => { if (!cancelled) setError(e.message || '读取皮肤失败'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [open, artSet, currentInstallation?.path]);
 
-    React.useEffect(() => {
-        if (!open) return;
-        window.electronAPI?.isSkinEnabled?.()
-            .then((enabled) => setSkinEnabled(enabled !== false))
-            .catch(() => setSkinEnabled(true));
-
-        window.electronAPI?.getRetroSkinStatus?.()
-            .then((status) => {
-                if (!status) return;
-                setRetroUnitsEnabled(isFullPackageInstalled && status.unitsEnabled);
-                setRetroBuildingsEnabled(isFullPackageInstalled && status.buildingsEnabled);
-                setRetroUnitsDirName(status.unitsDirName);
-                setRetroBuildingsDirName(status.buildingsDirName);
-                if (isFullPackageInstalled && (status.unitsEnabled || status.buildingsEnabled)) {
-                    setSelectedCategory('retro');
-                } else {
-                    setSelectedCategory('hero');
-                }
-            })
-            .catch(() => {});
-    }, [open, war3Path, isFullPackageInstalled]);
-
-    // 种族数据
-    const races = [
-        { id: 'hum', name: t('skin.race.hum'), icon: './assets/quenching/human-icon-pressed.png' },
-        { id: 'orc', name: t('skin.race.orc'), icon: './assets/quenching/orc-icon-pressed.png' },
-        { id: 'ud', name: t('skin.race.ud'), icon: './assets/quenching/undead-icon-pressed.png' },
-        { id: 'ne', name: t('skin.race.ne'), icon: './assets/quenching/nightelf-icon-pressed.png' },
-        { id: 'neutral', name: t('skin.race.neutral'), icon: './assets/quenching/logo.png' }
-    ];
-
-    // 获取当前种族的英雄列表
-    const currentHeroes = useMemo(() => {
-        const raceConfig = SKIN_CONFIG[selectedRace];
-        return raceConfig ? raceConfig.heroes : [];
-    }, [selectedRace]);
-
-    // 获取当前种族的战团列表
-    const currentWarbands = useMemo(() => {
-        const raceConfig = SKIN_CONFIG[selectedRace];
-        return raceConfig ? raceConfig.warbands || [] : [];
-    }, [selectedRace]);
-
-    // 当种族或类别改变时，重置选择
-    React.useEffect(() => {
-        if (selectedCategory === 'hero') {
-            if (currentHeroes.length > 0) {
-                if (!currentHeroes.find(h => h.id === selectedHeroId)) {
-                    setSelectedHeroId(currentHeroes[0].id);
-                }
-            }
-        } else {
-            if (selectedHeroId !== 'custom') {
-                setSelectedHeroId('warband');
-            }
-
-            if (selectedHeroId === 'warband' && currentWarbands.length > 0) {
-                const saved = warbandSkinByRace[selectedRace];
-                if (!saved || !currentWarbands.find(w => w.id === saved)) {
-                    const defaultWarband = currentWarbands.find(w => w.id.endsWith('_u1')) || currentWarbands[0];
-                    if (defaultWarband) {
-                        setWarbandSkinByRace(prev => ({ ...prev, [selectedRace]: defaultWarband.id }));
-                    }
-                }
-            } else if (selectedHeroId === 'custom') {
-                const raceUnits = CUSTOM_SKIN_CONFIG[selectedRace]?.units || [];
-                if (selectedCustomUnitId && !raceUnits.find(u => u.unitId === selectedCustomUnitId)) {
-                    setSelectedCustomUnitId('');
-                }
-            }
-        }
-    }, [selectedRace, selectedCategory, currentHeroes, currentWarbands, selectedHeroId, selectedCustomUnitId, warbandSkinByRace]);
-
-    // 获取当前选中的英雄数据
-    const currentHero = useMemo(() => {
-        return currentHeroes.find(h => h.id === selectedHeroId);
-    }, [currentHeroes, selectedHeroId]);
-
-    // Calculate available skins based on restrictions
-    const availableSkins = useMemo(() => {
-        if (!currentHero) return [];
-        let skins = currentHero.skins;
-
-        if (isClassicMode) {
-            skins = skins.slice(0, 2);
-        }
-
-        if (!isFullPackageInstalled) {
-            skins = skins.filter(skin =>
-                !skin.config.some(c => typeof c.value === 'string' && c.value.toLowerCase().includes('cos'))
-            );
-        }
-
-        return skins;
-    }, [currentHero, isClassicMode, isFullPackageInstalled]);
-
-    const activeHeroSkinId = useMemo(() => {
-        if (!currentHero || availableSkins.length === 0) return '';
-        const saved = heroSkinByKey[heroSkinKey(selectedRace, selectedHeroId)];
-        if (saved && availableSkins.some(s => s.id === saved)) {
-            return saved;
-        }
-        return availableSkins[0].id;
-    }, [heroSkinByKey, selectedRace, selectedHeroId, availableSkins, currentHero]);
-
-    const activeWarbandSkinId = useMemo(() => {
-        if (currentWarbands.length === 0) return '';
-        const saved = warbandSkinByRace[selectedRace];
-        if (saved && currentWarbands.some(w => w.id === saved)) {
-            return saved;
-        }
-        const defaultWarband = currentWarbands.find(w => w.id.endsWith('_u1')) || currentWarbands[0];
-        return defaultWarband?.id || '';
-    }, [warbandSkinByRace, selectedRace, currentWarbands]);
-
-    // 获取当前选中的战团数据
-    const currentWarband = useMemo(() => {
-        return currentWarbands.find(w => w.id === activeWarbandSkinId);
-    }, [currentWarbands, activeWarbandSkinId]);
-
-    React.useEffect(() => {
-        if (selectedCategory === 'unit') {
-            if (isClassicMode || !isFullPackageInstalled) {
-                setSelectedCategory('hero');
-            }
-        }
-    }, [isClassicMode, isFullPackageInstalled, selectedCategory]);
-
-    React.useEffect(() => {
-        if (!open || selectedCategory !== 'hero' || selectedHeroId) return;
-        if (currentHeroes.length > 0) {
-            setSelectedHeroId(currentHeroes[0].id);
-        }
-    }, [open, selectedCategory, selectedHeroId, currentHeroes]);
-
-    const handleSelectModel = async (unitId: string) => {
-        try {
-            const filePath = await (window as any).electronAPI.selectModelFile();
-            if (filePath) {
-                setCustomSkins(prev => ({ ...prev, [unitId]: filePath }));
-                setSelectedCustomUnitId(unitId);
-                // 选择模型后立即应用，传入 filePath 避免状态更新延迟导致的问题
-                await handleApplySkin('custom', unitId, filePath);
-            }
-        } catch (error) {
-            console.error('Failed to select model file:', error);
-            message.error(t('skin.model.select.fail'));
-        }
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !busy && !editorOpen) onClose();
     };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, busy, editorOpen, onClose]);
 
-    const handleToggleSkins = async () => {
-        if (!war3Path) {
-            message.error('War3 path not detected');
-            return;
-        }
-        message.loading({ content: t('skin.applying'), key: 'applySkin' });
-        try {
-            if (skinEnabled) {
-                await window.electronAPI?.disableSkins?.();
-                setSkinEnabled(false);
-                setHeroSkinByKey({});
-                setWarbandSkinByRace({});
-                setSelectedCustomUnitId('');
-                message.success({ content: t('skin.disable.success'), key: 'applySkin' });
-            } else {
-                await window.electronAPI?.enableSkins?.();
-                setSkinEnabled(true);
-                message.success({ content: t('skin.allow.success'), key: 'applySkin' });
-                const status = await window.electronAPI?.getRetroSkinStatus?.();
-                if (status) {
-                    setRetroUnitsEnabled(status.unitsEnabled);
-                    setRetroBuildingsEnabled(status.buildingsEnabled);
-                    setRetroUnitsDirName(status.unitsDirName);
-                    setRetroBuildingsDirName(status.buildingsDirName);
-                }
-            }
-        } catch (error: any) {
-            const failKey = skinEnabled ? 'skin.disable.fail' : 'skin.allow.fail';
-            message.error({ content: `${t(failKey)}: ${error.message || ''}`, key: 'applySkin' });
-        }
-    };
+  const race = races.find(item => item.id === raceId)!;
+  const visibleRaces = category === 'hero' ? races : races.filter(item => item.id !== 'neutral');
+  const isWarband = category === 'unit' && unitMode === 'warband';
+  const isRetro = category === 'unit' && unitMode === 'retro';
+  const targets = useMemo(() => skinTargets(raceId, category), [raceId, category]);
+  const target = targets.find(item => item.unitId === targetId) || targets[0];
+  const skins: PanelSkin[] = target ? [
+    { id: 'original', name: '原版', config: [] },
+    ...builtInSkins(raceId, target.unitId, artSet),
+    ...custom.filter(item => (item.artSet || 'hd') === artSet && item.targetId === target.unitId && item.category === category),
+  ] : [];
+  const currentSkin = skins.find(item => item.id === previewId)
+    || skins.find(item => item.id === selections[artSet]?.[target?.unitId]) || skins[0];
+  const warbands = artSet === 'hd' ? SKIN_CONFIG[raceId]?.warbands || [] : [];
+  const currentPreset = warbands.find(item => item.id === presetId) || warbands[0];
+  const presetChoices = currentPreset ? warbandChoices(raceId, currentPreset.id) : [];
+  const presetComplete = presetChoices.length > 0 && presetChoices.every(item => selections[artSet]?.[item.unitId] === item.skinId);
+  const representative = presetChoices.find(item => item.changes.some(c => c.field === 'file' || c.field.startsWith('file:'))) || presetChoices[0];
+  const previewModel = !isWarband && target && currentSkin
+    ? modelFrom(originals[target.unitId] || [], currentSkin.config, artSet) : undefined;
+  const previewTitle = isWarband ? currentPreset?.name : currentSkin?.name;
+  const canApply = !busy && !loading && !error && !!originals[isWarband ? representative?.unitId : target?.unitId];
+  const unavailable = isWarband ? !!currentPreset && !isFullPackageInstalled && needsPackage(currentPreset.config)
+    : !!currentSkin && !isFullPackageInstalled && needsPackage(currentSkin.config);
 
-    const applyRetroSettings = async (unitsEnabled: boolean, buildingsEnabled: boolean) => {
-        if (!war3Path) {
-            message.error('War3 path not detected');
-            return;
-        }
+  const apply = async (choices: VersionSkinChoice[]) => {
+    setBusy(true);
+    try {
+      setSelections(await window.electronAPI.applyVersionSkins(artSet, choices));
+      setEnabled(true); message.success(`${artSet.toUpperCase()} 涂装已应用`);
+    } catch (e: any) { message.error(e.message || '应用涂装失败'); }
+    finally { setBusy(false); }
+  };
+  const toggle = async () => {
+    setBusy(true);
+    try {
+      if (enabled) await window.electronAPI.disableSkins(); else await window.electronAPI.enableSkins();
+      setEnabled(!enabled);
+    } catch (e: any) { message.error(e.message || '切换涂装失败'); }
+    finally { setBusy(false); }
+  };
+  const toggleRetro = async (field: 'unitsEnabled' | 'buildingsEnabled', value: boolean) => {
+    setBusy(true);
+    try { setRetro(await window.electronAPI.applyRetroSkin({ [field]: value })); }
+    catch (e: any) { message.error(e.message || '切换怀旧涂装失败'); }
+    finally { setBusy(false); }
+  };
+  const chooseRace = (id: string) => { playSmall(); setRaceId(id); setTargetId(''); setPreviewId(''); setPresetId(''); setEditorOpen(false); };
+  const chooseCategory = (id: Category) => { playSmall(); setCategory(id); if (id !== 'hero' && raceId === 'neutral') setRaceId('hum'); setUnitMode('single'); setTargetId(''); setPreviewId(''); setPresetId(''); setEditorOpen(false); };
+  const cycleSkin = (step: number) => {
+    if (!skins.length) return;
+    const index = skins.findIndex(item => item.id === currentSkin?.id);
+    const next = (index + step + skins.length) % skins.length;
+    setPreviewId(skins[next].id);
+    playSmall();
+  };
+  const cyclePreset = (step: number) => {
+    if (!warbands.length) return;
+    const index = warbands.findIndex(item => item.id === currentPreset?.id);
+    setPresetId(warbands[(index + step + warbands.length) % warbands.length].id);
+    playSmall();
+  };
 
-        if ((unitsEnabled || buildingsEnabled) && !isFullPackageInstalled) {
-            message.error(t('main.status.full_not_installed'));
-            return;
-        }
-
-        setRetroApplying(true);
-        message.loading({ content: t('skin.applying'), key: 'applySkin' });
-        try {
-            const status = await window.electronAPI?.applyRetroSkin?.({
-                unitsEnabled,
-                buildingsEnabled,
-            });
-            if (status) {
-                setRetroUnitsEnabled(status.unitsEnabled);
-                setRetroBuildingsEnabled(status.buildingsEnabled);
-                setRetroUnitsDirName(status.unitsDirName);
-                setRetroBuildingsDirName(status.buildingsDirName);
-            }
-            const skinStillEnabled = await window.electronAPI?.isSkinEnabled?.();
-            setSkinEnabled(skinStillEnabled !== false);
-            message.success({ content: t('skin.apply.success'), key: 'applySkin' });
-        } catch (error: any) {
-            message.error({ content: `${t('skin.apply.fail')}: ${error.message || ''}`, key: 'applySkin' });
-        } finally {
-            setRetroApplying(false);
-        }
-    };
-
-    const handleRetroToggle = async (type: 'units' | 'buildings', enabled: boolean) => {
-        const nextUnits = type === 'units' ? enabled : retroUnitsEnabled;
-        const nextBuildings = type === 'buildings' ? enabled : retroBuildingsEnabled;
-        await applyRetroSettings(nextUnits, nextBuildings);
-    };
-
-    const handleRetroCategoryClick = async () => {
-        if (panelDisabled || retroApplying || !isFullPackageInstalled) return;
-        playSmall();
-        if (isRetroActive) {
-            await applyRetroSettings(false, false);
-            setSelectedCategory('hero');
-            return;
-        }
-        if (isRetroTab) {
-            setSelectedCategory('hero');
-            return;
-        }
-        setSelectedCategory('retro');
-    };
-
-    const handleApplySkin = async (targetId: string, skinId: string, customFilePath?: string) => {
-        console.log('[SkinModal] handleApplySkin called:', { targetId, skinId, selectedCategory, selectedHeroId, isClassicMode });
-        if (!skinId) {
-            message.warning(t('skin.select.prompt'));
-            return;
-        }
-
-        if (!war3Path) {
-            message.error('War3 path not detected');
-            return;
-        }
-
-        message.loading({ content: t('skin.applying'), key: 'applySkin' });
-
-        try {
-            if (selectedCategory === 'hero') {
-                const skin = availableSkins?.find(s => s.id === skinId);
-                console.log('[SkinModal] Hero skin selection:', { currentHero, skin, isClassicMode });
-                if (!skin || !currentHero) {
-                    console.error('[SkinModal] Missing hero or skin definition');
-                    return;
-                }
-
-                // Classic mode: use classic skin API
-                if (isClassicMode) {
-                    // Convert skin config to classic format
-                    const classicSkinData: any = {};
-                    for (const change of skin.config) {
-                        if (change.field === 'file') {
-                            classicSkinData.file = change.value;
-                        } else if (change.field === 'modelScale:hd') {
-                            classicSkinData.modelScale = change.value;
-                        } else if (change.field === 'Art') {
-                            classicSkinData.art = change.value;
-                        } else if (change.field === 'unitSound') {
-                            classicSkinData.unitSound = change.value;
-                        }
-                    }
-
-                    console.log('[SkinModal] Applying classic skin:', { heroId: currentHero.unitId, skinData: classicSkinData });
-                    await (window as any).electronAPI.applyClassicSkin(war3Path, {
-                        heroId: currentHero.unitId,
-                        skinData: classicSkinData
-                    });
-                } else {
-                    // Reforged mode: use regular skin API
-                    await (window as any).electronAPI.applySkin(currentHero.unitId, skin.config);
-                }
-
-                setHeroSkinByKey(prev => ({
-                    ...prev,
-                    [heroSkinKey(selectedRace, selectedHeroId)]: skinId,
-                }));
-                message.success({ content: t('skin.apply.success'), key: 'applySkin' });
-            } else if (selectedHeroId === 'custom') {
-                // Custom skins not available in classic mode
-                if (isClassicMode) {
-                    message.error({ content: 'Custom skins are not available in classic mode', key: 'applySkin' });
-                    return;
-                }
-
-                const filePath = customFilePath || customSkins[skinId];
-                console.log('[SkinModal] Custom skin selection:', { skinId, filePath });
-                if (!filePath) {
-                    message.error({ content: t('skin.model.select'), key: 'applySkin' });
-                    return;
-                }
-                await (window as any).electronAPI.applySkin(skinId, [{ field: 'file', value: filePath }]);
-                setSelectedCustomUnitId(skinId);
-                message.success({ content: t('skin.apply.success'), key: 'applySkin' });
-            } else {
-                // Warband skins not available in classic mode
-                if (isClassicMode) {
-                    message.error({ content: 'Warband skins are not available in classic mode', key: 'applySkin' });
-                    return;
-                }
-
-                const warband = currentWarbands.find(w => w.id === skinId);
-                console.log('[SkinModal] Warband skin selection:', warband);
-                if (!warband) return;
-
-                const vanillaWarband = currentWarbands.find(w => w.id.endsWith('_u1'));
-
-                // 先还原为该种族「原版」战团，再应用所选涂装，避免 A→B 时只覆盖部分兵种导致混搭
-                if (vanillaWarband && warband.id !== vanillaWarband.id) {
-                    const resetBatch = buildBatchChangesFromWarbandConfig(vanillaWarband.config);
-                    console.log('[SkinModal] Reset race units to vanilla warband before apply:', vanillaWarband.id, resetBatch);
-                    await (window as any).electronAPI.applyBatchSkin(resetBatch);
-                }
-
-                const batchChanges = buildBatchChangesFromWarbandConfig(warband.config);
-                console.log('[SkinModal] Batch skin changes:', batchChanges);
-                await (window as any).electronAPI.applyBatchSkin(batchChanges);
-                setWarbandSkinByRace(prev => ({ ...prev, [selectedRace]: warband.id }));
-                message.success({ content: t('skin.apply.success'), key: 'applySkin' });
-            }
-        } catch (error: any) {
-            console.error('Failed to apply skin:', error);
-            message.error({ content: `${t('skin.apply.fail')}: ${error.message || ''}`, key: 'applySkin' });
-        }
-    };
-
-    return (
-        <OverlayModal
-            title={isClassicMode ? `${t('skin.title')} (${t('settings.ui.classic')})` : t('skin.title')}
-            open={open}
-            onClose={onClose}
-        >
-            <div style={{ padding: '0 40px' }}>
-                {/* 顶部控制栏：种族和类别 */}
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '40px',
-                    borderBottom: '1px solid rgba(212, 175, 55, 0.2)',
-                    paddingBottom: '20px'
-                }}>
-                    {/* 种族选择 */}
-                    {!isRetroTab && (
-                    <Space size="large" style={{
-                        opacity: panelDisabled ? 0.45 : 1,
-                        pointerEvents: panelDisabled ? 'none' : 'auto',
-                    }}>
-                        {races.map((race) => (
-                            <div
-                                key={race.id}
-                                onClick={() => {
-                                    playSmall();
-                                    setSelectedRace(race.id);
-                                }}
-                                onMouseEnter={() => playHover()}
-                                style={{
-                                    cursor: 'pointer',
-                                    opacity: selectedRace === race.id ? 1 : 0.5,
-                                    transform: selectedRace === race.id ? 'scale(1.1)' : 'scale(1)',
-                                    transition: 'all 0.3s',
-                                    textAlign: 'center',
-                                    display: selectedCategory === 'unit' && selectedHeroId !== 'custom' && race.id === 'neutral' ? 'none' : 'block' // 中立种族在自定义模式下可见
-                                }}
-                            >
-                                <img
-                                    src={race.icon}
-                                    alt={race.name}
-                                    style={{ width: '48px', height: '48px', marginBottom: '5px' }}
-                                />
-                                <div style={{ color: '#d4af37', fontSize: '14px' }}>{race.name}</div>
-                            </div>
-                        ))}
-                    </Space>
-                    )}
-
-                    {/* 类别选择 */}
-                    <Space>
-                        <Button
-                            type={selectedCategory === 'hero' ? "primary" : "default"}
-                            onClick={() => {
-                                if (isRetroTab) return;
-                                playSmall();
-                                setSelectedCategory('hero');
-                            }}
-                            onMouseEnter={() => playHover()}
-                            disabled={isRetroTab || panelDisabled}
-                            style={{
-                                background: selectedCategory === 'hero' ? '#d4af37' : 'transparent',
-                                borderColor: '#d4af37',
-                                color: (isRetroTab || panelDisabled) ? '#666' : (selectedCategory === 'hero' ? '#000' : '#d4af37'),
-                                height: '40px',
-                                padding: '0 30px',
-                                fontSize: '16px',
-                                opacity: (isRetroTab || panelDisabled) ? 0.5 : 1
-                            }}
-                        >
-                            {t('skin.category.hero')}
-                        </Button>
-                        {/* Hide warband/unit category in classic mode OR if full package is not installed */}
-                        {!isClassicMode && isFullPackageInstalled && (
-                            <Button
-                                type={selectedCategory === 'unit' ? "primary" : "default"}
-                                onClick={() => {
-                                    if (isRetroTab) return;
-                                    playSmall();
-                                    setSelectedCategory('unit');
-                                }}
-                                onMouseEnter={() => playHover()}
-                                disabled={isRetroTab || panelDisabled}
-                                style={{
-                                    background: selectedCategory === 'unit' ? '#d4af37' : 'transparent',
-                                    borderColor: '#d4af37',
-                                    color: (isRetroTab || panelDisabled) ? '#666' : (selectedCategory === 'unit' ? '#000' : '#d4af37'),
-                                    height: '40px',
-                                    padding: '0 30px',
-                                    fontSize: '16px',
-                                    opacity: (isRetroTab || panelDisabled) ? 0.5 : 1
-                                }}
-                            >
-                                {t('skin.category.unit')}
-                            </Button>
-                        )}
-                        <Button
-                            type={isRetroActive || isRetroTab ? "primary" : "default"}
-                            onClick={() => { void handleRetroCategoryClick(); }}
-                            onMouseEnter={() => playHover()}
-                            disabled={panelDisabled || retroApplying || !isFullPackageInstalled}
-                            style={{
-                                background: (isRetroActive || isRetroTab) ? '#d4af37' : 'transparent',
-                                borderColor: isRetroActive ? '#ff7875' : '#d4af37',
-                                color: panelDisabled ? '#666' : (isRetroActive ? '#000' : (isRetroTab ? '#000' : '#d4af37')),
-                                height: '40px',
-                                padding: '0 20px',
-                                fontSize: '16px',
-                                opacity: panelDisabled ? 0.5 : 1
-                            }}
-                        >
-                            {isRetroActive ? t('skin.category.retro.off') : t('skin.category.retro')}
-                        </Button>
-                        {!isClassicMode && isFullPackageInstalled && (
-                            <Button
-                                onClick={() => {
-                                    playSmall();
-                                    handleToggleSkins();
-                                }}
-                                onMouseEnter={() => playHover()}
-                                style={{
-                                    borderColor: skinEnabled ? '#ff7875' : '#52c41a',
-                                    color: skinEnabled ? '#ff7875' : '#52c41a',
-                                    height: '40px',
-                                    padding: '0 20px',
-                                    fontSize: '16px'
-                                }}
-                            >
-                                {skinEnabled ? t('skin.disable') : t('skin.allow')}
-                            </Button>
-                        )}
-                    </Space>
-                </div>
-
-                {panelDisabled && (
-                    <div style={{
-                        marginBottom: '24px',
-                        padding: '12px 16px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255, 120, 117, 0.35)',
-                        background: 'rgba(255, 120, 117, 0.08)',
-                        color: '#ffaaa8',
-                        fontSize: '14px',
-                        textAlign: 'center',
-                    }}>
-                        {t('skin.disabled.hint')}
-                    </div>
-                )}
-
-                {/* 主内容区：两栏布局 */}
-                <div style={{
-                    opacity: panelDisabled ? 0.45 : 1,
-                    pointerEvents: panelDisabled ? 'none' : 'auto',
-                }}>
-                {isRetroTab ? (
-                    <div style={{ padding: '20px 0', minHeight: '500px' }}>
-                        <Text style={{ color: '#d4af37', fontSize: '18px', marginBottom: '12px', display: 'block' }}>
-                            {t('skin.retro.title')}
-                        </Text>
-                        <Text style={{ color: '#aaa', fontSize: '14px', marginBottom: '32px', display: 'block' }}>
-                            {t('skin.retro.desc')}
-                        </Text>
-
-                        <Space direction="vertical" size={24} style={{ width: '100%', maxWidth: '640px' }}>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '20px 24px',
-                                border: '1px solid rgba(212, 175, 55, 0.3)',
-                                borderRadius: '8px',
-                                background: 'rgba(0,0,0,0.3)'
-                            }}>
-                                <div>
-                                    <div style={{ color: '#d4af37', fontSize: '16px', marginBottom: '6px' }}>
-                                        {t('skin.retro.units')}
-                                    </div>
-                                    <div style={{ color: '#888', fontSize: '13px' }}>
-                                        {retroUnitsDirName
-                                            ? `${t('skin.retro.units.desc')} (${retroUnitsDirName})`
-                                            : t('skin.retro.units.missing')}
-                                    </div>
-                                </div>
-                                <Switch
-                                    checked={retroUnitsEnabled}
-                                    disabled={retroApplying || !isFullPackageInstalled || !retroUnitsDirName}
-                                    onChange={(checked) => {
-                                        playSmall();
-                                        handleRetroToggle('units', checked);
-                                    }}
-                                />
-                            </div>
-
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '20px 24px',
-                                border: '1px solid rgba(212, 175, 55, 0.3)',
-                                borderRadius: '8px',
-                                background: 'rgba(0,0,0,0.3)'
-                            }}>
-                                <div>
-                                    <div style={{ color: '#d4af37', fontSize: '16px', marginBottom: '6px' }}>
-                                        {t('skin.retro.buildings')}
-                                    </div>
-                                    <div style={{ color: '#888', fontSize: '13px' }}>
-                                        {retroBuildingsDirName
-                                            ? `${t('skin.retro.buildings.desc')} (${retroBuildingsDirName})`
-                                            : t('skin.retro.buildings.missing')}
-                                    </div>
-                                </div>
-                                <Switch
-                                    checked={retroBuildingsEnabled}
-                                    disabled={retroApplying || !isFullPackageInstalled || !retroBuildingsDirName}
-                                    onChange={(checked) => {
-                                        playSmall();
-                                        handleRetroToggle('buildings', checked);
-                                    }}
-                                />
-                            </div>
-                        </Space>
-                    </div>
-                ) : (
-                <Row gutter={40}>
-                    {/* 左侧：列表 */}
-                    <Col span={6}>
-                        <div style={{
-                            borderRight: '1px solid rgba(212, 175, 55, 0.2)',
-                            height: '100%',
-                            minHeight: '500px'
-                        }}>
-                            <Text style={{ color: '#d4af37', fontSize: '18px', marginBottom: '20px', display: 'block' }}>
-                                {selectedCategory === 'hero' ? t('skin.select.hero') : t('skin.category.unit.select')}
-                            </Text>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                {selectedCategory === 'hero' ? (
-                                    currentHeroes.map((hero) => (
-                                        <div
-                                            key={hero.id}
-                                            onClick={() => {
-                                                console.log('[SkinModal] Hero clicked:', hero.id);
-                                                playSmall();
-                                                setSelectedHeroId(hero.id);
-                                            }}
-                                            onMouseEnter={() => playHover()}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                padding: '10px',
-                                                background: selectedHeroId === hero.id ? 'linear-gradient(90deg, rgba(212, 175, 55, 0.3), transparent)' : 'transparent',
-                                                borderLeft: selectedHeroId === hero.id ? '4px solid #d4af37' : '4px solid transparent',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            <img
-                                                src={`./assets/quenching/${hero.icon}`}
-                                                alt={hero.name}
-                                                style={{ width: '48px', height: '48px', marginRight: '15px', borderRadius: '4px' }}
-                                            />
-                                            <span style={{ color: '#d4af37', fontSize: '16px' }}>{t(`skin.hero.${hero.id}` as any, hero.name)}</span>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                                        <div
-                                            onClick={() => {
-                                                playSmall();
-                                                setSelectedHeroId('warband');
-                                            }}
-                                            onMouseEnter={() => playHover()}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                padding: '10px',
-                                                background: selectedHeroId === 'warband' ? 'linear-gradient(90deg, rgba(212, 175, 55, 0.3), transparent)' : 'transparent',
-                                                borderLeft: selectedHeroId === 'warband' ? '4px solid #d4af37' : '4px solid transparent',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            <img
-                                                src="./assets/quenching/logo.png"
-                                                alt={t('skin.warband')}
-                                                style={{ width: '48px', height: '48px', marginRight: '15px', borderRadius: '4px' }}
-                                            />
-                                            <span style={{ color: '#d4af37', fontSize: '16px' }}>{t('skin.warband')}</span>
-                                        </div>
-                                        <div
-                                            onClick={() => {
-                                                playSmall();
-                                                setSelectedHeroId('custom');
-                                                setSelectedCustomUnitId('');
-                                            }}
-                                            onMouseEnter={() => playHover()}
-                                            style={{
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                padding: '10px',
-                                                background: selectedHeroId === 'custom' ? 'linear-gradient(90deg, rgba(212, 175, 55, 0.3), transparent)' : 'transparent',
-                                                borderLeft: selectedHeroId === 'custom' ? '4px solid #d4af37' : '4px solid transparent',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            <img
-                                                src="./assets/quenching/human-icon-pressed.png"
-                                                alt={t('skin.custom')}
-                                                style={{ width: '48px', height: '48px', marginRight: '15px', borderRadius: '4px', filter: 'sepia(1) saturate(5) hue-rotate(0deg)' }}
-                                            />
-                                            <span style={{ color: '#d4af37', fontSize: '16px' }}>{t('skin.custom')}</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </Col>
-
-                    {/* 右侧：皮肤预览 */}
-                    <Col span={18}>
-                        <Text style={{ color: '#d4af37', fontSize: '18px', marginBottom: '20px', display: 'block' }}>
-                            {selectedHeroId === 'custom' ? t('skin.custom.model') : t('skin.available')}
-                        </Text>
-
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                            gap: '20px'
-                        }}>
-                            {selectedCategory === 'hero' ? (
-                                availableSkins?.map((skin) => (
-                                    <div
-                                        key={skin.id}
-                                        onClick={() => {
-                                            console.log('[SkinModal] Skin clicked:', skin.id);
-                                            playSmall();
-                                            handleApplySkin(currentHero.id, skin.id);
-                                        }}
-                                        onMouseEnter={() => playHover()}
-                                        style={{
-                                            background: activeHeroSkinId === skin.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
-                                            border: activeHeroSkinId === skin.id ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
-                                            borderRadius: '8px',
-                                            overflow: 'hidden',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s',
-                                            transform: activeHeroSkinId === skin.id ? 'translateY(-5px)' : 'none',
-                                            boxShadow: activeHeroSkinId === skin.id ? '0 5px 15px rgba(0,0,0,0.5)' : 'none'
-                                        }}
-                                    >
-                                        <div style={{ height: '140px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-                                            <Image
-                                                src={`./assets/quenching/${skin.preview}`}
-                                                alt={skin.name}
-                                                preview={false}
-                                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                                                fallback="./assets/quenching/logo.png"
-                                            />
-                                        </div>
-                                        <div style={{
-                                            padding: '10px',
-                                            textAlign: 'center',
-                                            borderTop: '1px solid rgba(212, 175, 55, 0.2)',
-                                            background: activeHeroSkinId === skin.id ? '#d4af37' : 'transparent'
-                                        }}>
-                                            <span style={{
-                                                color: activeHeroSkinId === skin.id ? '#000' : '#d4af37',
-                                                fontWeight: 'bold'
-                                            }}>
-                                                {t(`skin.hero.${selectedHeroId}.skin.${skin.id}` as any, skin.name)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))
-                            ) : selectedHeroId === 'custom' ? (
-                                (CUSTOM_SKIN_CONFIG[selectedRace]?.units || []).map((unit) => (
-                                    <div
-                                        key={unit.unitId}
-                                        onClick={() => {
-                                            playSmall();
-                                            setSelectedCustomUnitId(unit.unitId);
-                                        }}
-                                        onMouseEnter={() => playHover()}
-                                        style={{
-                                            background: selectedCustomUnitId === unit.unitId ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
-                                            border: selectedCustomUnitId === unit.unitId ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
-                                            borderRadius: '8px',
-                                            padding: '15px',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s',
-                                            textAlign: 'center',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            gap: '10px'
-                                        }}
-                                    >
-                                        <img
-                                            src={`./assets/quenching/${unit.icon}`}
-                                            alt={unit.name}
-                                            style={{ width: '64px', height: '64px', borderRadius: '4px' }}
-                                        />
-                                        <span style={{ color: '#d4af37', fontSize: '16px', fontWeight: 'bold' }}>{t(`skin.unit.${unit.unitId}` as any, unit.name)}</span>
-
-                                        <Button
-                                            size="small"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                playSmall();
-                                                handleSelectModel(unit.unitId);
-                                            }}
-                                            onMouseEnter={() => playHover()}
-                                            style={{
-                                                background: customSkins[unit.unitId] ? '#d4af37' : 'transparent',
-                                                borderColor: '#d4af37',
-                                                color: customSkins[unit.unitId] ? '#000' : '#d4af37',
-                                                fontSize: '12px'
-                                            }}
-                                        >
-                                            {customSkins[unit.unitId] ? t('skin.model.reselect') : t('skin.model.select')}
-                                        </Button>
-
-                                        {customSkins[unit.unitId] && (
-                                            <div style={{
-                                                fontSize: '10px',
-                                                color: '#aaa',
-                                                maxWidth: '100%',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap'
-                                            }}>
-                                                {customSkins[unit.unitId].split(/[\\/]/).pop()}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))
-                            ) : (
-                                currentWarbands.map((warband) => (
-                                    <div
-                                        key={warband.id}
-                                        onClick={() => {
-                                            playSmall();
-                                            handleApplySkin('warband', warband.id);
-                                        }}
-                                        onMouseEnter={() => playHover()}
-                                        style={{
-                                            background: activeWarbandSkinId === warband.id ? 'rgba(212, 175, 55, 0.15)' : 'rgba(0,0,0,0.3)',
-                                            border: activeWarbandSkinId === warband.id ? '2px solid #d4af37' : '1px solid rgba(212, 175, 55, 0.3)',
-                                            borderRadius: '8px',
-                                            overflow: 'hidden',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s',
-                                            transform: activeWarbandSkinId === warband.id ? 'translateY(-5px)' : 'none',
-                                            boxShadow: activeWarbandSkinId === warband.id ? '0 5px 15px rgba(0,0,0,0.5)' : 'none'
-                                        }}
-                                    >
-                                        <div style={{ height: '140px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000' }}>
-                                            <Image
-                                                src={`./assets/quenching/${warband.preview}`}
-                                                alt={warband.name}
-                                                preview={false}
-                                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                                                fallback="./assets/quenching/logo.png"
-                                            />
-                                        </div>
-                                        <div style={{
-                                            padding: '10px',
-                                            textAlign: 'center',
-                                            borderTop: '1px solid rgba(212, 175, 55, 0.2)',
-                                            background: activeWarbandSkinId === warband.id ? '#d4af37' : 'transparent'
-                                        }}>
-                                            <span style={{
-                                                color: activeWarbandSkinId === warband.id ? '#000' : '#d4af37',
-                                                fontWeight: 'bold'
-                                            }}>
-                                                {t(`skin.warband.${warband.id}` as any, warband.name)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-
-                        {selectedCategory === 'hero' && !currentHero && (
-                            <div style={{ color: '#666', textAlign: 'center', marginTop: '50px' }}>
-                                {t('skin.prompt.hero')}
-                            </div>
-                        )}
-                        {selectedCategory === 'unit' && selectedHeroId === 'custom' && !selectedCustomUnitId && (
-                            <div style={{ color: '#666', textAlign: 'center', marginTop: '50px' }}>
-                                {t('skin.prompt.custom')}
-                            </div>
-                        )}
-                    </Col>
-                </Row>
-                )}
-                </div>
+  if (!open) return null;
+  return <>
+    <OverlayModal open={open} onClose={busy ? () => undefined : onClose} title="单位涂装" width="90%">
+      <div className={styles.layout}>
+        <nav className={styles.sidebar} aria-label="涂装类别">
+          {categories.map(item => <button key={item.id} className={`${styles.category} ${category === item.id ? styles.categoryActive : ''}`}
+            aria-pressed={category === item.id} onClick={() => chooseCategory(item.id)} onMouseEnter={playHover}>
+            <img src={asset(item.icon)} alt="" /><span>{item.name}</span>
+          </button>)}
+          <div className={styles.sidebarFoot}>{artSet.toUpperCase()} 画质<br /><small>画质版本在首页切换</small></div>
+        </nav>
+        <div className={styles.content}>
+          <main className={styles.controls}>
+            <div className={styles.intro}>
+              <span>{race.name} · {artSet.toUpperCase()}</span>
+              <h2>{category === 'hero' ? '英雄涂装' : category === 'building' ? '建筑涂装' : '单位涂装'}</h2>
+              <p>{isWarband ? '通过下方涂装选项选择战团，右侧查看战团概览。'
+                : category === 'unit' ? '选择单位，或将战团涂装作为一组预设应用。' : '选择对象后，在右侧预览实际游戏模型。'}</p>
             </div>
-        </OverlayModal>
-    );
+            <div className={`${styles.activationBar} ${enabled ? '' : styles.activationOff}`}>
+              <div className={styles.activationStatus}>
+                <strong>{enabled ? '涂装已启用' : '涂装未启用'}</strong>
+                <small>{enabled ? '所选皮肤会在游戏中生效' : '当前选择会保留，启用后才会在游戏中生效'}</small>
+              </div>
+              <button className={`${styles.activationButton} ${!enabled ? styles.activationPrimary : ''}`}
+                onClick={toggle} disabled={busy || loading}>
+                {busy ? '处理中…' : enabled ? '关闭涂装' : '启用涂装'}
+              </button>
+            </div>
+            {category === 'unit' && <div className={styles.unitModes} role="group" aria-label="单位涂装模式">
+              {([{ id: 'single', label: '单个单位' }, { id: 'warband', label: '战团预设' }, { id: 'retro', label: '怀旧涂装' }] as const).map(item =>
+                <button key={item.id} className={unitMode === item.id ? styles.modeActive : ''} aria-pressed={unitMode === item.id}
+                  onClick={() => { playSmall(); setUnitMode(item.id); setEditorOpen(false); }} onMouseEnter={playHover}>{item.label}</button>)}
+            </div>}
+            {!isRetro && <section>
+              <h3>种族</h3>
+              <div className={styles.races} role="group" aria-label="选择种族">
+                {visibleRaces.map(item => <button key={item.id} className={`${styles.race} ${raceId === item.id ? styles.raceActive : ''}`}
+                  title={item.name} aria-label={item.name} aria-pressed={raceId === item.id} onClick={() => chooseRace(item.id)} onMouseEnter={playHover}>
+                  <img src={asset(item.icon)} alt="" />
+                </button>)}
+              </div>
+            </section>}
+            {error && <div role="alert" className={styles.notice}>{error}</div>}
+            {isRetro ? <section className={styles.retroBox}>
+              <h3>怀旧涂装</h3>
+              {(['unitsEnabled', 'buildingsEnabled'] as const).map(field => <div className={styles.retroRow} key={field}>
+                <span>{field === 'unitsEnabled' ? '怀旧单位' : '怀旧建筑'}<small>{field === 'unitsEnabled' ? retro.unitsDirName : retro.buildingsDirName}</small></span>
+                <Switch checked={retro[field]} disabled={busy || artSet !== 'hd' || !isFullPackageInstalled} onChange={checked => void toggleRetro(field, checked)} />
+              </div>)}
+              {artSet !== 'hd' && <p>怀旧资源适用于 HD 画质，可在首页切换。</p>}
+              {!isFullPackageInstalled && <p>需要安装完整资源包。</p>}
+            </section> : <>
+              {!isWarband && <section className={styles.targetSection}>
+                <h3>选择{category === 'hero' ? '英雄' : category === 'building' ? '建筑' : '单位'}</h3>
+                <div className={styles.targets}>
+                  {targets.map(item => <button key={item.unitId} className={`${styles.target} ${target?.unitId === item.unitId ? styles.targetActive : ''}`}
+                    title={item.name} aria-label={item.name} aria-pressed={target?.unitId === item.unitId}
+                    onClick={() => { playSmall(); setTargetId(item.unitId); setPreviewId(''); setEditorOpen(false); }} onMouseEnter={playHover}>
+                    {item.icon ? <img src={asset(item.icon)} alt="" /> : <span className={styles.targetLabel}>{item.name}</span>}
+                  </button>)}
+                </div>
+                {!targets.length && <p className={styles.empty}>这一栏暂无对象。</p>}
+              </section>}
+              <section className={styles.choiceSection}>
+                <h3>涂装</h3>
+                {isWarband && !warbands.length && <p className={styles.empty}>此画质暂无战团预设。</p>}
+                <div className={styles.choiceRow}>
+                  <button className={styles.arrow} aria-label={isWarband ? '上一个战团预设' : '上一个皮肤'} onClick={() => isWarband ? cyclePreset(-1) : cycleSkin(-1)} disabled={isWarband ? !warbands.length : !skins.length}>‹</button>
+                  <div className={styles.choiceName}><strong>{previewTitle || (isWarband ? '暂无战团预设' : '尚无皮肤')}</strong><small>{isWarband ? currentPreset ? `${presetChoices.length} 个单位与建筑` : '当前无可用战团' : currentSkin && selections[artSet]?.[target?.unitId] === currentSkin.id ? '当前已应用' : '右侧实时预览'}</small></div>
+                  <button className={styles.arrow} aria-label={isWarband ? '下一个战团预设' : '下一个皮肤'} onClick={() => isWarband ? cyclePreset(1) : cycleSkin(1)} disabled={isWarband ? !warbands.length : !skins.length}>›</button>
+                  {isWarband ? <button className={styles.apply} disabled={!canApply || unavailable || !presetChoices.length} onClick={() => void apply(presetChoices)}>{unavailable ? '需要完整资源包' : presetComplete ? '重新应用' : '选定'}</button>
+                    : <button className={styles.apply} disabled={!canApply || unavailable || !target || !currentSkin} onClick={() => void apply([{ unitId: target!.unitId, skinId: currentSkin!.id, changes: currentSkin!.config }])}>
+                      {unavailable ? '需要完整资源包' : '选定'}
+                    </button>}
+                </div>
+                {!isWarband && <div className={styles.choiceMeta}>
+                  <span className={styles.skinCount}>{target ? `${Math.max(0, skins.findIndex(item => item.id === currentSkin?.id) + 1)} / ${skins.length} · ${target.name}` : ''}</span>
+                  {target && <button className={styles.addCustom} onClick={() => { playSmall(); setEditorOpen(true); }}>
+                    <span aria-hidden="true">＋</span> 添加自定义皮肤
+                  </button>}
+                </div>}
+              </section>
+            </>}
+            <div className={styles.secondaryActions}>
+              <button className={styles.toggle} onClick={() => message.info(isWarband
+                ? '通过左右箭头切换战团预设，右侧显示战团概览图；选定后批量应用到对应单位与建筑。'
+                : '选择对象与皮肤后点击“选定”；按住右侧模型可旋转。SD / HD / DE 请在首页切换。')}>操作说明</button>
+            </div>
+          </main>
+          <aside className={styles.showcase} style={{ '--team-glow': race.glow } as React.CSSProperties} aria-label={isWarband ? '战团预览' : '模型预览'}>
+            <div className={styles.halo} />
+            {isWarband ? <div className={styles.warbandPreview}>
+              {currentPreset ? <img key={currentPreset.id} src={asset(currentPreset.preview)} alt={`${currentPreset.name}战团预览`} />
+                : <span>此画质暂无战团预设</span>}
+            </div> : !isRetro ? <div className={styles.model}>
+              <ModelPreview key={`${artSet}:${raceId}:${category}:${unitMode}:${target?.unitId || currentPreset?.id}:${previewTitle}`}
+                modelPath={previewModel} artSet={artSet} teamColor={race.teamColor}
+                alt={previewTitle || '选择皮肤'} enabled={!loading && !unavailable} paused={editorOpen}
+                transparent viewDistance={category === 'building' ? 1.25 : 1} />
+            </div> : <div className={styles.retroPreview}>怀旧涂装是单位与建筑的整体预设</div>}
+            {!isRetro && (!isWarband || currentPreset) && <div className={styles.showcaseHint}>{isWarband ? `${currentPreset?.name} · ${presetChoices.length} 个单位与建筑` : '按住模型拖动旋转 · 默认 45°'}</div>}
+          </aside>
+        </div>
+      </div>
+    </OverlayModal>
+    {target && editorOpen && <CustomSkinEditor open={editorOpen} artSet={artSet} targetId={target.unitId} targetName={target.name}
+      category={category} race={raceId} onClose={() => setEditorOpen(false)}
+      onCreated={item => { setCustom(previous => [...previous, item]); setPreviewId(item.id); }} />}
+  </>;
 };

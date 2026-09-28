@@ -7,7 +7,10 @@ import { app } from 'electron';
 // app.whenReady 已经触发但锁还没拿到，导致多实例同时运行或异常退出。
 // =====================================================================
 
-const gotTheLock = app.requestSingleInstanceLock();
+// IPC fixtures use an isolated config and must not intercept launches of the
+// user's normal client.
+const isIsolatedTest = !!process.env.QUENCHING_TEST_CONFIG_DIR;
+const gotTheLock = isIsolatedTest || app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
 	// 已有实例在运行，静默退出当前新启动的进程（不弹错误框，避免干扰用户）
@@ -18,6 +21,7 @@ if (!gotTheLock) {
 // 当第二个实例尝试启动时（如用户双击图标），聚焦到已有主窗口
 // 注意：实际的窗口聚焦逻辑在 reaxel_MainProcessHub 中处理
 app.on('second-instance', () => {
+    if (isIsolatedTest) return;
 	// 从全局获取主窗口并聚焦（多数情况由框架处理）
 	const { BrowserWindow } = require('electron');
 	const windows = BrowserWindow.getAllWindows();

@@ -1,0 +1,149 @@
+diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/dds/texture.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/dds/texture.js
+index 6e2f671..a0ee730 100644
+--- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/dds/texture.js
++++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/dds/texture.js
+@@ -62,7 +62,16 @@ class DdsTexture extends texture_1.default {
+                 gl.texImage2D(gl.TEXTURE_2D, i, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+             }
+             else {
+-                gl.texImage2D(gl.TEXTURE_2D, i, gl.LUMINANCE_ALPHA, width, height, 0, gl.LUMINANCE_ALPHA, gl.UNSIGNED_BYTE, data);
++                // BC5/ATI2 stores independent R/G normal components. LUMINANCE_ALPHA
++                // swizzles these into R/R/R/G, but the HD shader samples .xy.
++                const rgba = new Uint8Array(width * height * 4);
++                for (let p = 0; p < width * height; p++) {
++                    rgba[p * 4] = data[p * 2];
++                    rgba[p * 4 + 1] = data[p * 2 + 1];
++                    rgba[p * 4 + 2] = 255;
++                    rgba[p * 4 + 3] = 255;
++                }
++                gl.texImage2D(gl.TEXTURE_2D, i, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+             }
+         }
+         // Restore the alignment to the default, in case it changed.
+diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/batchgroup.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/batchgroup.js
+index e1a5eca..874d279 100644
+--- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/batchgroup.js
++++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/batchgroup.js
+@@ -71,12 +71,13 @@ class BatchGroup {
+                 if (layerAlpha > 0) {
+                     gl.uniform1f(uniforms['u_layerAlpha'], layerAlpha);
+                     gl.uniform1f(uniforms['u_filterMode'], diffuseLayer.filterMode);
+-                    const diffuseId = diffuseLayer.textureId;
+-                    const normalsId = normalsLayer.textureId;
+-                    const ormId = ormLayer.textureId;
+-                    const emissiveId = emissiveLayer.textureId;
+-                    const teamColorId = teamColorLayer.textureId;
+-                    const environmentMapId = environmentMapLayer.textureId;
++                    diffuseLayer.bind(shader);
++                    const diffuseId = instance.layerTextures[diffuseLayer.index];
++                    const normalsId = instance.layerTextures[normalsLayer.index];
++                    const ormId = instance.layerTextures[ormLayer.index];
++                    const emissiveId = instance.layerTextures[emissiveLayer.index];
++                    const teamColorId = instance.layerTextures[teamColorLayer.index];
++                    const environmentMapId = instance.layerTextures[environmentMapLayer.index];
+                     const diffuseTexture = textures[diffuseId];
+                     const normalsTexture = textures[normalsId];
+                     const ormTexture = textures[ormId];
+diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/geoset.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/geoset.js
+index 541e0e9..3b586cb 100644
+--- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/geoset.js
++++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/geoset.js
+@@ -45,8 +45,9 @@ class Geoset {
+         gl.vertexAttribPointer(attribs['a_boneNumber'], 1, skinDataType, false, 9 * bytesPerSkinElement, this.skinOffset + 8 * bytesPerSkinElement);
+     }
+     bindSkin(gl, attribs) {
+-        gl.vertexAttribPointer(attribs['a_bones'], 4, gl.UNSIGNED_BYTE, false, 8, this.skinOffset);
+-        gl.vertexAttribPointer(attribs['a_weights'], 4, gl.UNSIGNED_BYTE, true, 8, this.skinOffset + 4);
++        const width = this.model.bytesPerSkinElement;
++        gl.vertexAttribPointer(attribs['a_bones'], 4, this.model.skinDataType, false, 8 * width, this.skinOffset);
++        gl.vertexAttribPointer(attribs['a_weights'], 4, this.model.skinDataType, true, 8 * width, this.skinOffset + 4 * width);
+     }
+     bind(shader, coordId) {
+         const gl = this.model.viewer.gl;
+diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/setupgeosets.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/setupgeosets.js
+index 23f9f62..3cbd67f 100644
+--- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/setupgeosets.js
++++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/setupgeosets.js
+@@ -53,7 +53,7 @@ function setupGeosets(model, geosets) {
+         let faceOffset = 0;
+         let SkinTypedArray = Uint8Array;
+         let skinGlType = gl.UNSIGNED_BYTE;
+-        if (model.bones.length > 255) {
++        if (model.bones.length > 255 || geosets.some(g => g.skin instanceof Uint16Array)) {
+             skinBytes *= 2;
+             SkinTypedArray = Uint16Array;
+             skinGlType = gl.UNSIGNED_SHORT;
+@@ -78,7 +78,14 @@ function setupGeosets(model, geosets) {
+                 const vertices = geoset.vertices.length / 3;
+                 const skinType = skinTypes[i];
+                 if (skinType === batch_1.SkinningType.Skin) {
+-                    skin = geoset.skin;
++                    skin = new SkinTypedArray(geoset.skin);
++                    // 16-bit normalized attributes require weights in 0..65535,
++                    // while MDX stores weights in 0..255 even in wide SKIN.
++                    if (SkinTypedArray === Uint16Array) {
++                        for (let v = 0; v < vertices; v++) {
++                            for (let k = 4; k < 8; k++) skin[v * 8 + k] *= 257;
++                        }
++                    }
+                 }
+                 else {
+                     const matrixIndices = geoset.matrixIndices;
+@@ -119,7 +126,11 @@ function setupGeosets(model, geosets) {
+                 const material = model.materials[geoset.materialId];
+                 const isHd = material.shader === 'Shader_HD_DefaultUnit';
+                 if (isHd) {
+-                    model.batches.push(new batch_1.Batch(model.batches.length, vGeoset, material, skinType, true));
++                    for (let layer = 0; layer < material.layers.length; layer += 6) {
++                        const pass = Object.assign(Object.create(Object.getPrototypeOf(material)), material,
++                            { layers: material.layers.slice(layer, layer + 6) });
++                        model.batches.push(new batch_1.Batch(model.batches.length, vGeoset, pass, skinType, true));
++                    }
+                 }
+                 else {
+                     for (const layer of material.layers) {
+diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/hd.frag.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/hd.frag.js
+index a6ca98b..7b51eba 100644
+--- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/hd.frag.js
++++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/hd.frag.js
+@@ -30,7 +30,7 @@ varying vec3 v_tangent;
+ vec3 decodeNormal() {
+   vec2 xy = texture2D(u_normalsMap, v_uv).xy * 2.0 - 1.0;
+   
+-  return vec3(xy, sqrt(1.0 - dot(xy, xy)));
++  return normalize(vec3(xy, sqrt(max(0.0, 1.0 - dot(xy, xy)))));
+ }
+ 
+ const vec2 invAtan = vec2(0.1591, 0.3183);
+@@ -268,7 +268,9 @@ void lambert() {
+     color *= tc * tcFactor;
+   }
+   
+-  color *= clamp(lambertFactor * aoFactor + 0.1, 0.0, 1.0);
++  // Some DE ORM maps leave the AO channel near zero across the whole model.
++  // Keep a soft studio fill so previews do not collapse into silhouettes.
++  color *= clamp(0.4 + lambertFactor * 0.8, 0.0, 1.0) * mix(0.7, 1.0, aoFactor);
+   color += emissive;
+ 
+   gl_FragColor = vec4(color, baseColor.a);
+diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/sd.frag.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/sd.frag.js
+index c9a42eb..c662790 100644
+--- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/sd.frag.js
++++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/sd.frag.js
+@@ -68,6 +68,16 @@ void lambert() {
+     color.rgb *= lambertFactor;
+   }
+ 
++  // Additive textures often have an opaque-black background. On a transparent
++  // preview canvas its alpha would accumulate into a solid black polygon.
++  // Normalize RGB against its peak and move that peak into alpha: SRC_ALPHA/ONE
++  // then contributes the same RGB while transparent black contributes no alpha.
++  if (u_filterMode == 3.0 || u_filterMode == 4.0) {
++    float intensity = max(color.r, max(color.g, color.b));
++    color.rgb = intensity > 0.001 ? color.rgb / intensity : vec3(0.0);
++    color.a *= intensity;
++  }
++
+   gl_FragColor = color;
+ }
+ 

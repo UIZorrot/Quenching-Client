@@ -42,6 +42,47 @@ export interface CustomSkinUnit {
   icon: string;
 }
 
+export interface CustomSkinTarget {
+  unitId: string;
+  name: string;
+  icon: string;
+}
+
+/** Buildings exposed by the melee race pages. IDs match unitskin.txt sections. */
+export const BUILDING_SKIN_CONFIG: Record<string, { name: string; buildings: CustomSkinTarget[] }> = {
+  hum: { name: '人类', buildings: [
+    { unitId: 'halt', name: '国王祭坛', icon: 'btnaltarofkings.png' },
+    { unitId: 'hars', name: '奥术圣所', icon: 'btnarcanevault.png' },
+    { unitId: 'hbar', name: '人类兵营', icon: 'btnhumanbarracks.png' },
+    { unitId: 'hkee', name: '城堡', icon: 'btnkeep.png' },
+    { unitId: 'htow', name: '城镇大厅', icon: 'btntownhall.png' },
+    { unitId: 'hhou', name: '农场', icon: 'btnfarm.png' },
+    { unitId: 'hwtw', name: '哨塔', icon: 'btnwatchtower.png' },
+  ] },
+  orc: { name: '兽族', buildings: [
+    { unitId: 'oalt', name: '风暴祭坛', icon: 'btnaltarofstorms.png' },
+    { unitId: 'obar', name: '兽族兵营', icon: 'btnorcishbarracks.png' },
+    { unitId: 'ogre', name: '兽栏', icon: 'btnbeastiary.png' },
+    { unitId: 'otot', name: '兽族大厅', icon: 'btnorctownhall.png' },
+    { unitId: 'owtw', name: '瞭望塔', icon: 'btnwatchtower.png' },
+  ] },
+  ud: { name: '不死族', buildings: [
+    { unitId: 'uaod', name: '黑暗祭坛', icon: 'btnaltarofdarkness.png' },
+    { unitId: 'usep', name: '地穴', icon: 'btncrypt.png' },
+    { unitId: 'ugrv', name: '坟场', icon: 'btngraveryard.png' },
+    { unitId: 'unpl', name: '城堡', icon: 'btnnecropolis.png' },
+    { unitId: 'uzig', name: '通灵塔', icon: 'btnziggurat.png' },
+  ] },
+  ne: { name: '暗夜精灵', buildings: [
+    { unitId: 'eate', name: '长者祭坛', icon: 'btnaltarofelders.png' },
+    { unitId: 'etol', name: '生命之树', icon: 'btnentangledgoldmine.png' },
+    { unitId: 'edob', name: '月井', icon: 'btnmoonwell.png' },
+    { unitId: 'edot', name: '猎手大厅', icon: 'btnhunters hall.png' },
+    { unitId: 'etoa', name: '远古之树', icon: 'btntreeofages.png' },
+  ] },
+  neutral: { name: '中立', buildings: [] },
+};
+
 export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSkinUnit[] }> = {
   hum: {
     name: '人类',

@@ -32,6 +32,9 @@ mac:
   icon: public/logo.png
   category: public.app-category.games
   target: dir
+  # Skip codesign in electron-builder. Windows cannot sign Mach-O binaries;
+  # the Mac-native pipeline still ad-hoc signs via scripts/sign-mac-app.js.
+  identity: null
   electronLanguages: ['en', 'zh', 'zh_CN']
 
 # 禁用 FFMPEG 替换，使用 Electron 自带的库，避免库路径问题

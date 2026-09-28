@@ -9,7 +9,7 @@ IPC?.on( 'console' , ( e , ...data ) => {
 
 
 IpcRendererOn( 'clear-localstorage' ).on( ( e , data ) => {
-	localStorage.clear();
+	// Ctrl+Shift+R is a reload shortcut, not consent to erase preferences.
 	location.reload();
 } );
 

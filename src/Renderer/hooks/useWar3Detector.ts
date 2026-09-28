@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { reaxel, createReaxable } from 'reaxes';
+import { reaction } from 'mobx';
 
 // War3安装信息接口
 export interface War3Installation {
@@ -20,31 +21,46 @@ export const reaxel_War3Detector = reaxel(() => {
     currentDirectory: ''
   });
 
+  let detectionRequest = 0;
+
   // 检测War3安装
   const detectInstallations = async () => {
+    const request = ++detectionRequest;
     setState({ isDetecting: true });
 
     try {
       const installations: War3Installation[] = [];
+      const api = window.electronAPI;
+      if (!api) throw new Error('Electron API is not ready');
+      const channel = await api.getConfig('gameChannel').catch(() => 'retail');
+      selectedBuildFolder = channel === 'ptr' ? '_ptr_' : '_retail_';
 
       // 0. 优先从 Config 获取保存的路径
-      if (window.electronAPI?.getConfig) {
-        const savedPath = await window.electronAPI.getConfig('war3Path');
-        if (savedPath) {
-          const installation = await analyzeWar3Directory(savedPath);
-          if (installation) {
-            installations.push(installation);
+      const savedPath = await api.getConfig('war3Path');
+      if (savedPath) {
+        const installation = await analyzeWar3Directory(savedPath);
+        if (installation) {
+          installations.push(installation);
+          // Do not lose a valid saved installation if an optional probe below
+          // fails or a slower, older detection finishes after this request.
+          if (request === detectionRequest) {
+            setState({ installations: [...installations], currentInstallation: installation });
           }
+        } else {
+          console.warn('Saved Warcraft III directory could not be verified:', savedPath);
         }
       }
 
       // 1. 获取当前目录
-      const currentDir = await window.electronAPI?.getCurrentDirectory();
-      setState({ currentDirectory: currentDir || '' });
+      const currentDir = await api.getCurrentDirectory().catch((error) => {
+        console.warn('Could not inspect the current directory:', error);
+        return '';
+      });
+      if (request === detectionRequest) setState({ currentDirectory: currentDir || '' });
 
       // 检查当前目录是否是War3目录
       const isInWar3Dir = await checkIsWar3Directory(currentDir);
-      setState({ isInWar3Directory: isInWar3Dir });
+      if (request === detectionRequest) setState({ isInWar3Directory: isInWar3Dir });
 
       // 如果当前目录是War3目录，添加到列表
       if (isInWar3Dir) {
@@ -76,24 +92,28 @@ export const reaxel_War3Detector = reaxel(() => {
         }
       }
 
-      setState({
-        installations,
-        currentInstallation: installations.length > 0 ? installations[0] : null
-      });
+      if (request === detectionRequest) {
+        setState({
+          installations,
+          currentInstallation: installations.length > 0 ? installations[0] : null
+        });
+      }
 
     } catch (error) {
       console.error('Failed to detect War3 installations:', error);
     } finally {
-      setState({ isDetecting: false });
+      if (request === detectionRequest) setState({ isDetecting: false });
     }
   };
+
+  let selectedBuildFolder: '_retail_' | '_ptr_' = '_retail_';
 
   // 检查目录是否是War3目录
   const checkIsWar3Directory = async (dirPath: string): Promise<boolean> => {
     if (!dirPath) return false;
 
     try {
-      if (await window.electronAPI?.pathExists(`${dirPath}/_retail_`)) {
+      if (await window.electronAPI?.pathExists(`${dirPath}/_retail_`) || await window.electronAPI?.pathExists(`${dirPath}/_ptr_`)) {
         return true;
       }
 
@@ -103,6 +123,7 @@ export const reaxel_War3Detector = reaxel(() => {
         'Warcraft III Launcher.exe', // 战网启动器
         'x86_64/Warcraft III.exe', // 重制版路径
         '_retail_/x86_64/Warcraft III.exe', // 战网重制版路径
+        '_ptr_/x86_64/Warcraft III.exe',
         'War3.exe', // 经典版
         'game.dll',
         'Warcraft III Launcher.exe' // 用户提到的文件
@@ -125,9 +146,13 @@ export const reaxel_War3Detector = reaxel(() => {
   // 分析War3目录信息
   const analyzeWar3Directory = async (dirPath: string): Promise<War3Installation | null> => {
     try {
+      const selectedExists = await window.electronAPI?.pathExists(`${dirPath}/${selectedBuildFolder}`);
+      const otherFolder = selectedBuildFolder === '_ptr_' ? '_retail_' : '_ptr_';
+      const otherExists = await window.electronAPI?.pathExists(`${dirPath}/${otherFolder}`);
+      if (otherExists && !selectedExists) return null;
       // 检查各种可能的可执行文件路径
       const paths = [
-        { path: `${dirPath}/_retail_/x86_64/Warcraft III.exe`, reforged: true, version: 'Reforged (Retail)' },
+        { path: `${dirPath}/${selectedBuildFolder}/x86_64/Warcraft III.exe`, reforged: true, version: selectedBuildFolder === '_ptr_' ? 'Reforged (PTR)' : 'Reforged (Retail)' },
         { path: `${dirPath}/x86_64/Warcraft III.exe`, reforged: true, version: 'Reforged' },
         { path: `${dirPath}/Warcraft III.exe`, reforged: false, version: 'Classic/Reforged' },
         { path: `${dirPath}/Warcraft III Launcher.exe`, reforged: true, version: 'Battle.net Launcher' },
@@ -148,14 +173,13 @@ export const reaxel_War3Detector = reaxel(() => {
       }
 
       if (!executablePath) {
-        const hasRetail = await window.electronAPI?.pathExists(`${dirPath}/_retail_`);
-        if (hasRetail) {
+        if (selectedExists) {
           return {
             path: dirPath,
-            version: 'Reforged (Retail)',
+            version: selectedBuildFolder === '_ptr_' ? 'Reforged (PTR)' : 'Reforged (Retail)',
             isReforged: true,
             isValid: true,
-            executablePath: `${dirPath}/_retail_/Warcraft III.app`
+            executablePath: `${dirPath}/${selectedBuildFolder}/Warcraft III.app`
           };
         }
         return null;
@@ -221,13 +245,33 @@ export const reaxel_War3Detector = reaxel(() => {
 export const useWar3Detector = () => {
   // 获取reaxel实例
   const detector = reaxel_War3Detector();
-
-  return {
+  const [state, setState] = useState(() => ({
     installations: detector.store.installations,
     currentInstallation: detector.store.currentInstallation,
     isDetecting: detector.store.isDetecting,
     isInWar3Directory: detector.store.isInWar3Directory,
-    currentDirectory: detector.store.currentDirectory,
+    currentDirectory: detector.store.currentDirectory
+  }));
+
+  useEffect(() => reaction(
+    () => [detector.store.installations, detector.store.currentInstallation, detector.store.isDetecting,
+      detector.store.isInWar3Directory, detector.store.currentDirectory],
+    () => setState({
+      installations: detector.store.installations,
+      currentInstallation: detector.store.currentInstallation,
+      isDetecting: detector.store.isDetecting,
+      isInWar3Directory: detector.store.isInWar3Directory,
+      currentDirectory: detector.store.currentDirectory
+    }),
+    { fireImmediately: true }
+  ), [detector.store]);
+
+  return {
+    installations: state.installations,
+    currentInstallation: state.currentInstallation,
+    isDetecting: state.isDetecting,
+    isInWar3Directory: state.isInWar3Directory,
+    currentDirectory: state.currentDirectory,
     detectInstallations: detector.detectInstallations,
     setCurrentInstallation: detector.setCurrentInstallation,
     launchGame: detector.launchGame

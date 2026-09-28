@@ -14,7 +14,9 @@ const electronAPI: ElectronAPI = {
 
   // 游戏启动
   launchGame: (executablePath?: string) => ipcRenderer.invoke('game:launch', executablePath),
+  ensureLocalFiles: () => ipcRenderer.invoke('game:ensure-local-files'),
   launchMap: (mapPath: string, difficulty: number) => ipcRenderer.invoke('game:launch-map', mapPath, difficulty),
+  unlockCampaign: () => ipcRenderer.invoke('campaign:unlock'),
   extractCampaignW3n: (w3nPath: string) => ipcRenderer.invoke('campaign:extract-w3n', w3nPath),
   listInstalledCampaigns: () => ipcRenderer.invoke('campaign:list-installed'),
   selectGamePath: () => ipcRenderer.invoke('game:select-path'),
@@ -41,6 +43,7 @@ const electronAPI: ElectronAPI = {
   updateTreeSettings: (war3Path: string, treeMode: string) => ipcRenderer.invoke('tree:update-settings', war3Path, treeMode),
   updateWaterSettings: (war3Path: string, waterMode: string) => ipcRenderer.invoke('water:update-settings', war3Path, waterMode),
   updateFoliageSettings: (war3Path: string, enabled: boolean, terrainMode?: string) => ipcRenderer.invoke('foliage:update-settings', war3Path, enabled, terrainMode),
+  updateBlightSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('blight:update-settings', war3Path, enabled),
   updateObjectShader: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-object-shader', war3Path, enabled),
   updatePostProcessing: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-post-processing', war3Path, enabled),
   /** @deprecated Manual toggle removed; always syncs shaders from detected War3 version. */
@@ -57,6 +60,8 @@ const electronAPI: ElectronAPI = {
   updateHalfPortrait: (war3Path: string, visionModPath: string, enabled: boolean) => ipcRenderer.invoke('vision:update-half-portrait', war3Path, visionModPath, enabled),
   updateModelEnhance: (war3Path: string, visionModPath: string, enabled: boolean) => ipcRenderer.invoke('vision:update-model-enhance', war3Path, visionModPath, enabled),
   applySkin: (unitId: string, changes: any[]) => ipcRenderer.invoke('skin:apply', unitId, changes),
+  getVersionSkinPanel: (artSet: 'sd' | 'hd' | 'de') => ipcRenderer.invoke('skin:version-panel', artSet),
+  applyVersionSkins: (artSet: 'sd' | 'hd' | 'de', choices: any[]) => ipcRenderer.invoke('skin:version-apply', artSet, choices),
   applyBatchSkin: (batchChanges: any[]) => ipcRenderer.invoke('skin:apply-batch', batchChanges),
   disableSkins: () => ipcRenderer.invoke('skin:disable'),
   enableSkins: () => ipcRenderer.invoke('skin:enable'),
@@ -67,11 +72,27 @@ const electronAPI: ElectronAPI = {
   selectModelFile: () => ipcRenderer.invoke('file:select-model'),
   selectFile: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => ipcRenderer.invoke('file:select', options),
   selectDirectory: (title?: string) => ipcRenderer.invoke('file:select-directory', title),
+  readModelResource: (path: string, basePath?: string, artSet?: 'sd' | 'hd' | 'de') => ipcRenderer.invoke('model:read-resource', { path, basePath, artSet }),
+  listCustomSkins: (targetId?: string) => ipcRenderer.invoke('custom-skin:list', targetId),
+  inspectCustomSkinModel: (modelPath: string) => ipcRenderer.invoke('custom-skin:inspect-model', modelPath),
+  createCustomSkin: (input: any) => ipcRenderer.invoke('custom-skin:create', input),
 
   // 新闻
   fetchNews: (lang?: 'cn' | 'en') => ipcRenderer.invoke('news:fetch', lang),
   // 版本
   fetchVersion: () => ipcRenderer.invoke('version:fetch'),
+  getClientUpdateStatus: () => ipcRenderer.invoke('client-update:get-status'),
+  applyClientUpdate: () => ipcRenderer.invoke('client-update:apply'),
+  onClientUpdateProgress: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, progress: ClientUpdateProgress) => callback(progress);
+    ipcRenderer.on('client-update:progress', handler);
+    return () => ipcRenderer.removeListener('client-update:progress', handler);
+  },
+  // MOD 增量更新
+  getModUpdateStatus: (war3Path: string) => ipcRenderer.invoke('mod-update:get-status', war3Path),
+  applyModUpdate: (war3Path: string) => ipcRenderer.invoke('mod-update:apply', war3Path),
+  getInstalledModState: (war3Path: string) => ipcRenderer.invoke('mod-update:get-installed-state', war3Path),
+  verifyModIntegrity: (war3Path: string, fullHash = false) => ipcRenderer.invoke('mod-update:verify-integrity', war3Path, fullHash),
 
   // Mod Actions系统操作
   openExternal: (url: string) => ipcRenderer.invoke('shell:openExternal', url),
@@ -126,13 +147,23 @@ const electronAPI: ElectronAPI = {
   executeCommand: (command: string) => ipcRenderer.invoke('system:exec', command),
 
   getFullPackageStatus: (war3Path?: string) => ipcRenderer.invoke('mod:get-full-package-status', war3Path),
-  installFullPackage: (zipPath: string) => ipcRenderer.invoke('mod:install-full-package', zipPath),
-  syncAssets: () => ipcRenderer.invoke('mod:sync-assets'),
+  getInstallSpaceStatus: (zipPath?: string) => ipcRenderer.invoke('mod:install-space-status', zipPath),
+  switchGameChannel: (channel: 'retail' | 'ptr') => ipcRenderer.invoke('game:switch-channel', channel),
+  getBranchModStates: () => ipcRenderer.invoke('mod:get-branch-states'),
+  setBranchModEnabled: (channel: 'retail' | 'ptr', enabled: boolean) => ipcRenderer.invoke('mod:set-branch-enabled', channel, enabled),
+  installFullPackage: (zipPath: string, channel?: 'retail' | 'ptr') => ipcRenderer.invoke('mod:install-full-package', zipPath, channel),
+  syncAssets: (war3Path?: string) => ipcRenderer.invoke('mod:sync-assets', war3Path),
 
   // Mod Management
   deleteMod: (war3Path: string) => ipcRenderer.invoke('mod:delete', war3Path),
   resetRenderingComponents: (war3Path: string) => ipcRenderer.invoke('mod:reset-rendering', war3Path),
   toggleClassicMode: (war3Path: string, enable: boolean) => ipcRenderer.invoke('mod:toggle-classic-mode', war3Path, enable),
+  getThirdPartyState: (war3Path: string) => ipcRenderer.invoke('third-party:get-state', war3Path),
+  importThirdPartyZip: (war3Path: string, id: number, zipPath: string) => ipcRenderer.invoke('third-party:import-zip', war3Path, id, zipPath),
+  importThirdPartyDirectory: (war3Path: string, id: number, directory: string) => ipcRenderer.invoke('third-party:import-directory', war3Path, id, directory),
+  setThirdPartyEnabled: (war3Path: string, id: number, enabled: boolean) => ipcRenderer.invoke('third-party:set-enabled', war3Path, id, enabled),
+  setThirdPartyFeature: (war3Path: string, id: number, featureId: string, enabled: boolean) => ipcRenderer.invoke('third-party:set-feature', war3Path, id, featureId, enabled),
+  setThirdPartyName: (war3Path: string, id: number, name: string) => ipcRenderer.invoke('third-party:set-name', war3Path, id, name),
 
   // Classic Mode Skin System
   applyClassicSkin: (war3Path: string, change: any) => ipcRenderer.invoke('classic-skin:apply', war3Path, change),
@@ -164,6 +195,10 @@ ipcRenderer.on('show-about', () => {
 
 ipcRenderer.on('mod:install-progress', (event, data) => {
   window.dispatchEvent(new CustomEvent('mod-install-progress', { detail: data }));
+});
+
+ipcRenderer.on('mod:profile-progress', (_event, data) => {
+  window.dispatchEvent(new CustomEvent('mod-profile-progress', { detail: data }));
 });
 
 ipcRenderer.on('anti-harmony:progress', (_event, data) => {

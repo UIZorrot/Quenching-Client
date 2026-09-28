@@ -1,109 +1,62 @@
+import { getSelectedGameFolder } from '../services/game-channel';
 import { ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs-extra';
 import { AssetSyncService } from '../services/asset-sync';
 import { assertFullPackageInstalled } from '../services/full-package-service';
+import { configManager } from '../services/config-manager';
+import { resolveModProfile } from '../services/mod-profile';
+import { removeActiveWaterOverrides, stripWaterForDe } from '../services/graphics-layout-service';
+import { copyWaterModeFromAssets, verifyWaterModeAssets } from '../services/water-assets-service';
+
+export async function applyWaterSettings(war3Path: string, waterMode: string): Promise<void> {
+    if (!war3Path) throw new Error('未提供魔兽路径');
+
+    const modSettings = configManager.get('modSettings') || {};
+    const profile = await resolveModProfile(war3Path, {
+        versionSelection: modSettings.versionSelection,
+        graphicsSelection: modSettings.graphicsSelection,
+        classicMode: modSettings.classicMode === true,
+    });
+    const assetsDir = await AssetSyncService.getAssetsDir();
+
+    // DE cannot adjust water — keep textures/slk stripped.
+    if (profile.graphics === 'de') {
+        console.log('[Water] DE graphics: water adjustments disabled, stripping water resources');
+        await stripWaterForDe(war3Path);
+        return;
+    }
+
+    await assertFullPackageInstalled(war3Path);
+
+    const retailPath = path.join(war3Path, getSelectedGameFolder());
+    const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
+
+    if (waterMode === 'off') {
+        await removeActiveWaterOverrides(baseDir);
+        console.log('[Water] Warcraft default water is active');
+        return;
+    }
+
+    if (waterMode !== 'transparent' && waterMode !== 'realistic') {
+        throw new Error(`Unknown water mode: ${waterMode}`);
+    }
+    console.log(`[Water] Mode: ${waterMode} execution...`);
+    await verifyWaterModeAssets(assetsDir, waterMode);
+    await removeActiveWaterOverrides(baseDir);
+    await copyWaterModeFromAssets(baseDir, assetsDir, waterMode);
+
+    console.log(`[Water] ALL OPERATIONS COMPLETED for mode: ${waterMode}`);
+}
 
 export function registerWaterHandlers() {
     console.log('[Water] Water handlers registered.');
 
-    ipcMain.handle('water:update-settings', async (event, war3Path: string, waterMode: string) => {
+    ipcMain.handle('water:update-settings', async (_event, war3Path: string, waterMode: string) => {
         console.log(`\n>>> [Water] Updating water to mode: ${waterMode}`);
         try {
-            if (!war3Path) throw new Error('未提供魔兽路径');
-
-            await assertFullPackageInstalled(war3Path);
-
-            const retailPath = path.join(war3Path, '_retail_');
-            const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
-
-            const waterDir = path.join(baseDir, 'replaceabletextures', 'water');
-            const waterRelDir = path.join(baseDir, 'replaceabletextures', 'water-rel');
-            const waterTransDir = path.join(baseDir, 'replaceabletextures', 'water-trans');
-
-            const shoreline1 = path.join(baseDir, 'textures', 'shoreline1.dds');
-            const shoreline2 = path.join(baseDir, 'textures', 'shorelineparticlexy.dds');
-            const waterSlk = path.join(baseDir, 'terrainart', 'water.slk');
-
-            const shoreline1Src = path.join(baseDir, 'textures', 'fx', 'shoreline1.dds');
-            const shoreline2Src = path.join(baseDir, 'textures', 'fx', 'shorelineparticlexy.dds');
-
-            const assetsDir = await AssetSyncService.getAssetsDir();
-            const waterTransSlkSrc = path.join(assetsDir, 'quenching', 'water-trans.slk');
-            const waterRelSlkSrc = path.join(assetsDir, 'quenching', 'water-rel.slk');
-
-            console.log(`[Water] Paths Debug:\n  - BaseDir: ${baseDir}\n  - AssetsDir: ${assetsDir}\n  - waterTransSlkSrc Exists: ${await fs.pathExists(waterTransSlkSrc)}\n  - waterRelSlkSrc Exists: ${await fs.pathExists(waterRelSlkSrc)}`);
-
-            if (waterMode === 'transparent') { // 清澈水面
-                console.log('[Water] Mode: Transparent execution...');
-
-                // 1. 目录交换
-                console.log(`[Water] Checking waterTransDir: ${waterTransDir}`);
-                if (await fs.pathExists(waterTransDir)) {
-                    if (await fs.pathExists(waterDir)) {
-                        console.log(`[Water] Backup water to water-rel`);
-                        await fs.move(waterDir, waterRelDir, { overwrite: true });
-                    }
-                    console.log(`[Water] Restore water-trans as water`);
-                    await fs.move(waterTransDir, waterDir, { overwrite: true });
-                } else {
-                    console.log('[Water] water-trans directory not found, skipping move.');
-                }
-
-                // 2. 拷贝 DDS
-                console.log(`[Water] Copying DDS from fx/ to textures/`);
-                if (await fs.pathExists(shoreline1Src)) {
-                    await fs.copy(shoreline1Src, shoreline1, { overwrite: true });
-                    console.log(`[Water] Copied: ${shoreline1}`);
-                }
-                if (await fs.pathExists(shoreline2Src)) {
-                    await fs.copy(shoreline2Src, shoreline2, { overwrite: true });
-                    console.log(`[Water] Copied: ${shoreline2}`);
-                }
-
-                // 3. 拷贝 SLK
-                console.log(`[Water] Updating SLK (Transparent) from: ${waterTransSlkSrc}`);
-                if (await fs.pathExists(waterTransSlkSrc)) {
-                    await fs.ensureDir(path.dirname(waterSlk));
-                    await fs.copy(waterTransSlkSrc, waterSlk, { overwrite: true });
-                    console.log(`[Water] SUCCESS: Copied to ${waterSlk}`);
-                } else {
-                    console.error(`[Water] ERROR: Source SLK NOT FOUND: ${waterTransSlkSrc}`);
-                }
-
-            } else if (waterMode === 'realistic') { // 反射水面
-                console.log('[Water] Mode: Realistic execution...');
-
-                // 1. 目录交换
-                console.log(`[Water] Checking waterRelDir: ${waterRelDir}`);
-                if (await fs.pathExists(waterRelDir)) {
-                    if (await fs.pathExists(waterDir)) {
-                        console.log(`[Water] Backup water to water-trans`);
-                        await fs.move(waterDir, waterTransDir, { overwrite: true });
-                    }
-                    console.log(`[Water] Restore water-rel as water`);
-                    await fs.move(waterRelDir, waterDir, { overwrite: true });
-                } else {
-                    console.log('[Water] water-rel directory not found, skipping move.');
-                }
-
-                // 2. 删除清澈模式的 DDS 文件
-                console.log(`[Water] Removing transparent mode DDS files...`);
-                await fs.remove(shoreline1);
-                await fs.remove(shoreline2);
-                console.log(`[Water] Removed if existed: ${shoreline1}, ${shoreline2}`);
-
-                // 3. 删除 SLK (其他水面不需要 water.slk)
-                console.log(`[Water] Removing SLK for non-transparent mode...`);
-                if (await fs.pathExists(waterSlk)) {
-                    await fs.remove(waterSlk);
-                    console.log(`[Water] SUCCESS: Removed ${waterSlk}`);
-                }
-            }
-
-            console.log(`[Water] ALL OPERATIONS COMPLETED for mode: ${waterMode}`);
+            await applyWaterSettings(war3Path, waterMode);
             return true;
-
         } catch (error) {
             console.error('[Water] Failed to update water settings:', error);
             throw error;

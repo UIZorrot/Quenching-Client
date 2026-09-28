@@ -21,6 +21,13 @@ interface Theme {
 
 const themes: Theme[] = [
   {
+    id: 'magicstorm',
+    name: '魔法风暴',
+    description: '全新的魔法风暴主界面背景',
+    video: 'assets/quenching/magicstorm.mp4',
+    author: 'QuenchinG'
+  },
+  {
     id: 'roc',
     name: '混乱之治',
     description: '经典的混乱之治主界面，回溯一切开始的地方',
@@ -77,7 +84,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
     }
     return isAssets ? (src.startsWith('/') ? src : `/${src}`) : src;
   };
-  const [selectedTheme, setSelectedTheme] = useState('tft');
+  const [selectedTheme, setSelectedTheme] = useState('magicstorm');
   const [hoveredTheme, setHoveredTheme] = useState<Theme | null>(null);
   const [customThemes, setCustomThemes] = useState<Theme[]>([]);
 
@@ -175,9 +182,9 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
   };
 
   // 这里的 currentTheme 用于底部详情显示
-  const displayTheme = hoveredTheme || allThemes.find(t => t.id === selectedTheme) || themes[1];
+  const displayTheme = hoveredTheme || allThemes.find(t => t.id === selectedTheme) || themes[0];
   // 这里的 backgroundTheme 仅用于背景，不随 hover 改变
-  const backgroundTheme = allThemes.find(t => t.id === selectedTheme) || themes[1];
+  const backgroundTheme = allThemes.find(t => t.id === selectedTheme) || themes[0];
 
   return (
     <OverlayModal
@@ -213,8 +220,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
             objectFit: 'cover',
             opacity: 0.3,
             transition: 'all 0.5s ease',
-            zIndex: 0,
-            filter: 'blur(4px)'
+            zIndex: 0
           }}
           src={resolveVideo(backgroundTheme.video)}
         />

@@ -4,7 +4,7 @@ import path from 'path';
 import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
 import archiver from 'archiver';
-import yauzl from 'yauzl';
+import { extractZipArchive } from '../services/zip-extraction';
 
 const execAsync = promisify(exec);
 
@@ -188,47 +188,8 @@ export class FileOperationsAPI {
 
     // 解压ZIP文件
     ipcMain.handle('file:extractZip', async (event, zipPath: string, extractPath: string) => {
-      return new Promise((resolve, reject) => {
-        yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
-          if (err) {
-            reject(err);
-            return;
-          }
-
-          zipfile.readEntry();
-          zipfile.on('entry', (entry) => {
-            if (/\/$/.test(entry.fileName)) {
-              // Directory entry
-              zipfile.readEntry();
-            } else {
-              // File entry
-              zipfile.openReadStream(entry, (err, readStream) => {
-                if (err) {
-                  reject(err);
-                  return;
-                }
-
-                const outputPath = path.join(extractPath, entry.fileName);
-                fs.ensureDir(path.dirname(outputPath)).then(() => {
-                  const writeStream = fs.createWriteStream(outputPath);
-                  readStream.pipe(writeStream);
-                  writeStream.on('close', () => {
-                    zipfile.readEntry();
-                  });
-                });
-              });
-            }
-          });
-
-          zipfile.on('end', () => {
-            resolve(true);
-          });
-
-          zipfile.on('error', (err) => {
-            reject(err);
-          });
-        });
-      });
+      await extractZipArchive(zipPath, extractPath);
+      return true;
     });
 
     // 创建ZIP文件

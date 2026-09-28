@@ -24,8 +24,10 @@ export const OverlayModal: React.FC<OverlayModalProps> = ({
 
   useEffect(() => {
     if (open) {
+      const previousOverflow = document.body.style.overflow;
       setVisible(true);
       document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = previousOverflow; };
     } else {
       const timer = setTimeout(() => setVisible(false), 300); // Wait for animation
       document.body.style.overflow = 'unset';
@@ -60,7 +62,6 @@ export const OverlayModal: React.FC<OverlayModalProps> = ({
           width: '100%',
           height: '100%',
           background: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(5px)',
           opacity: open ? 1 : 0,
           transition: 'opacity 0.3s ease',
           cursor: 'pointer'

@@ -16,8 +16,8 @@ export interface NewsItem {
 export class NewsService {
     private cachePath: string;
     private urls = {
-        cn: 'https://www.tianxiazhengyi.net/newscn.md',
-        en: 'https://www.tianxiazhengyi.net/newsen.md'
+        cn: 'https://qm.txzy.net/newscn.md',
+        en: 'https://qm.txzy.net/newsen.md'
     };
 
     constructor() {
@@ -32,19 +32,21 @@ export class NewsService {
         const mappedLang = (lang.toLowerCase().includes('cn') || lang === 'cn') ? 'cn' : 'en';
 
         try {
-            console.log(`[NewsService] Fetching news for lang: ${mappedLang} (original: ${lang})`);
             const content = await this.downloadMarkdown(this.urls[mappedLang]);
+            if (/^\s*(?:<!doctype\s+html|<html\b)/i.test(content)) {
+                throw new Error('news endpoint returned HTML instead of Markdown');
+            }
             const newsItems = this.parseMarkdown(content);
             await this.saveToCache(mappedLang, newsItems);
             return newsItems;
         } catch (error) {
-            console.error(`Failed to fetch news (${lang}):`, error);
+            console.warn(`[NewsService] News unavailable for ${mappedLang}:`, error instanceof Error ? error.message : String(error));
             const cached = await this.loadFromCache(mappedLang);
             if (cached && cached.length > 0) {
                 console.log(`[NewsService] Using cached news for ${mappedLang}`);
                 return cached;
             }
-            throw error;
+            return [];
         }
     }
 
@@ -57,21 +59,14 @@ export class NewsService {
                 timeout: 10000
             };
 
-            const doRequest = (targetUrl: string, allowHttpFallback: boolean) => {
-                console.log(`[NewsService] Starting download from ${targetUrl}`);
+            const doRequest = (targetUrl: string) => {
                 const request = https.get(targetUrl, options, (res) => {
                     if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
                         const next = res.headers.location.startsWith('http') ? res.headers.location : new URL(res.headers.location, targetUrl).toString();
-                        console.log(`[NewsService] Redirecting to ${next}`);
                         return this.downloadMarkdown(next).then(resolve).catch(reject);
                     }
 
                     if (res.statusCode !== 200) {
-                        if (allowHttpFallback && targetUrl.startsWith('https://')) {
-                            const httpUrl = 'https://' + targetUrl.slice('https://'.length);
-                            console.warn(`[NewsService] HTTP fallback to ${httpUrl}`);
-                            return doRequest(httpUrl, false);
-                        }
                         reject(new Error(`Request failed with status code ${res.statusCode} for URL: ${targetUrl}`));
                         return;
                     }
@@ -79,35 +74,23 @@ export class NewsService {
                     let data = '';
                     res.on('data', (chunk) => {
                         data += chunk;
+                        if (data.length > 2 * 1024 * 1024) request.destroy(new Error('News response too large'));
                     });
                     res.on('end', () => {
-                        console.log(`[NewsService] Downloaded ${data.length} characters from ${targetUrl}`);
                         resolve(data);
                     });
                 });
 
                 request.on('error', (err) => {
-                    if (allowHttpFallback && targetUrl.startsWith('https://')) {
-                        const httpUrl = 'https://' + targetUrl.slice('https://'.length);
-                        console.warn(`[NewsService] Error on https, fallback to ${httpUrl}`);
-                        return doRequest(httpUrl, false);
-                    }
-                    console.error(`[NewsService] Error downloading ${targetUrl}:`, err);
                     reject(err);
                 });
 
                 request.on('timeout', () => {
-                    request.destroy();
-                    if (allowHttpFallback && targetUrl.startsWith('https://')) {
-                        const httpUrl = 'https://' + targetUrl.slice('https://'.length);
-                        console.warn(`[NewsService] Timeout on https, fallback to ${httpUrl}`);
-                        return doRequest(httpUrl, false);
-                    }
-                    reject(new Error(`Timeout downloading ${targetUrl}`));
+                    request.destroy(new Error(`Timeout downloading ${targetUrl}`));
                 });
             };
 
-            doRequest(url, true);
+            doRequest(url);
         });
     }
 
@@ -134,7 +117,6 @@ export class NewsService {
             this.parseSection('', cleanMd, items);
         }
 
-        console.log(`[NewsService] Successfully parsed ${items.length} news items`);
 
         if (items.length === 0) {
             // 回退：尝试从全文提取第一处日期，如果没有则使用今天
@@ -148,7 +130,6 @@ export class NewsService {
                 date,
                 type: 'announcement',
             });
-            console.log('[NewsService] Applied fallback news item due to empty parse');
         }
 
         // 按日期排序 (最新的在前)
@@ -267,7 +248,9 @@ export class NewsService {
         try {
             if (await fs.pathExists(this.cachePath)) {
                 const cache = await fs.readJson(this.cachePath);
-                return cache[lang]?.items || [];
+                const items = cache[lang]?.items;
+                if (!Array.isArray(items)) return [];
+                return items.filter((item: NewsItem) => typeof item?.content === 'string' && !/^\s*(?:<!doctype\s+html|<html\b)/i.test(item.content));
             }
         } catch (error) {
             console.error('Failed to load news cache:', error);

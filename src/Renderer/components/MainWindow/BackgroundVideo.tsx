@@ -11,11 +11,13 @@ const safeStyles = styles || {
 interface BackgroundVideoProps {
   volume?: number;
   opacity?: number;
+  paused?: boolean;
 }
 
 export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
   volume = 0,
-  opacity = 0.65
+  opacity = 0.65,
+  paused = false
 }) => {
   const resolveAssetPath = (rel: string) => {
     const p = rel.startsWith('/') ? rel.slice(1) : rel;
@@ -24,7 +26,7 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
     }
     return rel.startsWith('/') ? rel : `/${rel}`;
   };
-  const [currentTheme, setCurrentTheme] = useState('tft');
+  const [currentTheme, setCurrentTheme] = useState('magicstorm');
   const [videoSources, setVideoSources] = useState({
     active: '',
     next: ''
@@ -37,6 +39,7 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
 
   // 视频源映射
   const themeVideos: Record<string, string> = {
+    'magicstorm': 'assets/quenching/magicstorm.mp4',
     'roc': 'assets/quenching/mainmenu1.mp4', // 混乱之治
     'tft': 'assets/quenching/mainmenu0.mp4', // 冰封王座
     'quenching': 'assets/quenching/mainmenu2.mp4',
@@ -50,7 +53,7 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
     const loadTheme = async () => {
       console.log('[BackgroundVideo] Starting to load theme...');
       try {
-        let themeId = 'tft';
+        let themeId = 'magicstorm';
         if (window.electronAPI?.getConfig) {
           const savedTheme = await window.electronAPI.getConfig('theme');
           if (savedTheme) themeId = savedTheme;
@@ -63,46 +66,52 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
         if (themeId.startsWith('custom-')) {
           const customThemes = await window.electronAPI?.getConfig('customThemes');
           const theme = customThemes?.find((t: any) => t.id === themeId);
-          initialSrc = theme?.videoPath || themeVideos['quenching'];
+          initialSrc = theme?.videoPath || themeVideos['magicstorm'];
         } else {
-          initialSrc = themeVideos[themeId] || themeVideos['quenching'];
+          initialSrc = themeVideos[themeId] || themeVideos['magicstorm'];
         }
 
         console.log('[BackgroundVideo] Setting initial video source:', initialSrc);
         setVideoSources({ active: resolveAssetPath(initialSrc), next: '' });
       } catch (error) {
-        console.error('[BackgroundVideo] Failed to load theme, falling back to quenching:', error);
-        setVideoSources({ active: resolveAssetPath(themeVideos['tft']), next: '' });
+        console.error('[BackgroundVideo] Failed to load theme, falling back to magicstorm:', error);
+        setVideoSources({ active: resolveAssetPath(themeVideos['magicstorm']), next: '' });
       }
     };
 
     loadTheme();
   }, []);
 
-  // 当 videoSources.active 变化时，确保 active 视频在播放
+  // 只给当前视频设置资源；播放由可见性统一控制。
   useEffect(() => {
     const activeRef = activeVideo === 1 ? videoRef1 : videoRef2;
     if (activeRef.current && videoSources.active) {
-      console.log(`[BackgroundVideo] Active video ${activeVideo} source:`, videoSources.active);
-
-      // 在 Electron 中，如果使用 file:// 协议，路径可能需要特殊处理
-      // 但如果是 webpack-dev-server，直接赋值相对路径通常是可以的
       if (!activeRef.current.src.endsWith(videoSources.active)) {
         activeRef.current.src = videoSources.active;
         activeRef.current.load();
       }
-
-      activeRef.current.play().then(() => {
-        console.log(`[BackgroundVideo] Active video ${activeVideo} started playing`);
-      }).catch(err => {
-        console.warn(`[BackgroundVideo] Active video ${activeVideo} playback failed:`, err);
-        // 尝试再次播放，处理某些浏览器的自动播放限制
-        setTimeout(() => {
-          activeRef.current?.play().catch(() => { });
-        }, 1000);
-      });
     }
   }, [videoSources.active, activeVideo]);
+
+  // 遮罩弹窗和窗口不可见时，后台视频不再持续解码、与 3D 预览争抢 GPU。
+  useEffect(() => {
+    const syncPlayback = () => {
+      const first = videoRef1.current, second = videoRef2.current;
+      if (paused || document.hidden) {
+        first?.pause(); second?.pause();
+        return;
+      }
+      if (fadeState !== 'fading') {
+        const active = activeVideo === 1 ? first : second;
+        const inactive = activeVideo === 1 ? second : first;
+        inactive?.pause();
+        if (active?.src) active.play().catch(error => console.warn('[BackgroundVideo] Playback failed:', error));
+      }
+    };
+    syncPlayback();
+    document.addEventListener('visibilitychange', syncPlayback);
+    return () => document.removeEventListener('visibilitychange', syncPlayback);
+  }, [paused, activeVideo, fadeState, videoSources.active]);
 
   // 监听主题变化
   useEffect(() => {
@@ -114,9 +123,9 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
         if (newThemeId.startsWith('custom-')) {
           const customThemes = await window.electronAPI?.getConfig('customThemes');
           const theme = customThemes?.find((t: any) => t.id === newThemeId);
-          newSrc = theme?.videoPath || themeVideos['quenching'];
+          newSrc = theme?.videoPath || themeVideos['magicstorm'];
         } else {
-          newSrc = themeVideos[newThemeId] || themeVideos['quenching'];
+          newSrc = themeVideos[newThemeId] || themeVideos['magicstorm'];
         }
 
         setVideoSources(prev => {
@@ -136,7 +145,7 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
 
   // 处理渐变逻辑
   useEffect(() => {
-    if (fadeState === 'fading' && videoSources.next) {
+    if (!paused && fadeState === 'fading' && videoSources.next) {
       const nextVideo = activeVideo === 1 ? videoRef2.current : videoRef1.current;
       const currentVideo = activeVideo === 1 ? videoRef1.current : videoRef2.current;
 
@@ -147,6 +156,7 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
         const onCanPlay = () => {
           nextVideo.play().then(() => {
             // 切换激活视频
+            currentVideo.pause();
             setActiveVideo(activeVideo === 1 ? 2 : 1);
             setVideoSources({ active: videoSources.next, next: '' });
             setTimeout(() => {
@@ -156,9 +166,10 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
         };
 
         nextVideo.addEventListener('canplay', onCanPlay, { once: true });
+        return () => nextVideo.removeEventListener('canplay', onCanPlay);
       }
     }
-  }, [fadeState, videoSources.next]);
+  }, [fadeState, videoSources.next, paused]);
 
   return (
     <div
@@ -190,7 +201,6 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
           transition: 'opacity 1s ease-in-out',
           zIndex: activeVideo === 1 ? 1 : 0
         }}
-        autoPlay
         muted
         loop
         playsInline
@@ -215,7 +225,6 @@ export const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
           transition: 'opacity 1s ease-in-out',
           zIndex: activeVideo === 2 ? 1 : 0
         }}
-        autoPlay
         muted
         loop
         playsInline

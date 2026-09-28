@@ -1,9 +1,12 @@
+import { getSelectedGameFolder } from './game-channel';
 import { app } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
 import { configManager } from './config-manager';
+import { installBundledResourceFile, removeBundledResourceFile } from './managed-resource-files';
 
 const BUILTIN_THEME_FILES: Record<string, string> = {
+    magicstorm: 'magicstorm.mp4',
     quenching: 'mainmenu2.mp4',
     warcraft2: 'mainmenu3.mp4',
     city: 'mainmenu4.mp4',
@@ -16,6 +19,7 @@ const BUILTIN_THEME_FILES: Record<string, string> = {
 const GAME_MAIN_MENU_TARGETS = [
     'mainmenu.webm',
     'mainmenu_1.webm',
+    'mainmenu_fk.webm',
     'mainmenu_sd.webm',
     'mainmenu_tft.webm',
     'mainmenu_tft_sd.webm'
@@ -71,10 +75,14 @@ export class ThemeService {
             return false;
         }
 
-        const retailPath = path.join(war3Path, '_retail_');
+        const retailPath = path.join(war3Path, getSelectedGameFolder());
         const gameDataDir = await fs.pathExists(retailPath) ? retailPath : war3Path;
         const webmsDir = path.join(gameDataDir, 'webui', 'Webms');
         const sourceFile = await this.resolveThemeSource(themeId);
+        const builtinSources = await Promise.all([...new Set(Object.values(BUILTIN_THEME_FILES))].map(file => this.findBuiltinThemeAsset(file)));
+        const customSources = ((configManager.get('customThemes') as any[]) || []).map(theme => theme.videoPath).filter(Boolean) as string[];
+        const knownSources = [...builtinSources, ...customSources].filter(Boolean);
+        const marker = '.quenching-theme-files';
 
         console.log(`[ThemeService] Target directory: ${webmsDir}`);
         console.log(`[ThemeService] Source file: ${sourceFile || '(not found)'}`);
@@ -86,15 +94,14 @@ export class ThemeService {
                 for (const target of GAME_MAIN_MENU_TARGETS) {
                     const targetPath = path.join(webmsDir, target);
                     if (await fs.pathExists(targetPath)) {
-                        await fs.remove(targetPath);
+                        await removeBundledResourceFile(webmsDir, target, knownSources, marker);
                     }
                 }
                 return true;
             }
 
             for (const target of GAME_MAIN_MENU_TARGETS) {
-                const targetPath = path.join(webmsDir, target);
-                await fs.copy(sourceFile, targetPath, { overwrite: true });
+                await installBundledResourceFile(webmsDir, target, sourceFile, knownSources, marker);
             }
 
             return true;

@@ -9,6 +9,9 @@ export const electronMainConf: Configuration = {
 		// electronPreload : true,
 	},
 	output: {
+		// The package is ESM, while webpack's Electron main runtime loads its
+		// async chunks with require(). Give those chunks a CommonJS extension.
+		chunkFilename: '[id].cjs',
 		library: {
 			type: 'umd',
 		},

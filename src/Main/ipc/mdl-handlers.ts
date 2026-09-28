@@ -1,9 +1,11 @@
+import { getSelectedGameFolder } from '../services/game-channel';
 import { ipcMain } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
-import yauzl from 'yauzl';
 import { configManager } from '../services/config-manager';
-import { AssetSyncService } from '../services/asset-sync';
+import { AssetSyncService, syncProfileResources } from '../services/asset-sync';
+import { getQuenchingResourcePath, resolveModProfile } from '../services/mod-profile';
+import { mutateManagedResourceFiles, syncBundledResourceFiles } from '../services/managed-resource-files';
 
 /** 向上查找当前行是否位于指定 MDL 动画块内（如 Rotation N） */
 function isInsideMdlBlock(lines: string[], lineIndex: number, headerPattern: RegExp): boolean {
@@ -254,21 +256,40 @@ export function registerMdlHandlers() {
                 console.log(`[MDL] Updating lighting mode: ${lightingMode}, brightness level: ${brightnessLevel} (Intensity ×${brightnessMul})`);
                 console.log(`[MDL] War3 Path: ${war3Path}`);
 
-                const dncPath = path.join(war3Path, '_retail_', 'environment', 'dnc');
-                const dncExists = await fs.pathExists(dncPath);
+                const modSettings = configManager.get('modSettings') || {};
+                const profile = await resolveModProfile(war3Path, {
+                    versionSelection: modSettings.versionSelection,
+                    graphicsSelection: modSettings.graphicsSelection,
+                    classicMode: modSettings.classicMode === true,
+                });
 
-                if (!brightnessOnly || !dncExists) {
-                    await restoreDncFiles(war3Path);
-                } else {
-                    console.log('[MDL] Brightness-only change, skipping zip restore');
+                // 3.0 HD stores each lighting mode as a separate shader set.
+                // DE and 2.0 HD intentionally keep one shader set and only patch DNC.
+                if (!brightnessOnly && profile.version === 'v30' && profile.graphics === 'hd') {
+                    const assetsDir = await AssetSyncService.getAssetsDir();
+                    await syncProfileResources(war3Path, path.join(assetsDir, 'quenching'), {
+                        ...modSettings,
+                        lighting: lightingMode,
+                    });
                 }
+
+                const dncPath = path.join(war3Path, getSelectedGameFolder(), 'environment', 'dnc');
+                // Always rebase on bundled DNC before modifying it. This avoids
+                // compounding brightness and keeps the ownership hash current.
+                await restoreDncFiles(war3Path);
 
                 if (await fs.pathExists(dncPath)) {
                     console.log(`[MDL] Modifying DNC files in: ${dncPath}`);
-                    await traverseAndModify(dncPath, lightingMode, brightnessLevel, {
-                        brightnessOnly,
-                        previousBrightnessLevel,
-                    });
+                    await mutateManagedResourceFiles(
+                        dncPath, '.quenching-dnc-profile',
+                        relative => relative.toLowerCase().endsWith('.mdl'),
+                        (file, relative) => processMdlFile(file, path.basename(relative), lightingMode, brightnessLevel, {
+                            brightnessOnly: false,
+                            previousBrightnessLevel,
+                            deMode: profile.graphics === 'de',
+                            isVersion30: profile.version === 'v30',
+                        }),
+                    );
                     console.log('[MDL] Modification complete.');
                 } else {
                     console.warn(`[MDL] DNC path not found after restore: ${dncPath}`);
@@ -284,106 +305,41 @@ export function registerMdlHandlers() {
 }
 
 async function restoreDncFiles(war3Path: string) {
-    const dncPath = path.join(war3Path, '_retail_', 'environment', 'dnc');
-    const envPath = path.join(war3Path, '_retail_', 'environment');
+    const dncPath = path.join(war3Path, getSelectedGameFolder(), 'environment', 'dnc');
 
-    console.log(`[MDL] Removing existing DNC directory: ${dncPath}`);
-    try {
-        await fs.remove(dncPath);
-    } catch (e) {
-        console.error(`[MDL] Failed to remove DNC directory: ${e}`);
-    }
-
-    const assetsDir = await AssetSyncService.getAssetsDir();
-    const zipPath = path.join(assetsDir, 'quenching', 'zip-env.zip');
-
-    if (await fs.pathExists(zipPath)) {
-        console.log(`[MDL] Found environment zip at: ${zipPath}`);
-        const targetDir = envPath;
-        console.log(`[MDL] Extracting to: ${targetDir}`);
-
-        try {
-            await extractZip(zipPath, targetDir);
-
-            if (await fs.pathExists(dncPath)) {
-                console.log('[MDL] DNC directory restored successfully.');
-            } else {
-                console.error('[MDL] CRITICAL: DNC directory not found after extraction!');
-                try {
-                    const files = await fs.readdir(targetDir);
-                    console.log(`[MDL] Files in ${targetDir}:`, files);
-                } catch (err) {
-                    console.error('[MDL] Failed to list target dir:', err);
-                }
-                throw new Error('DNC directory restoration failed');
-            }
-        } catch (extractError) {
-            console.error('[MDL] Zip extraction error:', extractError);
-            throw extractError;
-        }
-    } else {
-        const msg = `[MDL] Environment zip not found at: ${zipPath}, skipping restore.`;
-        console.warn(msg);
-        throw new Error(msg);
-    }
-}
-
-async function extractZip(zipPath: string, extractPath: string): Promise<void> {
-    await fs.ensureDir(extractPath);
-    return new Promise((resolve, reject) => {
-        yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
-            if (err || !zipfile) {
-                reject(err || new Error('Failed to open zip file'));
-                return;
-            }
-
-            zipfile.readEntry();
-
-            zipfile.on('entry', (entry) => {
-                if (/\/$/.test(entry.fileName)) {
-                    zipfile.readEntry();
-                } else {
-                    zipfile.openReadStream(entry, (err2, readStream) => {
-                        if (err2 || !readStream) {
-                            reject(err2 || new Error('Failed to read zip entry stream'));
-                            return;
-                        }
-
-                        const out = path.join(extractPath, entry.fileName);
-
-                        fs.ensureDir(path.dirname(out))
-                            .then(() => {
-                                const ws = fs.createWriteStream(out);
-                                readStream.pipe(ws);
-                                ws.on('close', () => zipfile.readEntry());
-                                ws.on('error', (wsErr) => {
-                                    console.error(`[MDL] Write stream error for ${out}:`, wsErr);
-                                    reject(wsErr);
-                                });
-                            })
-                            .catch((dirErr) => {
-                                console.error(`[MDL] Directory creation error for ${out}:`, dirErr);
-                                reject(dirErr);
-                            });
-                    });
-                }
-            });
-
-            zipfile.on('end', () => resolve());
-
-            zipfile.on('error', (e) => {
-                console.error('[MDL] Yauzl error:', e);
-                reject(e);
-            });
-        });
+    const modSettings = configManager.get('modSettings') || {};
+    const profile = await resolveModProfile(war3Path, {
+        versionSelection: modSettings.versionSelection,
+        graphicsSelection: modSettings.graphicsSelection,
+        classicMode: modSettings.classicMode === true,
     });
+    const assetsDir = await AssetSyncService.getAssetsDir();
+    const quenchingDir = path.join(assetsDir, 'quenching');
+    const dncSource = getQuenchingResourcePath(
+        quenchingDir,
+        profile.dncPack === 'dnc20' ? 'dnc20' : profile.dncPack === 'dnc30-hd' ? 'dnc30Hd' : 'dnc30De'
+    );
+
+    if (!(await fs.pathExists(dncSource))) {
+        throw new Error(`[MDL] DNC source not found: ${dncSource}`);
+    }
+
+    await syncBundledResourceFiles(dncPath, [{ source: dncSource }], [
+        { source: getQuenchingResourcePath(quenchingDir, 'dnc20') },
+        { source: getQuenchingResourcePath(quenchingDir, 'dnc30Hd') },
+        { source: getQuenchingResourcePath(quenchingDir, 'dnc30De') },
+    ], '.quenching-dnc-profile');
+    if (!(await fs.pathExists(dncPath))) {
+        throw new Error(`[MDL] DNC directory restoration failed: ${dncPath}`);
+    }
+    console.log(`[MDL] Restored ${profile.dncPack} DNC from ${dncSource}`);
 }
 
 async function traverseAndModify(
     dir: string,
     mode: string,
     brightnessLevel: number,
-    patchOptions: { brightnessOnly: boolean; previousBrightnessLevel: number }
+    patchOptions: { brightnessOnly: boolean; previousBrightnessLevel: number; deMode?: boolean; isVersion30?: boolean }
 ) {
     const files = await fs.readdir(dir);
     for (const file of files) {
@@ -402,7 +358,7 @@ async function processMdlFile(
     fileName: string,
     mode: string,
     brightnessLevel: number,
-    patchOptions: { brightnessOnly: boolean; previousBrightnessLevel: number }
+    patchOptions: { brightnessOnly: boolean; previousBrightnessLevel: number; deMode?: boolean; isVersion30?: boolean }
 ) {
     const content = await fs.readFile(filePath, 'utf-8');
     const lines = content.split(/\r?\n/);
@@ -415,7 +371,7 @@ async function processMdlFile(
     const targetAmb = getTargetAmbIntensity(category, mode);
     let appliedSurfaceBaseline = false;
 
-    if (category === 'surface') {
+    if (category === 'surface' && !patchOptions.deMode && !patchOptions.isVersion30) {
         const useUnitBaseline = isUnit && !isTerrain;
         const useTerrainBaseline = isTerrain && !isUnit;
         if (useUnitBaseline || useTerrainBaseline) {
@@ -430,7 +386,18 @@ async function processMdlFile(
         const line = lines[i].trim();
         const lowerLine = line.toLowerCase();
 
-        if (lowerLine.startsWith('static ambintensity') && targetAmb !== null) {
+        if (patchOptions.isVersion30 && !patchOptions.brightnessOnly && lowerLine.startsWith('static ambintensity')) {
+            const match = line.match(/static\s+AmbIntensity\s+([\d.-]+)/i);
+            if (match) {
+                const base = parseFloat(match[1]);
+                const offset = mode === 'battle' || mode === 'melee' ? 0.03 : mode === 'rpg' ? 0.01 : 0;
+                const newVal = `\tstatic AmbIntensity ${formatIntensityValue(base + offset)},`;
+                if (lines[i] !== newVal) {
+                    lines[i] = newVal;
+                    modified = true;
+                }
+            }
+        } else if (!patchOptions.isVersion30 && lowerLine.startsWith('static ambintensity') && targetAmb !== null) {
             const newVal = `\tstatic AmbIntensity ${targetAmb.toFixed(2)},`;
             if (lines[i] !== newVal) {
                 lines[i] = newVal;
@@ -438,8 +405,21 @@ async function processMdlFile(
             }
         }
 
+        if (patchOptions.isVersion30 && !patchOptions.brightnessOnly && lowerLine.startsWith('static shadowintensity')) {
+            const match = line.match(/static\s+ShadowIntensity\s+([\d.-]+)/i);
+            if (match) {
+                const base = parseFloat(match[1]);
+                const multiplier = mode === 'battle' || mode === 'melee' ? 0.66 : mode === 'rpg' ? 1.2 : 1;
+                const newVal = `\tstatic ShadowIntensity ${formatIntensityValue(base * multiplier)},`;
+                if (lines[i] !== newVal) {
+                    lines[i] = newVal;
+                    modified = true;
+                }
+            }
+        }
+
         const rotationMatch = line.match(/^(\d+):\s*\{\s*([\d.-]+),\s*([\d.-]+),\s*([\d.-]+),\s*([\d.-]+)\s*\},?$/);
-        if (rotationMatch && category === 'surface' && isUnit && !isTerrain && mode === 'battle') {
+        if (rotationMatch && !patchOptions.deMode && category === 'surface' && isUnit && !isTerrain && mode === 'battle') {
             if (isInsideMdlBlock(lines, i, ROTATION_HEADER)) {
                 const newVal = formatRotationKeyframe(rotationMatch[1], getSurfaceUnitBattleRotation());
                 if (lines[i].trim() !== newVal.trim()) {

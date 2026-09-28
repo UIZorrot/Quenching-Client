@@ -1,8 +1,14 @@
+import { getSelectedGameFolder } from '../services/game-channel';
 import { ipcMain } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
+import { rm } from 'node:fs/promises';
 import { AssetSyncService } from '../services/asset-sync';
 import { assertTreeModeAvailable } from '../services/full-package-service';
+import { resolveModProfile } from '../services/mod-profile';
+import { installBundledResourceFile } from '../services/managed-resource-files';
+import { readCurrentModVersion } from '../services/mod-integrity-service';
+import { getInstalledModState } from '../services/mod-update-service';
 
 /**
  * 魔兽文本文件处理器 (用于处理 destructableskin.txt 等类似 INI 的文件)
@@ -77,13 +83,33 @@ export function registerTreeHandlers() {
         try {
             if (!war3Path) throw new Error('未提供魔兽路径');
 
-            const retailPath = path.join(war3Path, '_retail_');
+            const retailPath = path.join(war3Path, getSelectedGameFolder());
             const baseDir = (await fs.pathExists(retailPath)) ? retailPath : war3Path;
             const targetPath = path.join(baseDir, 'units', 'destructableskin.txt');
+            if (!(await readCurrentModVersion(war3Path)) && (await getInstalledModState(war3Path))?.sequence === 34) {
+                throw new Error('请先将 3.4 MOD 更新到 3.5，再切换树木资源');
+            }
 
             // 找到基准原版文件
             const assetsDir = await AssetSyncService.getAssetsDir();
-            const sourcePath = path.join(assetsDir, 'quenching', 'destructableskin-org.txt');
+            const modSettings = (await import('../services/config-manager')).configManager.get('modSettings') || {};
+            const profile = await resolveModProfile(war3Path, {
+                versionSelection: modSettings.versionSelection,
+                graphicsSelection: modSettings.graphicsSelection,
+                classicMode: modSettings.classicMode === true,
+            });
+            const baselineName =
+                profile.graphics === 'de'
+                    ? 'destructableskin-de.txt'
+                    : treeMode === 'original'
+                        ? 'destructableskin.txt'
+                        : 'destructableskin-org.txt';
+            let sourcePath = path.join(assetsDir, 'quenching', 'skin', baselineName);
+
+            // HD/SD original prefers the dedicated destructableskin.txt; fall back to -org.
+            if (treeMode === 'original' && profile.graphics !== 'de' && !(await fs.pathExists(sourcePath))) {
+                sourcePath = path.join(assetsDir, 'quenching', 'skin', 'destructableskin-org.txt');
+            }
 
             console.log(`[Tree] Using baseline: ${sourcePath}`);
 
@@ -96,26 +122,40 @@ export function registerTreeHandlers() {
                 await assertTreeModeAvailable(war3Path, treeMode);
             }
 
-            // 无论切换到什么模式，我们都先从原版读取数据
+            const install = (source: string) => installBundledResourceFile(
+                path.join(baseDir, 'units'), 'destructableskin.txt', source, [], '.quenching-profile-skin',
+            );
+            if (treeMode === 'original') {
+                // Original is an exact bundled/baseline file, not a generated
+                // tree variant. This also covers DE's destructableskin-de.txt.
+                await install(sourcePath);
+                console.log(`[Tree] Restored original tree baseline to ${targetPath}`);
+                return true;
+            }
+
+            // Generate a client-owned variant in staging before touching the game.
             const handler = new War3TextHandler();
             await handler.readFile(sourcePath);
             console.log(`[Tree] Original data loaded. Sections: ${Array.from(handler.getData().keys()).length}`);
 
-            if (treeMode === 'original') {
-                console.log(`[Tree] RESTORE: Copying baseline org to ${targetPath}`);
-                await handler.saveFile(targetPath);
-            } else {
-                console.log(`[Tree] MODIFY: Applying ${treeMode} rules onto original data...`);
-                switch (treeMode) {
-                    case 'tall': applyTo20(handler); break;
-                    case 'short': applyTo20Short(handler); break;
-                    case 'v18': applyTo18(handler); break;
-                    case 'v16': applyTo16(handler); break;
-                    case 'retro': applyTo00(handler); break;
-                    default:
-                        console.warn(`[Tree] Unknown mode ${treeMode}, just saving baseline.`);
-                }
-                await handler.saveFile(targetPath);
+            console.log(`[Tree] MODIFY: Applying ${treeMode} rules onto original data...`);
+            switch (treeMode) {
+                case 'tall': applyTo20(handler); break;
+                case 'short': applyTo20Short(handler); break;
+                case 'v18': applyTo18(handler); break;
+                case 'v16': applyTo16(handler); break;
+                case 'retro': applyTo00(handler); break;
+                default:
+                    console.warn(`[Tree] Unknown mode ${treeMode}, just saving baseline.`);
+            }
+
+            const staging = await fs.mkdtemp(path.join(baseDir, '.quenching-tree-skin-'));
+            try {
+                const generated = path.join(staging, 'destructableskin.txt');
+                await handler.saveFile(generated);
+                await install(generated);
+            } finally {
+                await rm(staging, { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
             }
 
             console.log(`[Tree] SUCCESSFULLY updated tree to ${treeMode}`);

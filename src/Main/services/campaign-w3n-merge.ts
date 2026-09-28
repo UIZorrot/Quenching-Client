@@ -253,7 +253,7 @@ export async function extractCampaignW3nMerged(
     let workRoot = '';
     report({ phase: 'prepare', percent: 2 });
 
-    const ctempPath = path.join(await AssetSyncService.getAssetsDir(), 'quenching', 'ctemp.w3x');
+    const ctempPath = path.join(await AssetSyncService.getAssetsDir(), 'quenching', 'camp', 'ctemp.w3x');
 
     if (!(await fs.pathExists(ctempPath))) {
         throw new Error(`Missing merge template ctemp.w3x at ${ctempPath}`);

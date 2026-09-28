@@ -1,5 +1,8 @@
+import { getSelectedGameFolder } from './game-channel';
 import fs from 'fs-extra';
 import path from 'path';
+import { GameChannel, gameChannelFolder } from '../../shared/game-channel';
+import { normalizeWar3RootPath } from './war3-path';
 
 /** Resource folders referenced by terrainXX.slk. */
 export const REQUIRED_TERRAIN_FOLDERS = ['t00', 't16', 't18', 't20'] as const;
@@ -18,16 +21,11 @@ export const REQUIRED_TREE_TEXTURE_FOLDERS = [
 
 /** Resource folders used by the water, retro-skin, and cos-skin features. */
 export const REQUIRED_EXTRA_FULL_PACKAGE_FOLDERS = [
-    path.join('replaceabletextures', 'water'),
+    // Water dirs are optional at install time: DE packages (e.g. QMF3.5) ship without
+    // replaceabletextures/water. Water mode switching asserts them when needed.
     'cos',
     'RUnits',
     'Rbuildings',
-] as const;
-
-/** Files supplied by the full package rather than by the client assets. */
-export const REQUIRED_FULL_PACKAGE_FILES = [
-    path.join('textures', 'fx', 'shoreline1.dds'),
-    path.join('textures', 'fx', 'shorelineparticlexy.dds'),
 ] as const;
 
 export const REQUIRED_FULL_PACKAGE_FOLDERS = [
@@ -35,17 +33,6 @@ export const REQUIRED_FULL_PACKAGE_FOLDERS = [
     ...REQUIRED_DOODAD_FOLDERS,
     ...REQUIRED_TREE_TEXTURE_FOLDERS,
     ...REQUIRED_EXTRA_FULL_PACKAGE_FOLDERS,
-] as const;
-
-/** Water mode switching moves one backup folder into the active slot, so either backup is valid. */
-const ALTERNATIVE_FULL_PACKAGE_FOLDERS = [
-    {
-        label: 'replaceabletextures/water-rel or water-trans',
-        candidates: [
-            path.join('replaceabletextures', 'water-rel'),
-            path.join('replaceabletextures', 'water-trans'),
-        ],
-    },
 ] as const;
 
 const FULL_PACKAGE_FOLDER_CANDIDATES: Record<string, string[]> = {
@@ -61,6 +48,9 @@ const TERRAIN_MODE_FOLDER: Record<string, string> = {
     v16: 't16',
     v18: 't18',
     latest: 't20',
+    decisive: 't30',
+    v30: 't30',
+    t30: 't30',
 };
 
 const TREE_MODE_FOLDER: Record<string, string> = {
@@ -71,12 +61,23 @@ const TREE_MODE_FOLDER: Record<string, string> = {
     retro: 't00',
 };
 
+async function isDirectory(dir: string): Promise<boolean> {
+    return (await fs.stat(dir).catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+        throw error;
+    }))?.isDirectory() === true;
+}
+
 export async function resolveRetailDir(war3Path: string): Promise<string> {
-    const retailPath = path.join(war3Path, '_retail_');
-    if (await fs.pathExists(retailPath)) {
-        return retailPath;
+    const root = normalizeWar3RootPath(war3Path);
+    const selected = getSelectedGameFolder();
+    const selectedPath = path.join(root, selected);
+    if (await isDirectory(selectedPath)) return selectedPath;
+    const other = selected === '_retail_' ? '_ptr_' : '_retail_';
+    if (await isDirectory(path.join(root, other))) {
+        throw new Error(`Selected Warcraft branch is missing: ${selectedPath}`);
     }
-    return war3Path;
+    return root;
 }
 
 async function hasDirectoryContent(dir: string): Promise<boolean> {
@@ -97,69 +98,79 @@ async function hasDirectoryContent(dir: string): Promise<boolean> {
         }
 
         return false;
-    } catch {
-        return false;
-    }
-}
-
-async function isFilePresent(filePath: string): Promise<boolean> {
-    try {
-        return (await fs.stat(filePath)).isFile();
-    } catch {
-        return false;
+    } catch (error: any) {
+        if (error?.code === 'ENOENT' || error?.code === 'ENOTDIR') return false;
+        throw error;
     }
 }
 
 /** Check either the native root folder or the extracted doodad layout. */
 export async function isFullPackageFolderPresent(war3Path: string, folder: string): Promise<boolean> {
     const baseDir = await resolveRetailDir(war3Path);
+    return isFullPackageFolderPresentAtDir(baseDir, folder);
+}
+
+export async function isFullPackageFolderPresentAtDir(baseDir: string, folder: string): Promise<boolean> {
     const candidates = FULL_PACKAGE_FOLDER_CANDIDATES[folder] ?? [folder];
 
     for (const candidate of candidates) {
-        if (await hasDirectoryContent(path.join(baseDir, candidate))) {
-            return true;
+        for (const root of [baseDir, path.join(baseDir, 'QMoff')]) {
+            if (await hasDirectoryContent(path.join(root, candidate))) {
+                return true;
+            }
         }
     }
 
     return false;
 }
 
-/** Kept as a compatibility alias for callers that used the old helper name. */
-export const isTerrainFolderPresent = isFullPackageFolderPresent;
+/** Inspect one build explicitly; the selected launch branch must not affect the other build. */
+export async function isFullPackageInstalledInChannel(war3Path: string, channel: GameChannel): Promise<boolean> {
+    const baseDir = path.join(normalizeWar3RootPath(war3Path), gameChannelFolder(channel));
+    return isFullPackageInstalledAtDir(baseDir);
+}
 
-export async function isFullPackageFilePresent(war3Path: string, fileName: string): Promise<boolean> {
-    const baseDir = await resolveRetailDir(war3Path);
-    return isFilePresent(path.join(baseDir, fileName));
+export async function isFullPackageInstalledAtDir(baseDir: string): Promise<boolean> {
+    if (!(await fs.pathExists(baseDir))) return false;
+    if (!(await hasFullPackageMarkerAtDir(baseDir))) return false;
+    for (const folder of REQUIRED_FULL_PACKAGE_FOLDERS) {
+        if (!(await isFullPackageFolderPresentAtDir(baseDir, folder))) return false;
+    }
+    return true;
 }
 
 export async function getMissingFullPackageResources(war3Path: string): Promise<string[]> {
     const missing: string[] = [];
+    const root = normalizeWar3RootPath(war3Path);
+    const selected = getSelectedGameFolder();
+    const other = selected === '_retail_' ? '_ptr_' : '_retail_';
+    if (!(await isDirectory(path.join(root, selected))) && await isDirectory(path.join(root, other))) {
+        return [`${selected} branch`];
+    }
+    const baseDir = await resolveRetailDir(war3Path);
+    if (!(await hasFullPackageMarkerAtDir(baseDir))) return ['MOD version marker'];
 
     for (const folder of REQUIRED_FULL_PACKAGE_FOLDERS) {
-        if (!(await isFullPackageFolderPresent(war3Path, folder))) {
+        if (!(await isFullPackageFolderPresentAtDir(baseDir, folder))) {
             missing.push(folder);
-        }
-    }
-
-    for (const group of ALTERNATIVE_FULL_PACKAGE_FOLDERS) {
-        const present = await Promise.all(group.candidates.map((folder) => isFullPackageFolderPresent(war3Path, folder)));
-        if (!present.some(Boolean)) {
-            missing.push(group.label);
-        }
-    }
-
-    for (const fileName of REQUIRED_FULL_PACKAGE_FILES) {
-        if (!(await isFullPackageFilePresent(war3Path, fileName))) {
-            missing.push(fileName);
         }
     }
 
     return missing;
 }
 
-/** Compatibility name retained for existing callers. */
-export async function getMissingTerrainFolders(war3Path: string): Promise<string[]> {
-    return getMissingFullPackageResources(war3Path);
+async function hasFullPackageMarkerAtDir(baseDir: string): Promise<boolean> {
+    for (const relative of ['_patch/keep.que', 'QMoff/_patch/keep.que', 'patch/keep.que', 'QMoff/patch/keep.que']) {
+        const file = path.join(baseDir, ...relative.split('/'));
+        const stat = await fs.lstat(file).catch((error: NodeJS.ErrnoException) => {
+            if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+            throw error;
+        });
+        if (!stat?.isFile() || stat.isSymbolicLink()) continue;
+        const content = await fs.readFile(file, 'utf8');
+        if (/^-v\d+(?:\.\d+){1,2}-\s*$/im.test(content)) return true;
+    }
+    return false;
 }
 
 export async function isFullPackageInstalled(war3Path: string | undefined): Promise<boolean> {
@@ -191,6 +202,18 @@ export async function assertTerrainModeAvailable(war3Path: string, mode: string)
     // A terrain table is unsafe without the complete terrain/doodad package.
     await assertFullPackageInstalled(war3Path);
 
+    if (folder === 't30') {
+        // QMF3.5 may only ship t30/keep.txt while tiles already live under terrainart.
+        const baseDir = await resolveRetailDir(war3Path);
+        const t30Dir = path.join(baseDir, 't30');
+        const t30Marker = path.join(t30Dir, 'keep.txt');
+        const t30Exists = (await hasDirectoryContent(t30Dir)) || (await fs.pathExists(t30Marker));
+        if (!t30Exists) {
+            throw new Error('Terrain resource folder is missing: t30');
+        }
+        return;
+    }
+
     if (!(await isFullPackageFolderPresent(war3Path, folder))) {
         throw new Error(`Terrain resource folder is missing: ${folder}`);
     }
@@ -219,38 +242,4 @@ export async function assertTreeModeAvailable(war3Path: string, mode: string): P
     if (!hasTerrainTex || !hasTreeTex) {
         throw new Error(`Tree resource folder is missing: ${folder} or tree/${folder}`);
     }
-}
-
-/**
- * Remove terrain overrides that cannot be resolved safely without the full
- * texture package. This prevents a stale partial installation from crashing
- * the game during terrain loading.
- */
-export async function removeTerrainSlkIfFullPackageMissing(war3Path: string): Promise<boolean> {
-    if (await isFullPackageInstalled(war3Path)) {
-        return false;
-    }
-
-    const baseDir = await resolveRetailDir(war3Path);
-    const unsafeOverridePaths = [
-        path.join(baseDir, 'terrainart', 'terrain.slk'),
-        path.join(baseDir, 'terrainart', 'clifftypes.slk'),
-        path.join(baseDir, 'terrainart', 'meta.que'),
-        path.join(baseDir, 'terrainart', 'water.slk'),
-        path.join(baseDir, 'terrainart', 'terrain-que', 'terrain.slk'),
-        path.join(baseDir, 'terrainart', 'terrain-que', 'clifftypes.slk'),
-        path.join(baseDir, 'textures', 'shoreline1.dds'),
-        path.join(baseDir, 'textures', 'shorelineparticlexy.dds'),
-    ];
-
-    let removed = false;
-    for (const unsafeOverridePath of unsafeOverridePaths) {
-        if (await fs.pathExists(unsafeOverridePath)) {
-            await fs.remove(unsafeOverridePath);
-            removed = true;
-            console.warn(`[FullPackage] Removed unsafe full-package override: ${unsafeOverridePath}`);
-        }
-    }
-
-    return removed;
 }

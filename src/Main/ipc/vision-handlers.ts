@@ -1,14 +1,23 @@
 import { ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs-extra';
+import { installBundledResourceFile, removeBundledResourceFile } from '../services/managed-resource-files';
 import { glob } from 'glob';
 import { promisify } from 'util';
+import { getSelectedGameFolder } from '../services/game-channel';
 
 /**
  * 扫描 VisionMod 目录获取模型及贴图文件列表
  */
 async function scanVisionMod(visionModPath: string) {
-    const retailPath = path.join(visionModPath, '_retail_');
+    const candidates = [...new Set([getSelectedGameFolder(), '_retail_', '_ptr_'])];
+    const folder = await (async () => {
+        for (const candidate of candidates) {
+            if (await fs.pathExists(path.join(visionModPath, candidate))) return candidate;
+        }
+        return null;
+    })();
+    const retailPath = path.join(visionModPath, folder || getSelectedGameFolder());
     console.log(`[Vision] Scanning VisionMod at: ${retailPath}`);
 
     if (!(await fs.pathExists(retailPath))) {
@@ -64,7 +73,7 @@ async function scanVisionMod(visionModPath: string) {
         }
     }
 
-    return { portraits, enhancements, textures };
+    return { portraits, enhancements, textures, sourcePath: retailPath };
 }
 
 export function registerVisionHandlers() {
@@ -78,22 +87,20 @@ export function registerVisionHandlers() {
                 throw new Error('未设置或无效的 VisionMod 路径');
             }
 
-            const { portraits, textures } = await scanVisionMod(visionModPath);
-            const war3Retail = path.join(war3Path, '_retail_');
-            const visionRetail = path.join(visionModPath, '_retail_');
+            const { portraits, textures, sourcePath: visionRetail } = await scanVisionMod(visionModPath);
+            const war3Retail = path.join(war3Path, getSelectedGameFolder());
 
             // 处理所有头像模型和所有贴图
             const filesToProcess = [...portraits, ...textures];
 
             for (const relPath of filesToProcess) {
                 const targetPath = path.join(war3Retail, relPath);
+                const sourcePath = path.join(visionRetail, relPath);
                 if (enabled) {
-                    const sourcePath = path.join(visionRetail, relPath);
-                    await fs.ensureDir(path.dirname(targetPath));
-                    await fs.copy(sourcePath, targetPath);
+                    await installBundledResourceFile(war3Retail, relPath, sourcePath, [sourcePath], '.quenching-vision-files');
                 } else {
                     if (await fs.pathExists(targetPath)) {
-                        await fs.remove(targetPath);
+                        await removeBundledResourceFile(war3Retail, relPath, [sourcePath], '.quenching-vision-files');
                     }
                 }
             }
@@ -112,22 +119,20 @@ export function registerVisionHandlers() {
                 throw new Error('未设置或无效比 VisionMod 路径');
             }
 
-            const { enhancements, textures } = await scanVisionMod(visionModPath);
-            const war3Retail = path.join(war3Path, '_retail_');
-            const visionRetail = path.join(visionModPath, '_retail_');
+            const { enhancements, textures, sourcePath: visionRetail } = await scanVisionMod(visionModPath);
+            const war3Retail = path.join(war3Path, getSelectedGameFolder());
 
             // 处理所有增强模型和所有贴图
             const filesToProcess = [...enhancements, ...textures];
 
             for (const relPath of filesToProcess) {
                 const targetPath = path.join(war3Retail, relPath);
+                const sourcePath = path.join(visionRetail, relPath);
                 if (enabled) {
-                    const sourcePath = path.join(visionRetail, relPath);
-                    await fs.ensureDir(path.dirname(targetPath));
-                    await fs.copy(sourcePath, targetPath);
+                    await installBundledResourceFile(war3Retail, relPath, sourcePath, [sourcePath], '.quenching-vision-files');
                 } else {
                     if (await fs.pathExists(targetPath)) {
-                        await fs.remove(targetPath);
+                        await removeBundledResourceFile(war3Retail, relPath, [sourcePath], '.quenching-vision-files');
                     }
                 }
             }

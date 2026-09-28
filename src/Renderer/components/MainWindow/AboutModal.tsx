@@ -239,7 +239,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
             icon={<GlobalOutlined />}
             onClick={() => {
               playSmall();
-              handleOpenLink('https://tianxiazhengyi.net/');
+              handleOpenLink('https://qm.txzy.net/');
             }}
             onMouseEnter={() => playHover()}
             style={{ color: '#d4af37', fontSize: '1rem' }}
@@ -263,7 +263,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
             icon={<HeartOutlined />}
             onClick={() => {
               playSmall();
-              handleOpenLink('https://tianxiazhengyi.net/support');
+              handleOpenLink('https://qm.txzy.net/support');
             }}
             onMouseEnter={() => playHover()}
             style={{ color: '#d4af37', fontSize: '1rem' }}

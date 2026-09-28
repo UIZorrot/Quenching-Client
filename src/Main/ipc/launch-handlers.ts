@@ -7,7 +7,19 @@ import fs from 'fs-extra';
 import path from 'path';
 import { extractCampaignW3nMerged } from '../services/campaign-w3n-merge';
 import { readInstalledCampaignMetadata, InstalledCampaignMetadata } from '../services/campaign-metadata';
-import { isFullPackageInstalled, removeTerrainSlkIfFullPackageMissing } from '../services/full-package-service';
+import { isFullPackageInstalled, isFullPackageInstalledInChannel } from '../services/full-package-service';
+import { normalizeWar3RootPath } from '../services/war3-path';
+import { getSelectedGameFolder, getChannelModEnabled, setChannelModEnabled, hasGameChannelDirectory } from '../services/game-channel';
+import { switchGameChannel } from '../services/game-channel-switch';
+import { getInstallSpaceStatus, getZipUncompressedBytes } from '../services/install-space';
+import { GameChannel } from '../../shared/game-channel';
+import { registerLocalFilesInBackground } from '../services/local-files-service';
+import { getSelectedGameChannel } from '../services/game-channel';
+import { gameChannelFolder } from '../../shared/game-channel';
+import { applyBranchModFilesForSwitch, isBranchModDisabled, recoverBranchModToggle } from '../services/branch-mod-toggle';
+import { assertNoPendingBranchCopy, cloneBranchPackage } from '../services/branch-package-copy';
+import { assertWarcraftNotRunning } from '../services/mod-update-service';
+import { syncBlightOnStartup } from '../services/blight-service';
 
 function slugFromW3nBasename(w3nPath: string): string {
     const ext = path.extname(w3nPath);
@@ -17,15 +29,41 @@ function slugFromW3nBasename(w3nPath: string): string {
     return base;
 }
 
+function configuredGameRoot(): string {
+    const saved = configManager.get('war3Path');
+    if (!saved) throw new Error('Warcraft III directory is not configured');
+    return normalizeWar3RootPath(saved);
+}
+
+async function branchStates(root: string): Promise<Record<GameChannel, { available: boolean; installed: boolean; enabled: boolean }>> {
+    const result = {} as Record<GameChannel, { available: boolean; installed: boolean; enabled: boolean }>;
+    for (const channel of ['retail', 'ptr'] as const) {
+        const build = path.join(root, gameChannelFolder(channel));
+        await assertNoPendingBranchCopy(build);
+        const branchExists = await hasGameChannelDirectory(root, channel);
+        const installed = branchExists && await isFullPackageInstalledInChannel(root, channel);
+        const disabled = branchExists && await isBranchModDisabled(build);
+        const configured = configManager.get('channelModEnabled')?.[channel];
+        result[channel] = {
+            available: branchExists,
+            installed,
+            // The MOD switch also controls client-provided features when no
+            // full package is installed. "installed" is a separate capability.
+            enabled: branchExists && !disabled && (typeof configured === 'boolean' ? configured : getChannelModEnabled(channel)),
+        };
+    }
+    return result;
+}
+
 export function registerLaunchHandlers() {
     ipcMain.handle('game:launch', async (event, executablePath?: string) => {
         try {
             return await GameLauncher.launchGame(executablePath);
         } catch (e: any) {
             console.error(e);
-            if (e.message && (e.message.includes('not found') || e.message.includes('不存在'))) {
-                configManager.delete('war3Path');
-            }
+            // A launch failure can be caused by a missing executable in the
+            // selected branch or an unrelated resource. Never forget the
+            // player's saved installation root as a side effect.
             throw e;
         }
     });
@@ -33,6 +71,15 @@ export function registerLaunchHandlers() {
     ipcMain.handle('game:launch-map', async (event, mapPath: string, difficulty: number) => {
         try {
             return await GameLauncher.launchMap(mapPath, difficulty);
+        } catch (e: any) {
+            console.error(e);
+            throw e;
+        }
+    });
+
+    ipcMain.handle('campaign:unlock', async () => {
+        try {
+            return await GameLauncher.unlockCampaign();
         } catch (e: any) {
             console.error(e);
             throw e;
@@ -118,10 +165,18 @@ export function registerLaunchHandlers() {
                 selectedPath = path.dirname(selectedPath);
             }
 
-            const retailPath = path.join(selectedPath, '_retail_');
-            const hasRetailDir = await fs.pathExists(retailPath);
+            // The native folder picker lets users enter `_retail_`. Internally
+            // we always store the parent installation root.
+            selectedPath = normalizeWar3RootPath(selectedPath);
 
-            if (hasRetailDir) {
+            const hasRetailDir = await fs.pathExists(path.join(selectedPath, '_retail_'));
+            const hasPtrDir = await fs.pathExists(path.join(selectedPath, '_ptr_'));
+
+            if (hasRetailDir || hasPtrDir) {
+                if (hasRetailDir !== hasPtrDir) {
+                    const availableChannel: GameChannel = hasPtrDir ? 'ptr' : 'retail';
+                    await switchGameChannel(selectedPath, availableChannel);
+                }
                 configManager.set('war3Path', selectedPath);
                 return selectedPath;
             }
@@ -129,9 +184,11 @@ export function registerLaunchHandlers() {
             const possibleExes = isMac ? [
                 path.join(selectedPath, 'Warcraft III.app'),
                 path.join(selectedPath, '_retail_', 'Warcraft III.app'),
+                path.join(selectedPath, '_ptr_', 'Warcraft III.app'),
             ] : [
                 path.join(selectedPath, 'Warcraft III.exe'),
                 path.join(selectedPath, '_retail_', 'x86_64', 'Warcraft III.exe'),
+                path.join(selectedPath, '_ptr_', 'x86_64', 'Warcraft III.exe'),
                 path.join(selectedPath, 'x86_64', 'Warcraft III.exe')
             ];
 
@@ -149,8 +206,8 @@ export function registerLaunchHandlers() {
             }
 
             const msg = isMac
-                ? '所选目录中未找到 _retail_ 文件夹或 Warcraft III.app'
-                : '所选目录中未找到 _retail_ 文件夹或 Warcraft III.exe';
+                ? '所选目录中未找到 _retail_ / _ptr_ 文件夹或 Warcraft III.app'
+                : '所选目录中未找到 _retail_ / _ptr_ 文件夹或 Warcraft III.exe';
             dialog.showErrorBox('路径无效', `${msg}，请重新选择正确的游戏安装目录。`);
             return null;
         }
@@ -162,7 +219,49 @@ export function registerLaunchHandlers() {
     });
 
     ipcMain.handle('config:set', (event, key, value) => {
+        if (key === 'gameChannel') throw new Error('Use game:switch-channel to change game branches safely');
         return configManager.set(key, value);
+    });
+
+    ipcMain.handle('game:switch-channel', async (_event, channel: GameChannel) => {
+        const root = configManager.get('war3Path');
+        if (!root) throw new Error('Choose a Warcraft III folder before switching');
+        await switchGameChannel(root, channel);
+        return true;
+    });
+
+    ipcMain.handle('mod:get-branch-states', async () => branchStates(configuredGameRoot()));
+
+    ipcMain.handle('mod:set-branch-enabled', async (_event, channel: GameChannel, enabled: boolean) => {
+        if (channel !== 'retail' && channel !== 'ptr' || typeof enabled !== 'boolean') throw new Error('Invalid branch toggle request');
+        const root = configuredGameRoot();
+        await assertWarcraftNotRunning();
+        const build = path.join(root, gameChannelFolder(channel));
+        if (!(await hasGameChannelDirectory(root, channel))) throw new Error('The selected game branch is not installed');
+        await assertNoPendingBranchCopy(build);
+        await recoverBranchModToggle(build);
+        const installed = await isFullPackageInstalledInChannel(root, channel);
+        await applyBranchModFilesForSwitch(build, enabled, installed);
+        // Without a package or a parking journal, only change the switch.
+        // Never require a ZIP or move unknown/player-owned loose files.
+        setChannelModEnabled(channel, enabled);
+        if (enabled) await AssetSyncService.ensurePostProcessingConfig(root);
+        return { needsZip: false, states: await branchStates(root) };
+    });
+
+    ipcMain.handle('game:ensure-local-files', () => {
+        // After the window is up, write both branches. Game launch does not touch the registry.
+        registerLocalFilesInBackground('retail');
+        registerLocalFilesInBackground('ptr');
+        return true;
+    });
+
+    ipcMain.handle('mod:install-space-status', async (_event, zipPath?: string) => {
+        const root = configManager.get('war3Path');
+        if (!root) return null;
+        const bytes = zipPath ? await getZipUncompressedBytes(zipPath) : undefined;
+        if (bytes !== undefined) configManager.set('lastFullPackageBytes', bytes);
+        return getInstallSpaceStatus(root, bytes);
     });
 
     ipcMain.handle('theme:apply', async (event, themeId: string) => {
@@ -173,7 +272,7 @@ export function registerLaunchHandlers() {
         return await isFullPackageInstalled(war3Path);
     });
 
-    ipcMain.handle('mod:install-full-package', async (event, zipPath: string) => {
+    ipcMain.handle('mod:install-full-package', async (event, zipPath: string, requestedChannel?: GameChannel) => {
         const war3Path = configManager.get('war3Path') as string | undefined;
 
         if (!war3Path) {
@@ -183,14 +282,6 @@ export function registerLaunchHandlers() {
             };
         }
 
-        // 允许覆盖安装，移除已安装检查
-        // if (await isFullPackageInstalled(war3Path)) {
-        //     return {
-        //         success: true,
-        //         skipped: true
-        //     };
-        // }
-
         if (!zipPath || !(await fs.pathExists(zipPath))) {
             return {
                 success: false,
@@ -199,27 +290,76 @@ export function registerLaunchHandlers() {
         }
 
         try {
-            const targetPath = path.join(war3Path, '_retail_');
-            await AssetSyncService.extractZip(zipPath, targetPath, (percent, currentFile) => {
-                event.sender.send('mod:install-progress', { percent, message: `正在安装: ${currentFile}` });
-            });
-            // Extraction alone does not prove that the selected archive is a
-            // complete package. Do not report success or enable dependent
-            // features until all required full-package resources are present.
-            const installed = await isFullPackageInstalled(war3Path);
-            if (!installed) {
-                await removeTerrainSlkIfFullPackageMissing(war3Path);
-                return {
-                    success: false,
-                    error: 'incompletePackage'
-                };
+            await assertWarcraftNotRunning();
+            const normalizedWar3Path = normalizeWar3RootPath(war3Path);
+            if (normalizedWar3Path !== war3Path) {
+                configManager.set('war3Path', normalizedWar3Path);
             }
+            const channel = requestedChannel ?? getSelectedGameChannel();
+            if (channel !== 'retail' && channel !== 'ptr') throw new Error('Invalid target branch');
+            const targetPath = path.join(normalizedWar3Path, gameChannelFolder(channel));
+            if (!(await fs.pathExists(targetPath))) {
+                return { success: false, error: 'wrongChannel' };
+            }
+            await assertNoPendingBranchCopy(targetPath);
+            if (await isFullPackageInstalledInChannel(normalizedWar3Path, channel)) {
+                return { success: true, skipped: true };
+            }
+            // The extraction stage and installed files share a drive. Check
+            // the fixed reserve now; the archive size is counted while it is
+            // extracted, so there is no separate ZIP directory scan.
+            const space = await getInstallSpaceStatus(normalizedWar3Path, 0);
+            if (space.insufficient) {
+                return { success: false, error: 'insufficientSpace', ...space };
+            }
+            // Extract outside both game builds, then install only package-owned
+            // paths. Existing identical client assets are reused.
+            const staging = await fs.mkdtemp(path.join(normalizedWar3Path, '.quenching-zip-stage-'));
+            let copyCommitted = false;
+            try {
+                let lastExtractPercent = -1;
+                const archiveBytes = await AssetSyncService.extractZip(zipPath, staging, (percent, currentFile) => {
+                    const overallPercent = Math.round(percent * 0.7);
+                    if (overallPercent !== lastExtractPercent) {
+                        lastExtractPercent = overallPercent;
+                        event.sender.send('mod:install-progress', { percent: overallPercent, message: `正在解压: ${currentFile}` });
+                    }
+                }, { stripLeadingDirectory: ['_retail_', '_ptr_'] });
+                configManager.set('lastFullPackageBytes', archiveBytes);
+                let packageRoot = staging;
+                if (!(await fs.pathExists(path.join(staging, '_patch', 'keep.que')))) {
+                    const entries = await fs.readdir(staging, { withFileTypes: true });
+                    if (entries.length === 1 && entries[0].isDirectory() && !entries[0].isSymbolicLink()) {
+                        packageRoot = path.join(staging, entries[0].name);
+                    }
+                }
+                event.sender.send('mod:install-progress', { percent: 70, message: '正在安装资源包' });
+                await cloneBranchPackage(packageRoot, targetPath, {
+                    linkDisposableSource: true,
+                    onProgress: (percent, message) => event.sender.send('mod:install-progress', {
+                        percent: 70 + Math.round(percent * 0.28), message,
+                    }),
+                });
+                copyCommitted = true;
+            } finally {
+                if (copyCommitted) event.sender.send('mod:install-progress', { percent: 99, message: '正在清理临时文件' });
+                await fs.remove(staging);
+            }
+            setChannelModEnabled(channel, true);
+            if (channel === getSelectedGameChannel()) {
+                try {
+                    await syncBlightOnStartup(normalizedWar3Path, configManager.get('modSettings') || {});
+                } catch (error) {
+                    console.warn('[FullPackage] Could not apply the independent Blight preference after install:', error);
+                }
+            }
+            event.sender.send('mod:install-progress', { percent: 100, message: '安装完成' });
             return {
                 success: true,
                 skipped: false
             };
         } catch (e: any) {
-            await removeTerrainSlkIfFullPackageMissing(war3Path).catch(() => undefined);
+            console.error('[FullPackage] ZIP installation failed:', e);
             return {
                 success: false,
                 error: e && e.message ? e.message : String(e)
@@ -227,13 +367,20 @@ export function registerLaunchHandlers() {
         }
     });
 
-    ipcMain.handle('mod:sync-assets', async (event) => {
+    ipcMain.handle('mod:sync-assets', async (event, requestedWar3Path?: string) => {
         try {
-            const war3Path = configManager.get('war3Path');
-            if (war3Path) {
-                // Ensure we call syncAssetsBeforeLaunch which handles checking mod status and missing files
-                await AssetSyncService.syncAssetsBeforeLaunch(war3Path);
+            const war3Path = requestedWar3Path || configManager.get('war3Path');
+            if (!war3Path) {
+                throw new Error('Warcraft III directory is not configured');
             }
+            const selectedBuild = path.join(war3Path, getSelectedGameFolder());
+            const otherBuild = path.join(war3Path, getSelectedGameFolder() === '_ptr_' ? '_retail_' : '_ptr_');
+            if (!(await fs.pathExists(selectedBuild)) && await fs.pathExists(otherBuild)) {
+                throw new Error('Switch to the installed game branch before syncing assets');
+            }
+            await AssetSyncService.syncConfiguredAssets(war3Path, (step, percent) => {
+                event.sender.send('mod:profile-progress', { step, percent });
+            });
         } catch (error) {
             console.error('[LaunchHandlers] Failed to sync assets:', error);
             // Optionally rethrow if you want the renderer to know it failed

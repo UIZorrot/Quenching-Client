@@ -1,3 +1,4 @@
+import { getSelectedGameChannel, getSelectedGameFolder } from './game-channel';
 import fs from 'fs-extra';
 import path from 'path';
 import { execFile } from 'child_process';
@@ -11,6 +12,13 @@ export const SHADER_ZIP_PRE200 = 'shaders1.xx.zip';
 export const SHADER_ZIP_LEGACY = 'shaders2.02.zip';
 /** Shaders for War3 >= 2.0.3 */
 export const SHADER_ZIP_MODERN = 'shaders2.03.zip';
+
+/** UI package for War3 1.32-1.36 and 2.0.0-2.0.4. */
+export const UI_ZIP_20 = 'zip-ui-20.zip';
+/** UI package for newer/other War3 versions. */
+export const UI_ZIP_30 = 'zip-ui-30.zip';
+
+export type UiZipName = typeof UI_ZIP_20 | typeof UI_ZIP_30;
 
 export type ShaderZipName =
     | typeof SHADER_ZIP_PRE200
@@ -85,9 +93,29 @@ export function getShaderZipForVersion(version: string | null | undefined): Shad
     return SHADER_ZIP_MODERN;
 }
 
+/**
+ * The 2.0 UI layout is required by War3 1.32-1.36 and 2.0.0-2.0.4.
+ * Unknown versions deliberately use the current 3.0 layout.
+ */
+export function getUiZipForVersion(version: string | null | undefined): UiZipName {
+    if (!version) {
+        return UI_ZIP_30;
+    }
+
+    const [major = 0, minor = 0, patch = 0] = parseVersionParts(version);
+    const uses20Ui =
+        (major === 1 && minor >= 32 && minor <= 36) ||
+        (major === 2 && minor === 0 && patch >= 0 && patch <= 4);
+
+    return uses20Ui ? UI_ZIP_20 : UI_ZIP_30;
+}
+
 async function readVersionFromBuildInfo(war3Path: string): Promise<string | null> {
     const root = normalizeWar3Root(war3Path);
-    const candidates = [path.join(root, '.build.info'), path.join(root, '_retail_', '.build.info')];
+    const candidates = [
+        path.join(root, getSelectedGameFolder(), '.build.info'),
+        ...(getSelectedGameChannel() === 'retail' ? [path.join(root, '.build.info')] : []),
+    ];
 
     for (const buildInfoPath of candidates) {
         if (!(await fs.pathExists(buildInfoPath))) {
@@ -130,11 +158,13 @@ async function readVersionFromBuildInfo(war3Path: string): Promise<string | null
 function getExeCandidates(war3Path: string): string[] {
     const root = normalizeWar3Root(war3Path);
     return [
-        path.join(root, '_retail_', 'x86_64', 'Warcraft III.exe'),
-        path.join(root, 'x86_64', 'Warcraft III.exe'),
-        path.join(root, '_retail_', 'Warcraft III.exe'),
-        path.join(root, 'Warcraft III.exe'),
-        path.join(root, 'War3.exe'),
+        path.join(root, getSelectedGameFolder(), 'x86_64', 'Warcraft III.exe'),
+        path.join(root, getSelectedGameFolder(), 'Warcraft III.exe'),
+        ...(getSelectedGameChannel() === 'retail' ? [
+            path.join(root, 'x86_64', 'Warcraft III.exe'),
+            path.join(root, 'Warcraft III.exe'),
+            path.join(root, 'War3.exe'),
+        ] : []),
     ];
 }
 
@@ -228,6 +258,13 @@ export async function resolveShaderZipName(war3Path: string): Promise<ShaderZipN
     return info.shaderZip;
 }
 
+export async function resolveUiZipName(war3Path: string): Promise<UiZipName> {
+    const info = await detectWar3Version(war3Path);
+    const zipName = getUiZipForVersion(info.version);
+    console.log(`[War3Version] ${info.version || 'unknown'} (${info.source}) -> ${zipName}`);
+    return zipName;
+}
+
 export async function readShaderPackMarker(shadersDir: string): Promise<string | null> {
     const markerPath = path.join(shadersDir, SHADER_PACK_MARKER);
     if (!(await fs.pathExists(markerPath))) {
@@ -266,9 +303,12 @@ export async function normalizeShaderExtractLayout(shadersDir: string): Promise<
         const from = path.join(shadersDir, file);
         const to = path.join(psDir, file);
         if (await fs.pathExists(to)) {
-            await fs.remove(to);
+            // Both entries came from this disposable ZIP extraction. The
+            // canonical ps/ entry wins when an archive contains both layouts.
+            await fs.remove(from);
+            continue;
         }
-        await fs.move(from, to);
+        await fs.move(from, to, { overwrite: false });
         console.log(`[War3Version] Normalized shader layout: ${file} -> ps/${file}`);
     }
 }

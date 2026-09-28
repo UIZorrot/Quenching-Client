@@ -1,3 +1,4 @@
+import { getSelectedGameFolder } from '../services/game-channel';
 import { ipcMain } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
@@ -89,7 +90,7 @@ export function registerClassicSkinHandlers() {
             await assertFullPackageInstalled(war3Path);
         }
 
-        const unitskinPath = path.join(war3Path, '_retail_', 'units', 'unitskin.txt');
+        const unitskinPath = path.join(war3Path, getSelectedGameFolder(), 'units', 'unitskin.txt');
 
         // Ensure units folder exists
         const unitsDir = path.dirname(unitskinPath);
@@ -147,7 +148,7 @@ export function registerClassicSkinHandlers() {
      * Reads unitskin.txt and returns all section headers
      */
     ipcMain.handle('classic-skin:get-supported-heroes', async (event, war3Path: string) => {
-        const unitskinPath = path.join(war3Path, '_retail_', 'units', 'unitskin.txt');
+        const unitskinPath = path.join(war3Path, getSelectedGameFolder(), 'units', 'unitskin.txt');
 
         if (!(await fs.pathExists(unitskinPath))) {
             return [];

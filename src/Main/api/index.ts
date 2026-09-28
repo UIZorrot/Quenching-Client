@@ -15,13 +15,19 @@ import { registerTerrainHandlers } from '../ipc/terrain-handlers';
 import { registerTreeHandlers } from '../ipc/tree-handlers';
 import { registerWaterHandlers } from '../ipc/water-handlers';
 import { registerFoliageHandlers } from '../ipc/foliage-handlers';
+import { registerBlightHandlers } from '../ipc/blight-handlers';
 import { registerShaderHandlers } from '../ipc/shader-handlers';
 import { registerScriptHandlers } from '../ipc/script-handlers';
 import { registerGlowHandlers } from '../ipc/glow-handlers';
 import { registerAntiHarmonyHandlers } from '../ipc/anti-harmony-handlers';
 import { registerVisionHandlers } from '../ipc/vision-handlers';
 import { registerModManagementHandlers } from '../ipc/mod-management-handlers';
+import { registerThirdPartyHandlers } from '../ipc/third-party-handlers';
 import { registerClassicSkinHandlers } from '../ipc/classic-skin-handlers';
+import { registerModelPreviewHandlers } from '../ipc/model-preview-handlers';
+import { registerCustomSkinHandlers } from '../ipc/custom-skin-handlers';
+import { registerModUpdateHandlers } from '../ipc/mod-update-handlers';
+import { registerClientUpdateHandlers } from '../ipc/client-update-handlers';
 
 // 注册所有API
 export function registerAllAPIs() {
@@ -43,13 +49,19 @@ export function registerAllAPIs() {
   registerTreeHandlers();
   registerWaterHandlers();
   registerFoliageHandlers();
+  registerBlightHandlers();
   registerShaderHandlers();
   registerScriptHandlers();
   registerGlowHandlers();
   registerAntiHarmonyHandlers();
   registerVisionHandlers();
   registerModManagementHandlers();
+  registerThirdPartyHandlers();
   registerClassicSkinHandlers();
+  registerModelPreviewHandlers();
+  registerCustomSkinHandlers();
+  registerModUpdateHandlers();
+  registerClientUpdateHandlers();
 }
 
 export {

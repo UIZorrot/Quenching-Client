@@ -1,5 +1,7 @@
+import { getSelectedGameFolder } from './game-channel';
 import fs from 'fs-extra';
 import path from 'path';
+import { rm } from 'node:fs/promises';
 import { configManager } from './config-manager';
 import { AssetSyncService } from './asset-sync';
 
@@ -12,19 +14,31 @@ export function isRetroTerrainMode(terrainMode: string): boolean {
 }
 
 export function getFoliageZipName(terrainMode: string): string {
-    return terrainMode === 'latest' ? 'zip-foliage-que.zip' : 'zip-foliage-other.zip';
+    return terrainMode === 'latest' || terrainMode === 'decisive' || terrainMode === 'v30' || terrainMode === 't30'
+        ? 'zip-foliage-que.zip'
+        : 'zip-foliage-other.zip';
 }
 
 async function resolveBaseDir(war3Path: string): Promise<string> {
-    const retailPath = path.join(war3Path, '_retail_');
+    const retailPath = path.join(war3Path, getSelectedGameFolder());
     return (await fs.pathExists(retailPath)) ? retailPath : war3Path;
 }
 
 async function removeFoliageDir(environmentDir: string): Promise<void> {
-    const foliageDir = path.join(environmentDir, 'foliage');
-    if (await fs.pathExists(foliageDir)) {
-        await fs.remove(foliageDir);
-    }
+    // Files can stay locked briefly on Windows (game, antivirus, Battle.net).
+    await rm(path.join(environmentDir, 'foliage'), { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
+}
+
+async function syncFoliageDir(_war3Path: string, environmentDir: string, desiredZipName?: string): Promise<void> {
+    await removeFoliageDir(environmentDir);
+    if (!desiredZipName) return;
+
+    const assetsDir = await AssetSyncService.getAssetsDir();
+    const zipPath = path.join(assetsDir, 'quenching', desiredZipName);
+    if (!(await fs.pathExists(zipPath))) throw new Error(`Foliage zip not found: ${zipPath}`);
+
+    await fs.ensureDir(environmentDir);
+    await AssetSyncService.extractZip(zipPath, environmentDir);
 }
 
 export async function applyFoliageSettings(
@@ -39,7 +53,7 @@ export async function applyFoliageSettings(
 
     if (isRetroTerrainMode(mode)) {
         console.log('[Foliage] Retro terrain, removing foliage directory');
-        await removeFoliageDir(environmentDir);
+        await syncFoliageDir(war3Path, environmentDir);
         const modSettings = configManager.get('modSettings') || {};
         if (modSettings.foliage !== false) {
             configManager.set('modSettings', { ...modSettings, foliage: false });
@@ -49,22 +63,13 @@ export async function applyFoliageSettings(
 
     if (!enabled) {
         console.log('[Foliage] Disabling... Removing foliage directory');
-        await removeFoliageDir(environmentDir);
+        await syncFoliageDir(war3Path, environmentDir);
         return;
     }
 
     const zipName = getFoliageZipName(mode);
-    const assetsDir = await AssetSyncService.getAssetsDir();
-    const zipPath = path.join(assetsDir, 'quenching', zipName);
-
-    if (!(await fs.pathExists(zipPath))) {
-        throw new Error(`Foliage zip not found: ${zipPath}`);
-    }
-
     console.log(`[Foliage] Enabling with ${zipName} for terrain mode: ${mode}`);
-    await removeFoliageDir(environmentDir);
-    await fs.ensureDir(environmentDir);
-    await AssetSyncService.extractZip(zipPath, environmentDir);
+    await syncFoliageDir(war3Path, environmentDir, zipName);
 
     const foliageDir = path.join(environmentDir, 'foliage');
     if (!(await fs.pathExists(foliageDir))) {
@@ -82,7 +87,7 @@ export async function syncFoliageForTerrainIfEnabled(
     if (isRetroTerrainMode(terrainMode)) {
         const baseDir = await resolveBaseDir(war3Path);
         console.log('[Foliage] Retro terrain switch, removing foliage directory');
-        await removeFoliageDir(path.join(baseDir, 'environment'));
+        await syncFoliageDir(war3Path, path.join(baseDir, 'environment'));
         const modSettings = configManager.get('modSettings') || {};
         if (modSettings.foliage !== false) {
             configManager.set('modSettings', { ...modSettings, foliage: false });
@@ -111,7 +116,7 @@ export async function syncFoliageOnStartup(war3Path: string, modSettings: Record
 
     if (isRetroTerrainMode(terrainMode)) {
         console.log('[Foliage] Retro terrain on startup, removing foliage directory');
-        await removeFoliageDir(environmentDir);
+        await syncFoliageDir(war3Path, environmentDir);
         if (modSettings.foliage !== false) {
             configManager.set('modSettings', { ...modSettings, foliage: false });
         }
@@ -120,7 +125,7 @@ export async function syncFoliageOnStartup(war3Path: string, modSettings: Record
 
     if (modSettings.foliage === false) {
         console.log('[Foliage] foliage=false in config, cleaning up foliage directory on startup');
-        await removeFoliageDir(environmentDir);
+        await syncFoliageDir(war3Path, environmentDir);
         return;
     }
 

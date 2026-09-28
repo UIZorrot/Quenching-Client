@@ -46,6 +46,19 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
     }
   };
 
+  const unlockCampaign = async () => {
+    playSmall();
+    try {
+      showLoading(t('msg.launching'));
+      await window.electronAPI?.unlockCampaign();
+      message.success(t('campaign.unlock.success'));
+    } catch (e: any) {
+      message.error(e?.message || t('msg.game.start.failed'));
+    } finally {
+      hideLoading();
+    }
+  };
+
   const sectionTitle: React.CSSProperties = {
     color: '#d4af37',
     marginBottom: '10px',
@@ -202,6 +215,32 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
                   }}
                 >
                   {t('settings.campaign.launchMap.btn')}
+                </Button>
+              </div>
+
+              <div style={{
+                marginTop: '28px',
+                paddingTop: '24px',
+                borderTop: '1px solid rgba(212, 175, 55, 0.15)'
+              }}>
+                <h3 style={sectionTitle}>{t('campaign.unlock.title')}</h3>
+                <div style={{ color: '#888', fontSize: '13px', marginBottom: '16px' }}>
+                  {t('campaign.unlock.desc')}
+                </div>
+                <Button
+                  type="primary"
+                  onClick={() => void unlockCampaign()}
+                  onMouseEnter={() => playHover()}
+                  style={{
+                    background: 'linear-gradient(135deg, #d4af37 0%, #a67c00 100%)',
+                    borderColor: '#d4af37',
+                    color: '#000',
+                    fontWeight: 'bold',
+                    height: '40px',
+                    padding: '0 28px'
+                  }}
+                >
+                  {t('campaign.unlock.btn')}
                 </Button>
               </div>
             </div>

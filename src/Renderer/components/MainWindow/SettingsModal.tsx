@@ -44,7 +44,7 @@ interface SettingsModalProps {
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isFullPackageInstalled = false, onModDeleted }) => {
   const { t } = useTranslation();
-  const { modSettings, settings: war3Settings, saveModSettings, loadModSettings, toggleGameMode, isLoading } = useWar3Settings();
+  const { modSettings, settings: war3Settings, saveModSettings, toggleGameMode, isLoading } = useWar3Settings();
   const { currentInstallation, detectInstallations } = useWar3Detector();
   const { playSmall, playHover } = useSound();
   const { showLoading, hideLoading } = useGlobalLoading();
@@ -57,7 +57,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
   const isClassicMode = modSettings?.classicMode || false;
   const [antiHarmonyEnabled, setAntiHarmonyEnabled] = useState(false);
   const [antiHarmonyBusy, setAntiHarmonyBusy] = useState(false);
-  const [war3VersionLabel, setWar3VersionLabel] = useState('');
 
   const categories = [
     { id: 'game', name: t('settings.category.game') },
@@ -82,26 +81,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     if (!currentInstallation?.path) return;
     try {
       showLoading(t('progress.hint'));
-      await window.electronAPI?.deleteMod(currentInstallation.path);
-      message.success(t('settings.basic.deleteMod.success'));
+      const result = await window.electronAPI?.deleteMod(currentInstallation.path);
+      if (result?.preserved?.length) {
+        message.warning(`已删除 ${result.removed} 个 MOD 文件；保留 ${result.preserved.length} 个内容已修改的文件。`);
+      } else {
+        message.success(t('settings.basic.deleteMod.success'));
+      }
       detectInstallations();
       onModDeleted?.();
-    } catch (e: any) {
-      message.error(e.message || 'Error');
-    } finally {
-      hideLoading();
-    }
-  };
-
-  const handleClassicModeChange = async (nextClassic: boolean) => {
-    if (!currentInstallation?.path) return;
-    if (nextClassic === isClassicMode) return;
-    try {
-      showLoading(t(nextClassic ? 'msg.classicMode.switching' : 'msg.classicMode.restoring'));
-      await window.electronAPI?.toggleClassicMode(currentInstallation.path, nextClassic);
-      message.success(t(nextClassic ? 'msg.classicMode.switched' : 'msg.classicMode.restored'));
-      detectInstallations();
-      await loadModSettings(currentInstallation.path);
     } catch (e: any) {
       message.error(e.message || 'Error');
     } finally {
@@ -126,36 +113,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
         }
       }
 
-      try {
-        const info = await window.electronAPI?.detectWar3Version?.(currentInstallation.path);
-        if (cancelled) {
-          return;
-        }
-        if (!info?.version) {
-          setWar3VersionLabel(t('settings.basic.legacyShaders.unknown'));
-          return;
-        }
-        const packKey =
-          info.shaderZip === 'shaders1.xx.zip'
-            ? 'settings.basic.legacyShaders.pack.pre200'
-            : info.shaderZip === 'shaders2.02.zip'
-              ? 'settings.basic.legacyShaders.pack.legacy'
-              : 'settings.basic.legacyShaders.pack.modern';
-        setWar3VersionLabel(
-          t('settings.basic.legacyShaders.status')
-            .replace('{version}', info.version)
-            .replace('{pack}', t(packKey))
-        );
-      } catch {
-        if (!cancelled) {
-          setWar3VersionLabel(t('settings.basic.legacyShaders.unknown'));
-        }
-      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, currentInstallation?.path, t]);
+  }, [open, currentInstallation?.path]);
 
   const handleAntiHarmonyChange = (enabled: boolean) => {
     if (!currentInstallation?.path || antiHarmonyBusy || isClassicMode) {
@@ -224,56 +186,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     }
   };
 
-  const handleSelectVisionModPath = async () => {
-    playSmall();
-    const path = await window.electronAPI?.selectDirectory(t('setup.visionmod.path'));
-    if (path) {
-      // 验证目录
-      const valid_1 = await window.electronAPI?.pathExists(`${path}/Install Guide.txt`);
-      const valid_2 = await window.electronAPI?.pathExists(`${path}/visionmod.txt.txt`);
-      const valid_3 = await window.electronAPI?.pathExists(`${path}/visionmod.txt`);
-
-      if (valid_1 || valid_2 || valid_3) {
-        await handleSettingChange('visionModPath', path);
-        message.success(t('msg.visionmod.path.set'));
-      } else {
-        message.error(t('msg.visionmod.path.invalid'));
-      }
-    }
-  };
-
-  const renderVisionModPathSelector = () => (
-    <div style={{ marginBottom: '20px', paddingBottom: '20px', borderBottom: '1px solid rgba(212, 175, 55, 0.1)' }}>
-      <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('setup.visionmod.path')}</h3>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        <div style={{
-          flex: 1,
-          padding: '8px 12px',
-          background: 'rgba(0, 0, 0, 0.3)',
-          border: '1px solid rgba(212, 175, 55, 0.2)',
-          borderRadius: '4px',
-          color: '#aaa',
-          fontSize: '13px',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap'
-        }}>
-          {modSettings.visionModPath || t('setup.visionmod.unset')}
-        </div>
-        <Button
-          type="primary"
-          ghost
-          size="small"
-          onClick={handleSelectVisionModPath}
-          onMouseEnter={() => playHover()}
-          style={{ borderColor: '#d4af37', color: '#d4af37' }}
-        >
-          {t('setup.btn.change')}
-        </Button>
-      </div>
-    </div>
-  );
-
   const renderSettingButton = (label: string, currentValue: any, targetValue: any, onClick: () => void, onMouseEnter?: () => void, disabled?: boolean) => {
     const isSelected = currentValue === targetValue;
     const isDisabled = isLoading || disabled;
@@ -324,9 +236,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     }
 
     // 2. Classic Mode Check
-    const restrictedInClassic = ['foliage', 'objectShader', 'postProcessing', 'half', 'modelEnhance', 'water', 'terrain', 'tree', 'lighting', 'lightingBrightness', 'useIntelAmdShaderFix'];
+    const restrictedInClassic = ['foliage', 'blight', 'objectShader', 'postProcessing', 'half', 'modelEnhance', 'water', 'terrain', 'tree', 'lighting', 'lightingBrightness', 'useIntelAmdShaderFix'];
     if (restrictedInClassic.includes(key) && isClassicMode) {
       return { disabled: true, reason: t('settings.basic.classicMode.disabled') };
+    }
+
+    // 2b. DE graphics: water cannot be adjusted
+    if (key === 'water') {
+      const graphics = modSettings.graphicsSelection;
+      const resolved = (modSettings as any).resolvedGraphics;
+      if (graphics === 'de' || resolved === 'de') {
+        return { disabled: true, reason: t('settings.water.de.disabled') };
+      }
     }
 
     // 3. VisionMod Check
@@ -373,20 +294,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     // Helper to get status for each item
     const sWater = getSettingStatus('water');
     const sFoliage = getSettingStatus('foliage');
+    const sBlight = getSettingStatus('blight');
     const sShader = getSettingStatus('objectShader');
     const sPost = getSettingStatus('postProcessing');
     const sGlow = getSettingStatus('glow');
-    const sHalf = getSettingStatus('half');
-    const sEnv = getSettingStatus('envRender'); // likely none
-    const sEnhance = getSettingStatus('modelEnhance');
 
     return (
       <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
-        {renderVisionModPathSelector()}
         <Row gutter={[20, 20]}>
           <Col span={12}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.water.title')}</h3>
             <Space wrap>
+              {renderSettingButton(t('settings.water.off'), modSettings.water, 'off', () => handleSettingChange('water', 'off'), () => setPreviewInfo({ title: t('settings.water.title'), desc: t('settings.water.off.desc'), image: './assets/quenching/set1.png' }), sWater.disabled)}
               {renderSettingButton(t('settings.water.realistic'), modSettings.water, 'realistic', () => handleSettingChange('water', 'realistic'), () => setPreviewInfo({ title: t('settings.water.title'), desc: t('settings.water.realistic.desc'), image: './assets/quenching/set1.png' }), sWater.disabled)}
               {renderSettingButton(t('settings.water.transparent'), modSettings.water, 'transparent', () => handleSettingChange('water', 'transparent'), () => setPreviewInfo({ title: t('settings.water.title'), desc: t('settings.water.transparent.desc'), image: './assets/quenching/set1.png' }), sWater.disabled)}
             </Space>
@@ -399,6 +318,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
               {renderSettingButton(t('settings.btn.turnoff'), modSettings.foliage, false, () => handleSettingChange('foliage', false), () => setPreviewInfo({ title: t('settings.foliage.title'), desc: t('settings.foliage.off.desc'), image: './assets/quenching/set4.png' }), sFoliage.disabled)}
             </Space>
             {renderStatusPlaceholder(sFoliage.reason)}
+          </Col>
+          <Col span={12}>
+            <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.blight.title')}</h3>
+            <Space>
+              {renderSettingButton(t('settings.btn.turnon'), modSettings.blight, true, () => handleSettingChange('blight', true), () => setPreviewInfo({ title: t('settings.blight.title'), desc: t('settings.blight.on.desc'), image: './assets/quenching/set6.png' }), sBlight.disabled)}
+              {renderSettingButton(t('settings.btn.turnoff'), modSettings.blight, false, () => handleSettingChange('blight', false), () => setPreviewInfo({ title: t('settings.blight.title'), desc: t('settings.blight.off.desc'), image: './assets/quenching/set6.png' }), sBlight.disabled)}
+            </Space>
+            {renderStatusPlaceholder(sBlight.reason)}
           </Col>
           <Col span={12}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.shader.title')}</h3>
@@ -456,30 +383,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             </Space>
             {renderStatusPlaceholder(isClassicMode ? t('settings.basic.classicMode.disabled') : null)}
           </Col>
-          <Col span={12}>
-            <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.half.title')}</h3>
-            <Space>
-              {renderSettingButton(t('settings.btn.turnon'), modSettings.half, true, () => handleSettingChange('half', true), () => setPreviewInfo({ title: t('settings.half.title'), desc: t('settings.half.on.desc'), image: './assets/quenching/ui5.png' }), sHalf.disabled)}
-              {renderSettingButton(t('settings.btn.turnoff'), modSettings.half, false, () => handleSettingChange('half', false), () => setPreviewInfo({ title: t('settings.half.title'), desc: t('settings.half.off.desc'), image: './assets/quenching/ui5.png' }), sHalf.disabled)}
-            </Space>
-            {renderStatusPlaceholder(sHalf.reason)}
-          </Col>
-          <Col span={12}>
-            <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.envrender.title')}</h3>
-            <Space>
-              {renderSettingButton(t('settings.btn.turnon'), modSettings.envRender, true, () => handleSettingChange('envRender', true), () => setPreviewInfo({ title: t('settings.envrender.title'), desc: t('settings.envrender.on.desc'), image: './assets/quenching/set8.png' }), sEnv.disabled)}
-              {renderSettingButton(t('settings.btn.turnoff'), modSettings.envRender, false, () => handleSettingChange('envRender', false), () => setPreviewInfo({ title: t('settings.envrender.title'), desc: t('settings.envrender.off.desc'), image: './assets/quenching/set8.png' }), sEnv.disabled)}
-            </Space>
-            {renderStatusPlaceholder(sEnv.reason)}
-          </Col>
-          <Col span={12}>
-            <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.modelenhance.title')}</h3>
-            <Space>
-              {renderSettingButton(t('settings.btn.turnon'), modSettings.modelEnhance, true, () => handleSettingChange('modelEnhance', true), () => setPreviewInfo({ title: t('settings.modelenhance.title'), desc: t('settings.modelenhance.on.desc'), image: './assets/quenching/set7.png' }), sEnhance.disabled)}
-              {renderSettingButton(t('settings.btn.turnoff'), modSettings.modelEnhance, false, () => handleSettingChange('modelEnhance', false), () => setPreviewInfo({ title: t('settings.modelenhance.title'), desc: t('settings.modelenhance.off.desc'), image: './assets/quenching/set7.png' }), sEnhance.disabled)}
-            </Space>
-            {renderStatusPlaceholder(sEnhance.reason)}
-          </Col>
         </Row>
       </div>
     );
@@ -493,48 +396,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     const sLighting = getSettingStatus('lighting');
     const sLightingBrightness = getSettingStatus('lightingBrightness');
     const sUi = getSettingStatus('ui'); // not used yet but good to have
+    const deTerrainOnly = modSettings.graphicsSelection === 'de' || (modSettings as any).resolvedGraphics === 'de';
 
     return (
       <div style={{ padding: '16px', height: '100%', overflowY: 'auto' }}>
-        <div style={{ marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid rgba(212, 175, 55, 0.1)' }}>
-          <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('setup.war3.path')}</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-            <div style={{
-              flex: 1,
-              padding: '8px 12px',
-              background: 'rgba(0, 0, 0, 0.3)',
-              border: '1px solid rgba(212, 175, 55, 0.2)',
-              borderRadius: '4px',
-              color: '#aaa',
-              fontSize: '13px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>
-              {currentInstallation?.path || t('setup.war3.unset')}
-            </div>
-            <Button
-              type="primary"
-              ghost
-              size="small"
-              disabled={isLoading}
-              onClick={async () => {
-                playSmall();
-                const path = await window.electronAPI?.selectGamePath();
-                if (path) {
-                  message.success(t('msg.war3.path.set'));
-                  // 强制触发一次检测
-                  detectInstallations();
-                }
-              }}
-              onMouseEnter={() => playHover()}
-              style={{ borderColor: '#d4af37', color: '#d4af37' }}
-            >
-              {t('setup.btn.change_game_dir')}
-            </Button>
-          </div>
-        </div>
-
         <Row gutter={[16, 14]}>
           <Col span={24}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.ui.style')}</h3>
@@ -550,12 +415,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.terrain.style')}</h3>
             <Space wrap>
               {renderSettingButton(t('settings.terrain.original'), modSettings.terrain, 'original', () => handleSettingChange('terrain', 'original'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.original'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
-              {renderSettingButton(t('settings.tree.height.16'), modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
-              {renderSettingButton(t('settings.tree.height.18'), modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.decisive'), modSettings.terrain, 'decisive', () => handleSettingChange('terrain', 'decisive'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.decisive'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), deTerrainOnly || sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.tree.height.16'), modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set6.png' }), deTerrainOnly || sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.tree.height.18'), modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set6.png' }), deTerrainOnly || sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), deTerrainOnly || sTerrainMod.disabled || sTerrain.disabled)}
             </Space>
-            {renderStatusPlaceholder(sTerrainMod.reason || sTerrain.reason)}
+            {renderStatusPlaceholder(sTerrainMod.reason || sTerrain.reason ||
+              (deTerrainOnly ? t('settings.terrain.deOnly', '决定版画质仅支持原版地形和淬火决定版地形') : null))}
           </Col>
           <Col span={24}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.tree.style')}</h3>
@@ -608,47 +475,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     return (
     <div style={{ padding: '14px', height: '100%', overflowY: 'auto' }}>
       <Space direction="vertical" size={16} style={{ width: '100%' }}>
-        {/* 经典版模式切换 */}
-        <div>
-          <h3 style={BASIC_SETTINGS_TITLE}>{t('settings.basic.classicMode.title')}</h3>
-          <Space direction="vertical" size={6} style={{ width: '100%' }}>
-            <div style={BASIC_SETTINGS_DESC}>
-              {t(isClassicMode
-                ? 'settings.basic.classicMode.unlock.desc'
-                : 'settings.basic.classicMode.lock.desc'
-              )}
-            </div>
-            <Space size={6}>
-              {renderSettingButton(
-                t('settings.btn.turnon'),
-                isClassicMode,
-                true,
-                () => { void handleClassicModeChange(true); },
-                () => setPreviewInfo({ title: t('settings.basic.classicMode.title'), desc: t('settings.basic.classicMode.lock.desc'), image: null })
-              )}
-              {renderSettingButton(
-                t('settings.btn.turnoff'),
-                isClassicMode,
-                false,
-                () => { void handleClassicModeChange(false); },
-                () => setPreviewInfo({ title: t('settings.basic.classicMode.title'), desc: t('settings.basic.classicMode.unlock.desc'), image: null })
-              )}
-            </Space>
-            {renderStatusPlaceholder(null)}
-          </Space>
-        </div>
-
-        <div>
-          <h3 style={BASIC_SETTINGS_TITLE}>{t('settings.basic.legacyShaders.title')}</h3>
-          <Space direction="vertical" size={6} style={{ width: '100%' }}>
-            <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.legacyShaders.desc')}</div>
-            <div style={{ ...BASIC_SETTINGS_DESC, color: '#bbb' }}>
-              {war3VersionLabel}
-            </div>
-            {renderStatusPlaceholder(null)}
-          </Space>
-        </div>
-
         <div>
           <h3 style={BASIC_SETTINGS_TITLE}>{t('settings.basic.intelAmdShaderFix.title')}</h3>
           <Space direction="vertical" size={6} style={{ width: '100%' }}>
@@ -807,7 +633,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             background: 'linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.6) 100%)',
             borderRadius: '8px',
             border: '1px solid rgba(212, 175, 55, 0.2)',
-            backdropFilter: 'blur(10px)',
             boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
             opacity: previewInfo.title ? 1 : 0,
             transform: previewInfo.title ? 'translateY(0)' : 'translateY(20px)',
