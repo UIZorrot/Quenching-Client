@@ -41,8 +41,8 @@ try {
   assert.equal(content.Hamg['file:de'], 'keep-de');
   assert.equal(content.Hamg['file:hd'], 'keep-hd');
   assert.equal(content.Hpal.file, 'paladin');
-  const sdTarget = path.join(retail, 'QMoff', 'skin-profiles', 'sd', 'unitskin.txt');
-  const deTarget = path.join(retail, 'QMoff', 'skin-profiles', 'de', 'unitskin.txt');
+  const sdTarget = path.join(retail, 'QMoff', 'skin-profiles', 'v30', 'sd', 'unitskin.txt');
+  const deTarget = path.join(retail, 'QMoff', 'skin-profiles', 'v30', 'de', 'unitskin.txt');
   assert.equal(parseSkinSections(await fs.readFile(sdTarget, 'utf8')).Hamg['file:sd'], 'sd-model');
   assert.equal(parseSkinSections(await fs.readFile(deTarget, 'utf8')).Hamg['file:de'], 'de-model');
   const panel = await service.panel('sd');
@@ -58,6 +58,12 @@ try {
     assert.equal((await fs.readdir(path.join(retail, 'cos', 'custom', artSet, 'units', 'hfoo'))).length, 1);
   }
   const saved = JSON.stringify(config.skinSelections);
+  const original30 = await service.panel('hd');
+  assert.equal(original30.originals.Hamg.find((field: { field: string }) => field.field === 'modelScale')?.value, '1');
+  await fs.outputJson(path.join(retail, '.quenching', 'unit-skin-profile.json'),
+    { schema: 1, profile: 'hd', era: 'v20', baseline: 2 });
+  const original20 = await service.panel('hd');
+  assert.equal(original20.originals.Hamg.find((field: { field: string }) => field.field === 'modelScale')?.value, '1.05');
   config.war3Path = path.join(fixture, 'another-install');
   assert.deepEqual((await service.panel('hd')).selections, {});
   assert.equal(JSON.stringify(config.skinSelections), saved);

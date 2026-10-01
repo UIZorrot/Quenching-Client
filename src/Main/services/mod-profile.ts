@@ -1,11 +1,8 @@
-import fs from 'fs-extra';
 import path from 'path';
-import { app } from 'electron';
 import {
   DEFAULT_MOD_PROFILE_SELECTION,
   EffectiveGraphics,
   EffectiveVersion,
-  GraphicsSelection,
   ModProfile,
   ModProfileSelection,
   VersionSelection,
@@ -14,17 +11,19 @@ import {
 } from '../../shared/mod-profile';
 import { detectWar3Version } from './war3-version';
 import { getSelectedGameChannel } from './game-channel';
-import { graphicsFromHdValue, warcraftPreferencesFolder } from '../../shared/war3-preferences';
 
 export type ResourcePathKey =
   | 'dnc20'
   | 'dnc30Hd'
   | 'dnc30De'
+  | 'dnc30DeRpg'
   | 'shaders136'
   | 'shaders200'
   | 'shaders203'
   | 'shaders300Hd'
   | 'shaders300De'
+  | 'shadersPtrHd'
+  | 'shadersPtrDe'
   | 'environmentPublic'
   | 'skin';
 
@@ -40,35 +39,15 @@ function versionFromSelection(selection: VersionSelection, detected: EffectiveVe
   return selection === 'auto' ? detected : selection;
 }
 
-async function readHdPreference(): Promise<EffectiveGraphics | null> {
-  try {
-    const documents = app.getPath('documents');
-    const preferencesPath = path.join(documents, warcraftPreferencesFolder(getSelectedGameChannel()), 'War3Preferences.txt');
-    if (!(await fs.pathExists(preferencesPath))) return null;
-    const content = await fs.readFile(preferencesPath, 'utf8');
-    const match = content.match(/(?:^|\n)\s*hd\s*=\s*(\d+)/i);
-    return match ? graphicsFromHdValue(match[1]) : null;
-  } catch (error: any) {
-    if (error?.code === 'ENOENT' || error?.code === 'ENOTDIR') return null;
-    throw error;
-  }
-}
-
-async function graphicsFromSelection(selection: GraphicsSelection, classicMode: boolean): Promise<EffectiveGraphics> {
-  if (selection !== 'auto') return selection;
-  if (classicMode) return 'sd';
-  return await readHdPreference() ?? 'hd';
-}
-
 export async function resolveModProfile(
   war3Path: string,
-  selection?: Partial<ModProfileSelection> & { classicMode?: boolean }
+  selection?: Partial<ModProfileSelection> & { classicMode?: boolean; lighting?: string }
 ): Promise<ModProfile> {
   const detected = await detectWar3Version(war3Path);
   const versionSelection = normalizeVersionSelection(selection?.versionSelection ?? DEFAULT_MOD_PROFILE_SELECTION.versionSelection);
   const graphicsSelection = normalizeGraphicsSelection(selection?.graphicsSelection ?? DEFAULT_MOD_PROFILE_SELECTION.graphicsSelection);
   const version = versionFromSelection(versionSelection, versionFromDetected(detected.parts));
-  let graphics = await graphicsFromSelection(graphicsSelection, selection?.classicMode === true);
+  let graphics: EffectiveGraphics = selection?.classicMode === true ? 'sd' : graphicsSelection;
 
   // A saved DE choice must not silently install 3.0 shaders into a 2.x game.
   if (graphics === 'de' && version !== 'v30') {
@@ -77,21 +56,25 @@ export async function resolveModProfile(
 
   const is3 = version === 'v30';
   const isDe = is3 && graphics === 'de';
+  // DE RPG lighting keeps the DE shaders but uses a brightened HD DNC and the public environment.
+  const deRpg = isDe && selection?.lighting === 'rpg';
   const shaderPack = is3
-    ? (isDe ? 'shaders-300-de' : 'shaders-300-hd')
+    ? (getSelectedGameChannel() === 'ptr'
+      ? (isDe ? 'shaders-ptr-de' : 'shaders-ptr-hd')
+      : (isDe ? 'shaders-300-de' : 'shaders-300-hd'))
     : version === 'v1'
       ? 'shaders136'
       : version === 'v20'
         ? 'shaders200'
         : 'shaders203';
-  const dncPack = is3 ? (isDe ? 'dnc30-de' : 'dnc30-hd') : 'dnc20';
+  const dncPack = is3 ? (deRpg ? 'dnc30-de-rpg' : isDe ? 'dnc30-de' : 'dnc30-hd') : 'dnc20';
 
   return {
     versionSelection,
     graphicsSelection,
     version,
     graphics,
-    usesPublicEnvironment: !isDe,
+    usesPublicEnvironment: !isDe || deRpg,
     shaderPack,
     dncPack,
   };
@@ -102,11 +85,14 @@ export function getQuenchingResourcePath(quenchingDir: string, key: ResourcePath
     dnc20: path.join(quenchingDir, 'dnc', 'dnc20'),
     dnc30Hd: path.join(quenchingDir, 'dnc', 'dnc30-hd'),
     dnc30De: path.join(quenchingDir, 'dnc', 'dnc30-de'),
+    dnc30DeRpg: path.join(quenchingDir, 'dnc', 'dnc30-de-rpg'),
     shaders136: path.join(quenchingDir, 'shaders', 'shaders136'),
     shaders200: path.join(quenchingDir, 'shaders', 'shaders200'),
     shaders203: path.join(quenchingDir, 'shaders', 'shaders203'),
     shaders300Hd: path.join(quenchingDir, 'shaders', 'shaders-300-hd'),
     shaders300De: path.join(quenchingDir, 'shaders', 'shaders-300-de'),
+    shadersPtrHd: path.join(quenchingDir, 'shaders', 'shaders-ptr-hd'),
+    shadersPtrDe: path.join(quenchingDir, 'shaders', 'shaders-ptr-de'),
     environmentPublic: path.join(quenchingDir, 'env-20-30-public.zip'),
     skin: path.join(quenchingDir, 'skin'),
   };
@@ -122,12 +108,40 @@ export function getShaderResourcePath(quenchingDir: string, profile: ModProfile,
         ? 'shaders203'
         : profile.shaderPack === 'shaders-300-de'
           ? 'shaders300De'
-          : 'shaders300Hd');
-  if (profile.shaderPack === 'shaders-300-hd') {
-    const folder = lighting === 'battle' ? 'melee' : lighting === 'rpg' ? 'rpg' : 'standard';
+          : profile.shaderPack === 'shaders-ptr-de'
+            ? 'shadersPtrDe'
+            : profile.shaderPack === 'shaders-ptr-hd'
+              ? 'shadersPtrHd'
+              : 'shaders300Hd');
+  if (profile.shaderPack === 'shaders-300-hd' || profile.shaderPack === 'shaders-ptr-hd') {
+    const effective = effectiveLightingMode(profile, lighting);
+    // Retail HD battle shares standard shaders; PTR ships a separate melee set.
+    const folder = effective === 'rpg' ? 'rpg'
+      : effective === 'battle' && profile.shaderPack === 'shaders-ptr-hd' ? 'melee'
+      : 'standard';
     return path.join(root, 'ps', folder);
   }
   return root;
+}
+
+/** DE RPG patches its DNC as standard lighting. */
+export function effectiveLightingMode(profile: ModProfile, lighting: string = 'standard'): string {
+  return profile.dncPack === 'dnc30-de-rpg' ? 'standard' : lighting;
+}
+
+export function getDncResourcePath(quenchingDir: string, profile: ModProfile): string {
+  const keys: Record<ModProfile['dncPack'], ResourcePathKey> = {
+    'dnc20': 'dnc20',
+    'dnc30-hd': 'dnc30Hd',
+    'dnc30-de': 'dnc30De',
+    'dnc30-de-rpg': 'dnc30DeRpg',
+  };
+  return getQuenchingResourcePath(quenchingDir, keys[profile.dncPack]);
+}
+
+export function getKnownDncRoots(quenchingDir: string): Array<{ source: string }> {
+  return (['dnc20', 'dnc30Hd', 'dnc30De', 'dnc30DeRpg'] as const)
+    .map((key) => ({ source: getQuenchingResourcePath(quenchingDir, key) }));
 }
 
 export function getSelectedShaderLabel(profile: ModProfile): string {

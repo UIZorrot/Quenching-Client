@@ -54,7 +54,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     desc: t('settings.preview.default'),
     image: null
   });
-  const isClassicMode = modSettings?.classicMode || false;
+  const isClassicMode = modSettings?.classicMode === true;
+  const visualSettingsDisabled = isClassicMode || modSettings?.graphicsSelection === 'sd';
   const [antiHarmonyEnabled, setAntiHarmonyEnabled] = useState(false);
   const [antiHarmonyBusy, setAntiHarmonyBusy] = useState(false);
 
@@ -120,7 +121,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
   }, [open, currentInstallation?.path]);
 
   const handleAntiHarmonyChange = (enabled: boolean) => {
-    if (!currentInstallation?.path || antiHarmonyBusy || isClassicMode) {
+    if (!currentInstallation?.path || antiHarmonyBusy || visualSettingsDisabled) {
       return;
     }
     if (enabled === antiHarmonyEnabled) {
@@ -236,8 +237,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     }
 
     // 2. Classic Mode Check
-    const restrictedInClassic = ['foliage', 'blight', 'objectShader', 'postProcessing', 'half', 'modelEnhance', 'water', 'terrain', 'tree', 'lighting', 'lightingBrightness', 'useIntelAmdShaderFix'];
-    if (restrictedInClassic.includes(key) && isClassicMode) {
+    const restrictedInClassic = ['foliage', 'blight', 'objectShader', 'postProcessing', 'postProcessingGlow', 'half', 'modelEnhance', 'water', 'terrain', 'tree', 'lighting', 'lightingBrightness', 'useIntelAmdShaderFix', 'ui', 'glow'];
+    if (restrictedInClassic.includes(key) && visualSettingsDisabled) {
       return { disabled: true, reason: t('settings.basic.classicMode.disabled') };
     }
 
@@ -269,7 +270,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     if (!isFullPackageInstalled) {
       return { disabled: true, reason: t('main.status.full_not_installed') };
     }
-    if (isClassicMode) {
+    if (visualSettingsDisabled) {
       return { disabled: true, reason: t('settings.basic.classicMode.disabled') };
     }
     return { disabled: false, reason: null };
@@ -297,6 +298,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     const sBlight = getSettingStatus('blight');
     const sShader = getSettingStatus('objectShader');
     const sPost = getSettingStatus('postProcessing');
+    const sPostGlow = getSettingStatus('postProcessingGlow');
     const sGlow = getSettingStatus('glow');
 
     return (
@@ -344,6 +346,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             {renderStatusPlaceholder(sPost.reason)}
           </Col>
           <Col span={12}>
+            <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.postprocessing.glow.title', '后处理辉光')}</h3>
+            <Space>
+              {renderSettingButton(t('settings.btn.turnon'), modSettings.postProcessingGlow, true, () => handleSettingChange('postProcessingGlow', true), () => setPreviewInfo({ title: t('settings.postprocessing.glow.title', '后处理辉光'), desc: t('settings.postprocessing.glow.on.desc', '只开启辉光，控制两份 Bloom 和 Gaussian Blur。'), image: './assets/quenching/set9.png' }), sPostGlow.disabled)}
+              {renderSettingButton(t('settings.btn.turnoff'), modSettings.postProcessingGlow, false, () => handleSettingChange('postProcessingGlow', false), () => setPreviewInfo({ title: t('settings.postprocessing.glow.title', '后处理辉光'), desc: t('settings.postprocessing.glow.off.desc', '关闭后处理辉光。'), image: './assets/quenching/set9.png' }), sPostGlow.disabled)}
+            </Space>
+            {renderStatusPlaceholder(sPostGlow.reason)}
+          </Col>
+          <Col span={12}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.glow.title')}</h3>
             <Space>
               {renderSettingButton(t('settings.glow.strong'), modSettings.glow, false, () => handleSettingChange('glow', false), () => setPreviewInfo({ title: t('settings.glow.title'), desc: t('settings.glow.strong.desc'), image: './assets/quenching/ui4.png' }), sGlow.disabled)}
@@ -365,7 +375,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
                     desc: t('settings.antiharmony.on.desc'),
                     image: './assets/quenching/set7.png',
                   }),
-                isClassicMode || antiHarmonyBusy
+                visualSettingsDisabled || antiHarmonyBusy
               )}
               {renderSettingButton(
                 t('settings.btn.turnoff'),
@@ -378,10 +388,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
                     desc: t('settings.antiharmony.off.desc'),
                     image: './assets/quenching/set7.png',
                   }),
-                isClassicMode || antiHarmonyBusy
+                visualSettingsDisabled || antiHarmonyBusy
               )}
             </Space>
-            {renderStatusPlaceholder(isClassicMode ? t('settings.basic.classicMode.disabled') : null)}
+            {renderStatusPlaceholder(visualSettingsDisabled ? t('settings.basic.classicMode.disabled') : null)}
           </Col>
         </Row>
       </div>
@@ -405,11 +415,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.ui.style')}</h3>
             <Space wrap>
 
-              {renderSettingButton(t('settings.ui.classic'), modSettings.ui, 'classic', () => handleSettingChange('ui', 'classic'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.classic.desc'), image: './assets/quenching/ui1.png' }))}
-              {renderSettingButton(t('settings.ui.quenching'), modSettings.ui, 'quenching', () => handleSettingChange('ui', 'quenching'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.quenching.desc'), image: './assets/quenching/ui2.png' }))}
-              {renderSettingButton(t('settings.ui.blizzard'), modSettings.ui, 'carnival', () => handleSettingChange('ui', 'carnival'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.blizzard.desc'), image: './assets/quenching/ui3.png' }))}
+              {renderSettingButton(t('settings.ui.classic'), modSettings.ui, 'classic', () => handleSettingChange('ui', 'classic'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.classic.desc'), image: './assets/quenching/ui1.png' }), sUi.disabled)}
+              {renderSettingButton(t('settings.ui.quenching'), modSettings.ui, 'quenching', () => handleSettingChange('ui', 'quenching'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.quenching.desc'), image: './assets/quenching/ui2.png' }), sUi.disabled)}
+              {renderSettingButton(t('settings.ui.blizzard'), modSettings.ui, 'carnival', () => handleSettingChange('ui', 'carnival'), () => setPreviewInfo({ title: t('settings.ui.style'), desc: t('settings.ui.blizzard.desc'), image: './assets/quenching/ui3.png' }), sUi.disabled)}
             </Space>
-            {renderStatusPlaceholder(null)}
+            {renderStatusPlaceholder(sUi.reason)}
           </Col>
           <Col span={24}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.terrain.style')}</h3>
@@ -492,7 +502,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
           <Space direction="vertical" size={6} style={{ width: '100%' }}>
             <div style={BASIC_SETTINGS_DESC}>{t('settings.basic.resetRendering.desc')}</div>
             <Button
-              disabled={isClassicMode}
+              disabled={visualSettingsDisabled}
               onClick={() => { playSmall(); handleResetRendering(); }}
               onMouseEnter={() => playHover()}
               style={{ ...BASIC_SETTINGS_CONTROL_BTN, borderColor: '#d4af37', color: '#d4af37' }}
@@ -500,8 +510,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
               {t('settings.basic.resetRendering')}
             </Button>
             {renderStatusPlaceholder(
-              isClassicMode ? t('settings.basic.classicMode.restrict') : null,
-              isClassicMode ? 'danger' : 'default'
+              visualSettingsDisabled ? t('settings.basic.classicMode.restrict') : null,
+              visualSettingsDisabled ? 'danger' : 'default'
             )}
           </Space>
         </div>

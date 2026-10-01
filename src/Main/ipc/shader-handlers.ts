@@ -1,4 +1,4 @@
-import { getSelectedGameFolder } from '../services/game-channel';
+import { getChannelModEnabled, getSelectedGameChannel, getSelectedGameFolder } from '../services/game-channel';
 import { ipcMain } from 'electron';
 import path from 'path';
 import { rm } from 'node:fs/promises';
@@ -18,36 +18,30 @@ import { getQuenchingResourcePath, getShaderResourcePath, resolveModProfile } fr
 import { syncProfileResources } from '../services/asset-sync';
 import { syncBundledResourceFiles } from '../services/managed-resource-files';
 import { getInstalledModState } from '../services/mod-update-service';
+import { isFullPackageInstalled } from '../services/full-package-service';
+import { isThirdPartyQuenchingPaused } from '../services/third-party-resources';
 import { readCurrentModVersion } from '../services/mod-integrity-service';
+import { applyShaderToggles, OBJECT_SHADER_FILES, POST_PROCESSING_GLOW_FILES, POST_PROCESSING_SHADOW_FILES } from '../services/fog-shader-override';
 const SHADER_PROFILE_MARKER = '.quenching-shader-profile';
-
-const OBJECT_SHADER_FILES = [
-    'ps/cliffblightmiscterrain.bls',
-    'ps/foliage.bls',
-    'ps/hd.bls',
-    'ps/sd_on_hd.bls',
-    'ps/terrain.bls',
-    'vs/cliffblightmiscterrain.bls',
-    'vs/foliage.bls',
-    'vs/hd.bls',
-    'vs/terrain.bls',
-];
-
-const POST_PROCESSING_FILES = [
-    'ps/fog.bls',
-    'ps/volumetricfog.bls',
-    'ps/bloomcombine.bls',
-    'ps/bloomextract.bls',
-    'ps/gaussianblur.bls',
-    // Kept for supported legacy packs which use tonemap instead.
-    'ps/tonemap.bls',
-];
 
 const INTEL_AMD_BLOOM_FILE = 'bloomextract.bls';
 
 async function resolveShadersBaseDir(war3Path: string): Promise<string> {
     const retailPath = path.join(war3Path, getSelectedGameFolder());
     return (await fs.pathExists(retailPath)) ? retailPath : war3Path;
+}
+
+async function applyCurrentShaderToggles(war3Path: string, overrides: Record<string, unknown> = {}): Promise<void> {
+    const modSettings = { ...(configManager.get('modSettings') || {}), ...overrides };
+    const profile = await resolveModProfile(war3Path, {
+        versionSelection: modSettings.versionSelection,
+        graphicsSelection: modSettings.graphicsSelection,
+        classicMode: modSettings.classicMode === true,
+        lighting: modSettings.lighting,
+    });
+    const shadersDir = path.join(await resolveShadersBaseDir(war3Path), 'shaders');
+    const quenchingDir = path.join(await AssetSyncService.getAssetsDir(), 'quenching');
+    await applyShaderToggles(shadersDir, quenchingDir, profile, modSettings);
 }
 
 async function resolveVersionedShaderZipPath(war3Path: string): Promise<{ zipName: string; zipPath: string; isDirectory: boolean } | null> {
@@ -57,11 +51,15 @@ async function resolveVersionedShaderZipPath(war3Path: string): Promise<{ zipNam
         versionSelection: modSettings.versionSelection,
         graphicsSelection: modSettings.graphicsSelection,
         classicMode: modSettings.classicMode === true,
+        lighting: modSettings.lighting,
     });
     const quenchingDir = path.join(assetsDir, 'quenching');
     const sourceDir = getShaderResourcePath(quenchingDir, profile, modSettings.lighting || 'standard');
     if (await fs.pathExists(sourceDir)) {
         return { zipName: profile.shaderPack, zipPath: sourceDir, isDirectory: true };
+    }
+    if (profile.version === 'v30') {
+        throw new Error(`Missing ${profile.shaderPack} shader resources: ${sourceDir}`);
     }
     const zipName = await resolveShaderZipName(war3Path);
     const zipPath = path.join(assetsDir, 'quenching', zipName);
@@ -81,6 +79,10 @@ export async function ensureVersionedShaders(
     options?: { force?: boolean }
 ): Promise<{ success: boolean; zipName?: string; version?: War3VersionInfo }> {
     const version = await detectWar3Version(war3Path);
+    const settings = configManager.get('modSettings');
+    if (settings?.graphicsSelection === 'sd' || settings?.classicMode === true) {
+        return { success: false, version };
+    }
     if (!(await readCurrentModVersion(war3Path)) && (await getInstalledModState(war3Path))?.sequence === 34) {
         console.log('[Shader] Legacy 3.4 package detected; postponing shader profile sync until after the 3.5 patch.');
         return { success: false, version };
@@ -108,16 +110,16 @@ export async function ensureVersionedShaders(
         try {
             await AssetSyncService.extractZip(resolved.zipPath, staging);
             await normalizeShaderExtractLayout(staging);
-            const quenchingDir = path.join(await AssetSyncService.getAssetsDir(), 'quenching');
             // Shader overlays are client-managed; do not retain unknown files
             // from a previous shader pack when applying a new profile.
             await fs.remove(shadersDir);
-            await syncBundledResourceFiles(shadersDir, [{ source: staging }], getKnownShaderResourceRoots(quenchingDir), SHADER_PROFILE_MARKER);
+            await syncBundledResourceFiles(shadersDir, [{ source: staging }], [], SHADER_PROFILE_MARKER, { removeAbsent: false });
         } finally {
             await rm(staging, { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
         }
     }
     await writeShaderPackMarker(shadersDir, resolved.zipName);
+    await applyCurrentShaderToggles(war3Path);
 
     // Re-apply Intel/AMD bloom override if enabled
     const modSettings = configManager.get('modSettings') || {};
@@ -144,11 +146,13 @@ async function applyLegacyShaderVersion(war3Path: string, _useLegacyWar3Shaders?
 
 async function applyIntelAmdBloomFix(war3Path: string, enabled: boolean): Promise<boolean> {
     const assetsDir = await AssetSyncService.getAssetsDir();
+    const glowEnabled = (configManager.get('modSettings') || {}).postProcessingGlow !== false;
 
     if (enabled) {
+        if (!glowEnabled) return true;
         const resolved = await resolveVersionedShaderZipPath(war3Path);
         const source = resolved?.isDirectory
-            ? path.join(resolved.zipPath, ...(resolved.zipName === 'shaders-300-hd' ? [] : ['ps']), INTEL_AMD_BLOOM_FILE)
+            ? path.join(resolved.zipPath, ...(['shaders-300-hd', 'shaders-ptr-hd'].includes(resolved.zipName) ? [] : ['ps']), INTEL_AMD_BLOOM_FILE)
             : path.join(assetsDir, 'quenching', 'tx', INTEL_AMD_BLOOM_FILE);
         if (!(await fs.pathExists(source))) {
             console.warn(`[Shader] Intel/AMD bloom fix file not found: ${source}`);
@@ -161,6 +165,7 @@ async function applyIntelAmdBloomFix(war3Path: string, enabled: boolean): Promis
         return true;
     }
 
+    if (!glowEnabled) return true;
     const resolved = await resolveVersionedShaderZipPath(war3Path);
     if (!resolved) {
         console.warn('[Shader] Cannot restore bloomextract: versioned zip missing');
@@ -224,25 +229,29 @@ async function stageProfileShaderFiles(
     const candidatesFor = (key: string): string[] => {
         const [stage, name] = key.split('/');
         const candidates: string[] = [];
-        if (resolved.zipName === 'shaders-300-hd') {
+        if (resolved.zipName === 'shaders-300-hd' || resolved.zipName === 'shaders-ptr-hd') {
+            const hdRoot = getQuenchingResourcePath(quenchingDir,
+                resolved.zipName === 'shaders-ptr-hd' ? 'shadersPtrHd' : 'shaders300Hd');
             if (stage === 'ps') {
                 candidates.push(path.join(resolved.zipPath, name));
                 for (const variant of ['standard', 'melee', 'rpg']) {
-                    candidates.push(path.join(quenchingDir, 'shaders', 'shaders-300-hd', 'ps', variant, name));
+                    candidates.push(path.join(hdRoot, 'ps', variant, name));
                 }
             } else {
-                candidates.push(path.join(quenchingDir, 'shaders', 'shaders-300-hd', 'vs', name));
+                candidates.push(path.join(hdRoot, 'vs', name));
             }
         } else {
             candidates.push(path.join(resolved.zipPath, stage, name));
-            if (stage === 'ps' && resolved.zipName === 'shaders-300-de') {
+            if (stage === 'ps' && (resolved.zipName === 'shaders-300-de' || resolved.zipName === 'shaders-ptr-de')) {
                 candidates.push(path.join(resolved.zipPath, name));
             }
         }
 
-        for (const root of getKnownShaderResourceRoots(quenchingDir)) {
-            if (root.targetPrefix === stage) candidates.push(path.join(root.source, name));
-            else if (!root.targetPrefix) candidates.push(path.join(root.source, stage, name));
+        if (!resolved.zipName.startsWith('shaders-ptr-') && !resolved.zipName.startsWith('shaders-300-')) {
+            for (const root of getKnownShaderResourceRoots(quenchingDir)) {
+                if (root.targetPrefix === stage) candidates.push(path.join(root.source, name));
+                else if (!root.targetPrefix) candidates.push(path.join(root.source, stage, name));
+            }
         }
         return [...new Set(candidates)];
     };
@@ -295,7 +304,8 @@ export function registerShaderHandlers() {
 
     ipcMain.handle('shader:sync-versioned', async (_event, war3Path?: string) => {
         const target = war3Path || configManager.get('war3Path');
-        if (!target) {
+        if (!target || !getChannelModEnabled(getSelectedGameChannel()) ||
+            await isThirdPartyQuenchingPaused(target) || !(await isFullPackageInstalled(target))) {
             return { success: false };
         }
         return ensureVersionedShaders(target);
@@ -321,7 +331,7 @@ export function registerShaderHandlers() {
     });
 
     ipcMain.handle('shader:update-post-processing', async (_event, war3Path: string, enabled: boolean) => {
-        console.log(`[Shader] Updating post processing: ${enabled}`);
+        console.log(`[Shader] Updating post-processing shadows: ${enabled}`);
 
         const baseDir = await resolveShadersBaseDir(war3Path);
 
@@ -330,7 +340,28 @@ export function registerShaderHandlers() {
             if (!resolved) {
                 return false;
             }
-            await installShaderFiles(war3Path, resolved, POST_PROCESSING_FILES);
+            await installShaderFiles(war3Path, resolved, POST_PROCESSING_SHADOW_FILES);
+            await applyCurrentShaderToggles(war3Path, { postProcessing: true });
+            await writeShaderPackMarker(path.join(baseDir, 'shaders'), resolved.zipName);
+            return true;
+        }
+
+        await removeShaderFiles(war3Path, POST_PROCESSING_SHADOW_FILES);
+        return true;
+    });
+
+    ipcMain.handle('shader:update-post-processing-glow', async (_event, war3Path: string, enabled: boolean) => {
+        console.log(`[Shader] Updating post-processing glow: ${enabled}`);
+
+        const baseDir = await resolveShadersBaseDir(war3Path);
+
+        if (enabled) {
+            const resolved = await resolveVersionedShaderZipPath(war3Path);
+            if (!resolved) {
+                return false;
+            }
+            await installShaderFiles(war3Path, resolved, POST_PROCESSING_GLOW_FILES);
+            await applyCurrentShaderToggles(war3Path, { postProcessingGlow: true });
             await writeShaderPackMarker(path.join(baseDir, 'shaders'), resolved.zipName);
 
             const modSettings = configManager.get('modSettings') || {};
@@ -340,7 +371,7 @@ export function registerShaderHandlers() {
             return true;
         }
 
-        await removeShaderFiles(war3Path, POST_PROCESSING_FILES);
+        await removeShaderFiles(war3Path, POST_PROCESSING_GLOW_FILES);
         return true;
     });
 
@@ -366,9 +397,16 @@ export async function cleanupShadersOnStartup(war3Path: string, modSettings: any
     }
 
     if (modSettings.postProcessing === false) {
-        console.log('[Shader] Cleaning up post processing shaders on startup');
-        await removeShaderFiles(war3Path, POST_PROCESSING_FILES);
+        console.log('[Shader] Cleaning up post-processing shadow shaders on startup');
+        await removeShaderFiles(war3Path, POST_PROCESSING_SHADOW_FILES);
+    }
+    if (modSettings.postProcessingGlow === false) {
+        console.log('[Shader] Cleaning up post-processing glow shaders on startup');
+        await removeShaderFiles(war3Path, POST_PROCESSING_GLOW_FILES);
     } else if (modSettings.useIntelAmdShaderFix === true) {
         await applyIntelAmdBloomFix(war3Path, true);
+    }
+    if (modSettings.postProcessing !== false) {
+        await applyCurrentShaderToggles(war3Path);
     }
 }

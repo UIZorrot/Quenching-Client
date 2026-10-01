@@ -14,6 +14,7 @@ const startRendererServer = async (conf: Configuration) => {
 		return Promise.resolve();
 	}
 	try {
+		console.log(chalk.yellow(`端口 ${port} 可用，开始编译 renderer。`));
 		const { compiler } = await webpack_promise(conf);
 		const webpackServer = new WebpackDevServer(conf.devServer, compiler);
 		return webpackServer.

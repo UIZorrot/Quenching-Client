@@ -7,13 +7,17 @@ import { skinService, usesFullPackageSkinResource } from './skin-service';
 import { assertFullPackageInstalled } from './full-package-service';
 import { AssetSyncService } from './asset-sync';
 import { assertArtSet, originalSkin, parseSkinSections, writeVersionSkins, SkinArtSet, SkinSections, SkinSelections, VersionSkinChoice } from '../../shared/skin-versions';
-import { activeSkinProfile, storedSkinPath, unitSkinTemplate } from './unit-skin-profile';
+import { activeSkinEra, activeSkinProfile, storedSkinPath, unitSkinTemplate } from './unit-skin-profile';
 
 class VersionSkinService {
   private queue: Promise<unknown> = Promise.resolve();
   private cache = new Map<string, SkinSections>();
   private async baseline(root: string, artSet: SkinArtSet) {
-    const cached = this.cache.get(`${root}:casc`) || this.cache.get(`${root}:${artSet}`);
+    const retail = path.join(root, getSelectedGameFolder());
+    const era = await activeSkinEra(await fs.pathExists(retail) ? retail : root,
+      configManager.get('modSettings')?.resolvedVersion);
+    const cacheKey = `${path.resolve(root).toLowerCase()}:${getSelectedGameFolder()}:${era}`;
+    const cached = this.cache.get(`${cacheKey}:casc`) || this.cache.get(`${cacheKey}:${artSet}`);
     if (cached) return cached;
     let text: string;
     let fromCasc = false;
@@ -25,10 +29,10 @@ class VersionSkinService {
     } catch {
       const assets = await AssetSyncService.getAssetsDir();
       if (!assets) throw new Error('无法读取游戏原版皮肤配置');
-      text = await fs.readFile(unitSkinTemplate(path.join(assets, 'quenching'), artSet), 'utf8');
+      text = await fs.readFile(unitSkinTemplate(path.join(assets, 'quenching'), artSet, era), 'utf8');
     } finally { try { storage.close(); } catch {} }
     const sections = parseSkinSections(text);
-    this.cache.set(fromCasc ? `${root}:casc` : `${root}:${artSet}`, sections);
+    this.cache.set(fromCasc ? `${cacheKey}:casc` : `${cacheKey}:${artSet}`, sections);
     return sections;
   }
   private root() {
@@ -58,19 +62,20 @@ class VersionSkinService {
         (configManager.get('retroSkinUnits') === true || configManager.get('retroSkinBuildings') === true)
         ? 'hd-retro' : artSet;
       const activeProfile = await activeSkinProfile(retail) || 'hd';
+      const era = await activeSkinEra(retail, configManager.get('modSettings')?.resolvedVersion);
       let target: string;
       if (targetProfile === activeProfile) {
         await skinService.enableSkins();
         target = path.join(retail, 'units', 'unitskin.txt');
       } else {
-        const parked = storedSkinPath(retail, targetProfile);
-        const parkedDisabled = storedSkinPath(retail, targetProfile, true);
+        const parked = storedSkinPath(retail, targetProfile, false, era);
+        const parkedDisabled = storedSkinPath(retail, targetProfile, true, era);
         target = await fs.pathExists(parked) ? parked
           : await fs.pathExists(parkedDisabled) ? parkedDisabled : parked;
         if (!(await fs.pathExists(target))) {
           const assets = await AssetSyncService.getAssetsDir();
           await fs.ensureDir(path.dirname(target));
-          await fs.copy(unitSkinTemplate(path.join(assets, 'quenching'), targetProfile), target);
+          await fs.copy(unitSkinTemplate(path.join(assets, 'quenching'), targetProfile, era), target);
         }
       }
       const before = await fs.readFile(target, 'utf8');

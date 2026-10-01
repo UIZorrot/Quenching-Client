@@ -41,10 +41,35 @@ export const getIPV4address = () => {
 	return "127.0.0.1";
 };
 
-/*自动检查basePort的端口是否可用, 如果不可用则寻找相邻的可用端口作为wds服务器端口*/
+/*只探测开发服务器真正绑定的地址。portfinder 会逐个尝试网卡（含 VMware、代理和 fe80），在 Windows 上会卡住数分钟。*/
 export const getPort = (port) => {
-	portfinder.basePort = parseInt(port) || 3000;
-	return portfinder.getPortPromise();
+	const start = Number.parseInt(port, 10) || 3000;
+	const probe = (candidate: number): Promise<number> => new Promise((resolve, reject) => {
+		if (candidate > 65535) {
+			reject(new Error(`No open port from ${start}`));
+			return;
+		}
+		const server = net.createServer();
+		const timer = setTimeout(() => {
+			server.close();
+			reject(new Error(`Timed out while checking port ${candidate}`));
+		}, 2000);
+		server.once('error', (error: NodeJS.ErrnoException) => {
+			clearTimeout(timer);
+			server.close();
+			if (error.code === 'EADDRINUSE' || error.code === 'EACCES') {
+				resolve(probe(candidate + 1));
+				return;
+			}
+			reject(error);
+		});
+		server.once('listening', () => {
+			clearTimeout(timer);
+			server.close(() => resolve(candidate));
+		});
+		server.listen(candidate, '0.0.0.0');
+	});
+	return probe(start);
 };
 /*反射:根据参数值来反射出相应参数名*/
 export const reflect = <M extends Array<{
@@ -71,5 +96,5 @@ export const reflect = <M extends Array<{
 import { fileURLToPath, pathToFileURL } from "url";
 import path from "path";
 import os from "os";
+import net from "node:net";
 import webpack , {Compiler,Stats,Configuration} from "webpack";
-import portfinder from "portfinder";

@@ -51,16 +51,28 @@ export function writeVersionSkins(text: string, baseline: SkinSections, artSet: 
     if (!/^[A-Za-z0-9]{4}$/.test(choice.unitId) || seen.has(choice.unitId) || !choice.skinId) throw new Error('无效或重复的单位');
     seen.add(choice.unitId);
     if (!baseline[choice.unitId]) throw new Error(`找不到单位原版配置: ${choice.unitId}`);
-    const values = scopedSkin([...originalSkin(baseline[choice.unitId], artSet), ...choice.changes], artSet);
+    const original = choice.skinId === 'original';
+    const values = scopedSkin([
+      ...originalSkin(baseline[choice.unitId], artSet),
+      ...(original ? [] : choice.changes),
+    ], artSet).filter(change => change.value !== '');
+    const scopedFields = SKIN_FIELDS.map(field => `${field}:${artSet}`.toLowerCase());
+    const qualifiedOriginals = original
+      ? Object.entries(baseline[choice.unitId]).filter(([key]) =>
+          scopedFields.some(field => key.toLowerCase().startsWith(`${field}:`)))
+      : [];
     let start = lines.findIndex(line => line.trim() === `[${choice.unitId}]`);
     if (start < 0) { lines.push('', `[${choice.unitId}]`); start = lines.length - 1; }
     let end = start + 1;
     while (end < lines.length && !/^\[.*\]$/.test(lines[end].trim())) end++;
     const block = lines.slice(start + 1, end).filter(line => {
       const key = line.split('=')[0].trim();
-      return !values.some(c => key.toLowerCase() === c.field.toLowerCase() || key.toLowerCase().startsWith(c.field.toLowerCase() + ':'));
+      return !scopedFields.some(field => key.toLowerCase() === field || key.toLowerCase().startsWith(`${field}:`));
     });
-    lines.splice(start + 1, end - start - 1, ...values.map(c => `${c.field}=${c.value}`), ...block);
+    lines.splice(start + 1, end - start - 1,
+      ...values.map(c => `${c.field}=${c.value}`),
+      ...qualifiedOriginals.map(([key, value]) => `${key}=${value}`),
+      ...block);
   }
   return lines.join('\r\n');
 }

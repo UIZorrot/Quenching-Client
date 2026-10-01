@@ -17,7 +17,6 @@ import { registerWaterHandlers } from '../ipc/water-handlers';
 import { registerFoliageHandlers } from '../ipc/foliage-handlers';
 import { registerBlightHandlers } from '../ipc/blight-handlers';
 import { registerShaderHandlers } from '../ipc/shader-handlers';
-import { registerScriptHandlers } from '../ipc/script-handlers';
 import { registerGlowHandlers } from '../ipc/glow-handlers';
 import { registerAntiHarmonyHandlers } from '../ipc/anti-harmony-handlers';
 import { registerVisionHandlers } from '../ipc/vision-handlers';
@@ -51,7 +50,6 @@ export function registerAllAPIs() {
   registerFoliageHandlers();
   registerBlightHandlers();
   registerShaderHandlers();
-  registerScriptHandlers();
   registerGlowHandlers();
   registerAntiHarmonyHandlers();
   registerVisionHandlers();

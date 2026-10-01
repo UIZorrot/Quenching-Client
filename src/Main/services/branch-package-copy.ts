@@ -68,11 +68,11 @@ export async function cloneBranchPackage(
   }
   if (!Number.isSafeInteger(manifest.sequence) || manifest.sequence < 35) throw new Error('Invalid package sequence');
 
-  const records = new Map<string, { path: string; size: number }>();
+  const records = new Map<string, { path: string }>();
   for (const record of manifest.files) {
     if (!safeRelative(record?.path)) throw new Error('Invalid source package record');
     if (!PACKAGE_ROOTS.has(record.path.split('/')[0])) throw new Error(`Unexpected package path: ${record.path}`);
-    records.set(record.path.toLowerCase(), { path: record.path, size: Number(record.size) || 0 });
+    records.set(record.path.toLowerCase(), { path: record.path });
   }
 
   const report = (percent: number, message: string) => options.onProgress?.(percent, message);
@@ -81,17 +81,20 @@ export async function cloneBranchPackage(
   let totalOwnedBytes = 0;
   let prepared = 0;
   for (const record of records.values()) {
+    prepared++;
+    if (prepared % 100 === 0 || prepared === records.size) report(Math.round(prepared / records.size * 30), '正在准备安装文件');
     const relative = record.path;
     const active = path.join(sourceBuild, ...relative.split('/'));
     const parked = path.join(sourceBuild, 'QMoff', ...relative.split('/'));
-    const selected = (await fs.lstat(active).catch(() => null))?.isFile() ? active
-      : (await fs.lstat(parked).catch(() => null))?.isFile() ? parked : null;
-    if (!selected) throw new Error(`The other branch is missing a full-package file: ${relative}`);
+    const activeStat = await fs.lstat(active).catch(() => null);
+    const parkedStat = activeStat?.isFile() ? null : await fs.lstat(parked).catch(() => null);
+    const selected = activeStat?.isFile() ? active : parkedStat?.isFile() ? parked : null;
+    // Profiles and package revisions can intentionally remove listed files.
+    // The file list selects owned paths; it does not require an exact layout.
+    if (!selected) continue;
     items.push({ source: selected, relative: selected === parked ? `QMoff/${relative}` : relative });
     ownedFiles.push(relative);
-    totalOwnedBytes += record.size;
-    prepared++;
-    if (prepared % 100 === 0 || prepared === records.size) report(Math.round(prepared / records.size * 30), '正在准备安装文件');
+    totalOwnedBytes += selected === active ? activeStat!.size : parkedStat!.size;
   }
   items.push({ source: keepPath, relative: '_patch/keep.que' });
   items.push({ source: manifestPath, relative: `_patch/qmf-${version}.files.json.gz` });

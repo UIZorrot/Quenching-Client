@@ -67,6 +67,9 @@ app.whenReady().then(async () => {
 		void AssetSyncService.ensurePostProcessingConfig(configuredGamePath).catch(error => {
 			console.error('[Main] Startup PostProcessingConfig check failed:', error);
 		});
+		void AssetSyncService.refreshUnitSkinBaseline(configuredGamePath).catch(error => {
+			console.error('[Main] Startup unitskin baseline check failed:', error);
+		});
 	}
 	setTimeout(() => void cleanupCompletedClientUpdate().catch(error => console.warn('[ClientUpdate] cleanup deferred:', error)), 10000);
 	setTimeout(() => void cleanupCompletedClientUpdate().catch(error => console.warn('[ClientUpdate] cleanup deferred:', error)), 30000);

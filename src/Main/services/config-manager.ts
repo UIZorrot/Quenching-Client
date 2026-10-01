@@ -75,7 +75,7 @@ const schema = {
     },
     modSettings: {
         type: 'object',
-        default: {},
+        default: { ui: 'classic' },
         additionalProperties: true
     },
     retroSkinUnits: {

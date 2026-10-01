@@ -2,7 +2,20 @@ import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'fs-extra';
-import { removeActiveWaterOverrides, syncGraphicsLayout } from '../src/Main/services/graphics-layout-service';
+import { createRequire } from 'node:module';
+import { build } from 'esbuild';
+
+const bundle = await build({
+  entryPoints: ['src/Main/services/graphics-layout-service.ts'],
+  platform: 'node', format: 'cjs', packages: 'external', bundle: true, write: false,
+  plugins: [{ name: 'fixture-retail-dir', setup(builder) {
+    builder.onResolve({ filter: /full-package-service$/ }, () => ({ path: 'full-package-service', namespace: 'fixture' }));
+    builder.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: 'export async function resolveRetailDir(path) { return path; }' }));
+  } }],
+});
+const module = { exports: {} as any };
+new Function('require', 'module', 'exports', bundle.outputFiles[0].text)(createRequire(import.meta.url), module, module.exports);
+const { removeActiveWaterOverrides, syncGraphicsLayout } = module.exports;
 
 const root = await fs.mkdtemp(path.join(os.tmpdir(), 'quenching-graphics-layout-'));
 const retail = root;
@@ -14,15 +27,37 @@ try {
   await fs.outputFile(path.join(waterDir, 'water.blp'), 'existing water');
   await fs.outputFile(waterSlk, 'existing water data');
   await fs.outputFile(path.join(retail, 'shaders', 'ps', 'hd.bls'), 'selected shader');
+  await fs.outputFile(path.join(retail, 'units', 'unitskin.txt'), 'selected skin');
+  await fs.outputFile(path.join(retail, 'units', 'destructableskin.txt'), 'mod tree skin');
+  await fs.outputFile(path.join(retail, 'doodads', 'que', 'd20', 'tree.mdx'), 'mod tree');
+  await fs.outputFile(path.join(retail, 't20', 'tree.blp'), 'mod tree texture');
+  await fs.outputFile(path.join(retail, 'ui', 'frame.fdf'), 'mod UI');
+  await fs.outputFile(path.join(retail, 'webui', 'logo.png'), 'mod WebUI');
+  await fs.outputFile(path.join(retail, 'cos', 'custom', 'sd', 'model.mdx'), 'custom skin model');
+  await fs.outputFile(path.join(retail, 'PostProcessingConfig.txt'), 'mod postprocessing');
 
   assert.deepEqual(await syncGraphicsLayout(root, 'sd'), { waterNeedsReapply: false });
   assert.equal(await fs.pathExists(path.join(retail, 'shaders')), false);
   assert.equal(await fs.pathExists(waterDir), false);
+  assert.equal(await fs.pathExists(path.join(retail, 'units', 'destructableskin.txt')), false);
+  assert.equal(await fs.readFile(path.join(retail, 'units', 'unitskin.txt'), 'utf8'), 'selected skin');
+  assert.equal(await fs.pathExists(path.join(retail, 'doodads')), false);
+  assert.equal(await fs.pathExists(path.join(retail, 't20')), false);
+  assert.equal(await fs.pathExists(path.join(retail, 'ui')), false);
+  assert.equal(await fs.pathExists(path.join(retail, 'webui')), false);
+  assert.equal(await fs.pathExists(path.join(retail, 'PostProcessingConfig.txt')), false);
+  assert.equal(await fs.readFile(path.join(retail, 'cos', 'custom', 'sd', 'model.mdx'), 'utf8'), 'custom skin model');
+  assert.equal(await fs.readFile(path.join(retail, 'QMoff', 'units', 'destructableskin.txt'), 'utf8'), 'mod tree skin');
   assert.equal(await fs.readFile(path.join(retail, 'QMoff', 'shaders', 'ps', 'hd.bls'), 'utf8'), 'selected shader');
+  assert.deepEqual(await syncGraphicsLayout(root, 'sd'), { waterNeedsReapply: false });
 
   assert.deepEqual(await syncGraphicsLayout(root, 'hd'), { waterNeedsReapply: false });
   assert.equal(await fs.readFile(path.join(retail, 'shaders', 'ps', 'hd.bls'), 'utf8'), 'selected shader');
   assert.equal(await fs.readFile(path.join(waterDir, 'water.blp'), 'utf8'), 'existing water');
+  assert.equal(await fs.readFile(path.join(retail, 'units', 'destructableskin.txt'), 'utf8'), 'mod tree skin');
+  assert.equal(await fs.readFile(path.join(retail, 'doodads', 'que', 'd20', 'tree.mdx'), 'utf8'), 'mod tree');
+  assert.equal(await fs.readFile(path.join(retail, 't20', 'tree.blp'), 'utf8'), 'mod tree texture');
+  assert.equal(await fs.readFile(path.join(retail, 'PostProcessingConfig.txt'), 'utf8'), 'mod postprocessing');
 
   assert.deepEqual(await syncGraphicsLayout(root, 'hd'), { waterNeedsReapply: false });
   assert.deepEqual(await syncGraphicsLayout(root, 'hd'), { waterNeedsReapply: false });
@@ -67,11 +102,15 @@ try {
   await fs.copy(path.join(waterAssets.waterRoot, 'water-trans'), path.join(managedRoot, 'replaceabletextures', 'water'));
   await fs.copy(path.join(waterAssets.waterRoot, 'shoreline', 'shoreline1.dds'), path.join(managedRoot, 'textures', 'shoreline1.dds'));
   await fs.copy(path.join(waterAssets.tileRoot, 'water-trans.slk'), path.join(managedRoot, 'terrainart', 'water.slk'));
-  assert.deepEqual(await syncGraphicsLayout(managedRoot, 'de', { waterAssets }), { waterNeedsReapply: false });
+  await fs.outputFile(path.join(managedRoot, 'replaceabletextures', 'water-trans', 'water.blp'), 'package water copy');
+  await fs.outputFile(path.join(managedRoot, 'QMoff', 'replaceabletextures', 'water-rel', 'water.blp'), 'parked package water copy');
+  assert.deepEqual(await syncGraphicsLayout(managedRoot, 'de'), { waterNeedsReapply: false });
   assert.equal(await fs.pathExists(path.join(managedRoot, 'replaceabletextures', 'water')), false);
+  assert.equal(await fs.pathExists(path.join(managedRoot, 'replaceabletextures', 'water-trans')), false);
+  assert.equal(await fs.pathExists(path.join(managedRoot, 'QMoff', 'replaceabletextures', 'water-rel')), false);
   assert.equal(await fs.readFile(path.join(waterAssets.waterRoot, 'water-trans', 'water.blp'), 'utf8'), 'bundled water');
   assert.equal(await fs.readFile(path.join(waterAssets.tileRoot, 'water-trans.slk'), 'utf8'), 'bundled water table');
-  assert.deepEqual(await syncGraphicsLayout(managedRoot, 'hd', { waterMode: 'transparent', waterAssets }), { waterNeedsReapply: true });
+  assert.deepEqual(await syncGraphicsLayout(managedRoot, 'hd', { waterMode: 'transparent' }), { waterNeedsReapply: true });
 
   const activeTextures = path.join(retail, 'textures');
   const parkedTextures = path.join(retail, 'QMoff', 'textures');

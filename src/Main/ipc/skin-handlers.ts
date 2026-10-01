@@ -3,7 +3,8 @@ import { skinService, SkinChange } from '../services/skin-service';
 import { retroSkinService } from '../services/retro-skin-service';
 import { versionSkinService } from '../services/version-skin-service';
 import { SkinArtSet, VersionSkinChoice } from '../../shared/skin-versions';
-import { canUseRetroSkin, resolveModProfile } from '../services/mod-profile';
+import { resolveModProfile } from '../services/mod-profile';
+import { canUseRetroSkin } from '../../shared/mod-profile';
 import { configManager } from '../services/config-manager';
 
 export function registerSkinHandlers() {

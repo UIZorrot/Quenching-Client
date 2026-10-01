@@ -12,7 +12,7 @@ import { AssetSyncService } from './asset-sync';
 import { assertFullPackageInstalled } from './full-package-service';
 import { preserveVersionSkins } from '../../shared/skin-versions';
 import { installBundledResourceFile } from './managed-resource-files';
-import { storedSkinPath, switchUnitSkinProfile } from './unit-skin-profile';
+import { activeSkinEra, storedSkinPath, switchUnitSkinProfile, unitSkinTemplate } from './unit-skin-profile';
 
 
 
@@ -426,17 +426,18 @@ export class RetroSkinService {
 
     const assetsDir = await AssetSyncService.getAssetsDir();
     const selectedProfile = unitsEnabled || buildingsEnabled ? 'hd-retro' : 'hd';
-    await switchUnitSkinProfile(baseDir, path.join(assetsDir, 'quenching'), selectedProfile);
-    const parkedDisabled = storedSkinPath(baseDir, selectedProfile, true);
+    const era = await activeSkinEra(baseDir, configManager.get('modSettings')?.resolvedVersion);
+    await switchUnitSkinProfile(baseDir, path.join(assetsDir, 'quenching'), selectedProfile, era);
+    const parkedDisabled = storedSkinPath(baseDir, selectedProfile, true, era);
     const skinIsDisabled = !(await fs.pathExists(unitskinPath)) && await fs.pathExists(parkedDisabled);
     const previousPath = skinIsDisabled ? parkedDisabled
       : await fs.pathExists(unitskinPath) ? unitskinPath : disabledPath;
     const previous = await fs.pathExists(previousPath) ? await fs.readFile(previousPath, 'utf8') : '';
     const selections = (configManager.get('skinSelections') || {})[path.resolve(configManager.get('war3Path')).toLowerCase()] || {};
     const unitsDir = path.dirname(unitskinPath);
-    const normalSource = path.join(assetsDir, 'quenching', 'skin', 'unitskin-new.txt');
-    const retroSource = path.join(assetsDir, 'quenching', 'skin', 'unitskin-old.txt');
-    const normalTemplate = await this.readAssetTemplate('skin/unitskin-new.txt');
+    const normalSource = unitSkinTemplate(path.join(assetsDir, 'quenching'), 'hd', era);
+    const retroSource = unitSkinTemplate(path.join(assetsDir, 'quenching'), 'hd-retro', era);
+    const normalTemplate = await this.readAssetTemplate(path.relative(path.join(assetsDir, 'quenching'), normalSource));
 
     if (await fs.pathExists(disabledPath) && !(await fs.pathExists(unitskinPath))) {
       await skinService.enableSkins();

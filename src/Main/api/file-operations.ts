@@ -154,6 +154,15 @@ export class FileOperationsAPI {
     });
 
     // 选择目录
+    ipcMain.handle('file:select-multiple', async (_event, options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => {
+      const result = await dialog.showOpenDialog({
+        properties: ['openFile', 'multiSelections'],
+        title: options.title || '选择文件',
+        filters: options.filters || [{ name: 'All Files', extensions: ['*'] }],
+      });
+      return result.canceled ? [] : result.filePaths;
+    });
+
     ipcMain.handle('file:select-directory', async (event, title?: string) => {
       const result = await dialog.showOpenDialog({
         properties: ['openDirectory'],

@@ -7,6 +7,7 @@ import { AssetSyncService } from '../services/asset-sync';
 import { assertTerrainModeAvailable } from '../services/full-package-service';
 import { BundledResourceRoot, createResourceSourceCache, ResourceSourceCache, installBundledResourceFile, removeBundledResourceFile, syncBundledResourceFiles } from '../services/managed-resource-files';
 import { resolveModProfile } from '../services/mod-profile';
+import { syncDecisiveTerrainTreeTextures } from '../services/decisive-terrain-tree-textures';
 
 type TerrainVersion = 'retro' | 'v16' | 'v18' | 'latest' | 'decisive';
 
@@ -241,9 +242,10 @@ export function registerTerrainHandlers() {
                     ? undefined
                     : waterMode;
 
+            const decisiveTerrain = terrainMode === 'decisive' || terrainMode === 'v30' || terrainMode === 't30';
             if (terrainMode === 'classic' || terrainMode === 'original') {
                 await switchToOriginalTerrain(baseDir);
-            } else if (terrainMode === 'decisive' || terrainMode === 'v30' || terrainMode === 't30') {
+            } else if (decisiveTerrain) {
                 await assertTerrainModeAvailable(war3Path, 'decisive');
                 await applyDecisiveTerrain(baseDir);
             } else if (terrainMode in TERRAIN_VERSIONS) {
@@ -253,6 +255,11 @@ export function registerTerrainHandlers() {
                 throw new Error(`不支持的地形模式: ${terrainMode}`);
             }
 
+            await syncDecisiveTerrainTreeTextures(
+                baseDir,
+                path.join(await AssetSyncService.getAssetsDir(), 'quenching'),
+                decisiveTerrain,
+            );
             await syncFoliageForTerrainIfEnabled(war3Path, terrainMode, previousTerrainMode);
 
             console.log(`[Terrain] Successfully updated terrain to ${terrainMode}`);

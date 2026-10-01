@@ -4,6 +4,7 @@ import path from 'path';
 import zlib from 'zlib';
 import { promisify } from 'util';
 import { resolveRetailDir } from './full-package-service';
+import { CurrentModMarker, readCurrentModMarkerAtDir } from './mod-version-detection';
 
 const gunzip = promisify(zlib.gunzip);
 const gzip = promisify(zlib.gzip);
@@ -11,6 +12,8 @@ const PRODUCT = 'quenching-mod';
 const KEEP_RELATIVE_PATH = '_patch/keep.que';
 const BASELINE_BACKUP_RELATIVE_PATH = '_patch/qmf-3.5.files.json.gz';
 const MAX_ISSUES = 200;
+// Package copies the client deletes on purpose; the water switch recreates them from client assets.
+const CLIENT_REMOVED_PREFIXES = ['replaceabletextures/water-rel/', 'replaceabletextures/water-trans/'];
 
 export interface ModIntegrityFileRecord {
   path: string;
@@ -196,22 +199,39 @@ export async function readKeepVersions(war3Path: string): Promise<string[]> {
   return [...text.matchAll(/^-v(\d+(?:\.\d+){1,2})-\s*$/gim)].map((match) => match[1]);
 }
 
-export async function readCurrentModVersion(war3Path: string): Promise<string | null> {
-  const versions = await readKeepVersions(war3Path);
-  return versions.length > 0 ? versions[versions.length - 1] : null;
+/** Read the tiny version marker only. This must never inspect the resource tree. */
+export async function readCurrentModMarker(war3Path: string): Promise<CurrentModMarker | null> {
+  const retailDir = await resolveRetailDir(war3Path);
+  return readCurrentModMarkerAtDir(retailDir);
 }
 
-export async function writeCurrentModVersion(war3Path: string, version: string): Promise<void> {
+export async function readCurrentModVersion(war3Path: string): Promise<string | null> {
+  return (await readCurrentModMarker(war3Path))?.version ?? null;
+}
+
+export async function writeCurrentModVersion(
+  war3Path: string,
+  version: string,
+  sequence?: number,
+  displayVersion?: string,
+): Promise<void> {
   if (!/^\d+(?:\.\d+){1,2}$/.test(version)) throw new Error(`invalid MOD version: ${version}`);
+  if (sequence !== undefined && (!Number.isSafeInteger(sequence) || sequence <= 0)) throw new Error(`invalid MOD sequence: ${sequence}`);
+  if (displayVersion !== undefined && !/^\d+(?:\.\d+){1,2}$/.test(displayVersion)) throw new Error(`invalid MOD display version: ${displayVersion}`);
   const retailDir = await resolveRetailDir(war3Path);
   const keepPath = path.join(retailDir, ...KEEP_RELATIVE_PATH.split('/'));
-  const versions = await readKeepVersions(war3Path);
-  if (versions[versions.length - 1] === version) return;
+  const marker = await readCurrentModMarker(war3Path);
+  if (marker?.version === version &&
+      (sequence === undefined || marker.sequence === sequence) &&
+      (displayVersion === undefined || marker.displayVersion === displayVersion)) return;
   const existing = await fs.readFile(keepPath, 'utf8').catch((error: NodeJS.ErrnoException) => {
     if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return '';
     throw error;
   });
-  const next = `${existing.trimEnd()}${existing.trim() ? '\n' : ''}-v${version}-\n`;
+  const lines = marker?.version === version
+    ? [sequence === undefined ? '' : `-s${sequence}-`, displayVersion === undefined ? '' : `-d${displayVersion}-`].filter(Boolean)
+    : [`-v${version}-`, sequence === undefined ? '' : `-s${sequence}-`, displayVersion === undefined ? '' : `-d${displayVersion}-`].filter(Boolean);
+  const next = `${existing.trimEnd()}${existing.trim() ? '\n' : ''}${lines.join('\n')}\n`;
   await fs.ensureDir(path.dirname(keepPath));
   const temporary = `${keepPath}.${process.pid}.${Date.now()}.tmp`;
   try {
@@ -241,12 +261,19 @@ export async function verifyModIntegrity(war3Path: string, mode: 'presence' | 'f
   const hashMismatch: string[] = [];
   let issueCount = 0;
   let checkedFiles = 0;
+  const statFile = (absolute: string) => fs.stat(absolute).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+    throw error;
+  });
   for (const file of loaded.manifest.files) {
-    const absolute = path.join(retailDir, ...file.path.split('/'));
-    const stat = await fs.stat(absolute).catch((error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
-      throw error;
-    });
+    if (CLIENT_REMOVED_PREFIXES.some((prefix) => file.path.toLowerCase().startsWith(prefix))) continue;
+    // Graphics/classic switches park package files under QMoff; those still count as installed.
+    let absolute = path.join(retailDir, ...file.path.split('/'));
+    let stat = await statFile(absolute);
+    if (!stat?.isFile()) {
+      absolute = path.join(retailDir, 'QMoff', ...file.path.split('/'));
+      stat = await statFile(absolute);
+    }
     if (!stat?.isFile()) {
       issueCount += 1;
       pushIssue(missing, file.path);

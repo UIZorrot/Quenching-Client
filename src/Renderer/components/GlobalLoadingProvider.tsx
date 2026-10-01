@@ -59,7 +59,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
             <div className="global-loading-title">{loadingState.message}</div>
             {loadingState.detail ? <div className="global-loading-detail">{loadingState.detail}</div> : null}
             <div className="global-loading-track" aria-hidden="true">
-              {typeof loadingState.percent === 'number' && loadingState.percent > 0 ? (
+              {typeof loadingState.percent === 'number' && loadingState.percent >= 0 ? (
                 <div
                   className="global-loading-fill"
                   style={{ width: `${Math.max(0, Math.min(100, loadingState.percent))}%` }}
@@ -68,7 +68,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
                 <div className="global-loading-fill is-indeterminate" />
               )}
             </div>
-            {typeof loadingState.percent === 'number' && loadingState.percent > 0 ? (
+            {typeof loadingState.percent === 'number' && loadingState.percent >= 0 ? (
               <div className="global-loading-percent">{Math.round(loadingState.percent)}%</div>
             ) : null}
           </div>

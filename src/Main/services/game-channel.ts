@@ -11,8 +11,12 @@ export function getSelectedGameChannel(): GameChannel {
 export function getChannelModEnabled(channel: GameChannel): boolean {
     const configured = configManager.get('channelModEnabled')?.[channel];
     if (typeof configured === 'boolean') return configured;
-    // Preserve the legacy Retail setting; PTR begins independently disabled.
-    return channel === 'retail' && configManager.get('modSettings')?.modEnabled !== false;
+    // A branch that has never been toggled starts with the MOD enabled.
+    // Preserve an explicit legacy Retail choice during migration.
+    if (channel === 'retail' && typeof configManager.get('modSettings')?.modEnabled === 'boolean') {
+        return configManager.get('modSettings').modEnabled;
+    }
+    return true;
 }
 
 export function setChannelModEnabled(channel: GameChannel, enabled: boolean): void {

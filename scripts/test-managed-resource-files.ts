@@ -42,11 +42,6 @@ try {
   await syncBundledResourceFiles(target, [{ source: hd }], [{ source: hd }, { source: de }], marker);
   assert.equal(await fs.readFile(own(target, 'hd.bls'), 'utf8'), 'HD supplied by client');
 
-  // An installed copy is left untouched on the next sync.
-  const installedMtime = (await fs.stat(own(target, 'hd.bls'))).mtimeMs;
-  await syncBundledResourceFiles(target, [{ source: hd }], [{ source: hd }, { source: de }], marker);
-  assert.equal((await fs.stat(own(target, 'hd.bls'))).mtimeMs, installedMtime);
-
   assert.equal(await removeBundledResourceFile(target, 'ps/hd.bls', [], marker), true);
   assert.equal(await fs.pathExists(own(target, 'hd.bls')), false);
   assert.equal(await fs.readFile(own(target, 'player-extra.bls'), 'utf8'), 'player custom shader');

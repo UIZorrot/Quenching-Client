@@ -3,7 +3,10 @@ import path from 'node:path';
 import type { EffectiveGraphics } from '../../shared/mod-profile';
 
 export type UnitSkinProfile = 'sd' | 'hd' | 'hd-retro' | 'de';
+/** 3.0 and the 2.x/1.x clients read different unitskin baselines, so their copies are kept apart. */
+export type UnitSkinEra = 'v30' | 'v20';
 const PROFILES = new Set<UnitSkinProfile>(['sd', 'hd', 'hd-retro', 'de']);
+const ERAS = new Set<UnitSkinEra>(['v30', 'v20']);
 const TEMPLATE: Record<UnitSkinProfile, string> = {
   sd: 'unitskin-sd.txt',
   hd: 'unitskin-new.txt',
@@ -19,69 +22,166 @@ export function skinProfileForGraphics(graphics: EffectiveGraphics, retroUnits: 
   return graphics === 'hd' && (retroUnits || retroBuildings) ? 'hd-retro' : graphics;
 }
 
-export function unitSkinTemplate(quenchingDir: string, profile: UnitSkinProfile): string {
-  return path.join(quenchingDir, 'skin', TEMPLATE[profile]);
+export function skinEraForVersion(version: string | undefined): UnitSkinEra {
+  return !version || version === 'v30' ? 'v30' : 'v20';
 }
 
-export function storedSkinPath(retailDir: string, profile: UnitSkinProfile, disabled = false): string {
-  return path.join(retailDir, 'QMoff', 'skin-profiles', profile, disabled ? 'unitskin-dis.txt' : 'unitskin.txt');
+export function unitSkinTemplate(quenchingDir: string, profile: UnitSkinProfile, era: UnitSkinEra): string {
+  return era === 'v20' && profile !== 'hd-retro'
+    ? path.join(quenchingDir, 'skin', 'legacy', TEMPLATE[profile])
+    : path.join(quenchingDir, 'skin', TEMPLATE[profile]);
 }
 
-export async function activeSkinProfile(retailDir: string): Promise<UnitSkinProfile | null> {
+export function storedSkinPath(retailDir: string, profile: UnitSkinProfile, disabled: boolean, era: UnitSkinEra): string {
+  return path.join(retailDir, 'QMoff', 'skin-profiles', era, profile, disabled ? 'unitskin-dis.txt' : 'unitskin.txt');
+}
+
+/** Bump when the bundled baselines change; copies built from an older baseline are replaced once. */
+export const UNIT_SKIN_BASELINE = 2;
+
+async function readMarker(retailDir: string): Promise<{ profile: UnitSkinProfile | null; era: UnitSkinEra | null; baseline: number | null }> {
   const state = await fs.readJson(marker(retailDir)).catch((error: NodeJS.ErrnoException) => {
     if (error.code === 'ENOENT') return null;
     throw error;
   });
-  return state?.schema === 1 && PROFILES.has(state.profile) ? state.profile : null;
+  const valid = state?.schema === 1 && PROFILES.has(state.profile);
+  return {
+    profile: valid ? state.profile : null,
+    era: valid && ERAS.has(state.era) ? state.era : null,
+    baseline: valid && typeof state.baseline === 'number' ? state.baseline : null,
+  };
 }
 
-/** Keep one profile active and the other three under QMoff. */
-export async function switchUnitSkinProfile(
+export async function activeSkinProfile(retailDir: string): Promise<UnitSkinProfile | null> {
+  return (await readMarker(retailDir)).profile;
+}
+
+/** The era of the active unitskin, or the one implied by the resolved game version before any switch. */
+export async function activeSkinEra(retailDir: string, resolvedVersion?: string): Promise<UnitSkinEra> {
+  return (await readMarker(retailDir)).era ?? skinEraForVersion(resolvedVersion);
+}
+
+// Earlier SD transitions parked the entire units directory; recover its skin
+// before the remaining unit models are restored.
+async function recoverLegacyParkedSkin(retailDir: string): Promise<void> {
+  const units = path.join(retailDir, 'units');
+  const hasCurrent = await fs.pathExists(path.join(units, 'unitskin.txt')) || await fs.pathExists(path.join(units, 'unitskin-dis.txt'));
+  for (const name of ['unitskin.txt', 'unitskin-dis.txt']) {
+    const old = path.join(retailDir, 'QMoff', 'units', name);
+    if (!hasCurrent && await fs.pathExists(old)) {
+      await fs.ensureDir(units);
+      await fs.move(old, path.join(units, name), { overwrite: true });
+      break;
+    }
+  }
+  for (const name of ['unitskin.txt', 'unitskin-dis.txt']) await fs.remove(path.join(retailDir, 'QMoff', 'units', name));
+}
+
+/**
+ * Bring unitskin copies up to the current baseline. Copies from before the
+ * 2.x/3.0 split were all built from the 2.x baseline, so they move to the 2.x
+ * slot; a 3.0 install then starts from the 3.0 template. `force` rebuilds the
+ * current profile from its template after a package install overwrote it.
+ */
+export async function refreshUnitSkinBaseline(
   retailDir: string,
   quenchingDir: string,
-  desired: UnitSkinProfile,
-): Promise<{ created: boolean; switched: boolean }> {
+  fallbackProfile: UnitSkinProfile,
+  fallbackEra: UnitSkinEra,
+  options: { force?: boolean } = {},
+): Promise<{ refreshed: boolean; profile: UnitSkinProfile; era: UnitSkinEra }> {
+  const state = await readMarker(retailDir);
+  const profile = state.profile ?? fallbackProfile;
+  const era = state.era ?? fallbackEra;
+  if (!options.force && state.baseline === UNIT_SKIN_BASELINE) return { refreshed: false, profile, era };
+
+  const template = unitSkinTemplate(quenchingDir, profile, era);
+  if (!(await fs.pathExists(template))) throw new Error(`Missing ${era} ${profile} unit skin template: ${template}`);
   const units = path.join(retailDir, 'units');
   const active = path.join(units, 'unitskin.txt');
   const disabled = path.join(units, 'unitskin-dis.txt');
-  const legacyParked = path.join(retailDir, 'QMoff', 'units');
-  const previous = await activeSkinProfile(retailDir);
-  const oldProfile = previous || 'hd';
-  const template = unitSkinTemplate(quenchingDir, desired);
-  if (!(await fs.pathExists(template))) throw new Error(`Missing ${desired} unit skin template: ${template}`);
+  const profilesRoot = path.join(retailDir, 'QMoff', 'skin-profiles');
+  const writeMarker = () => fs.outputJson(marker(retailDir), { schema: 1, profile, era, baseline: UNIT_SKIN_BASELINE });
 
-  // Earlier SD transitions parked the entire units directory. Recover its
-  // skin separately before the remaining unit models are restored.
-  if (!(await fs.pathExists(active)) && !(await fs.pathExists(disabled))) {
-    for (const name of ['unitskin.txt', 'unitskin-dis.txt']) {
-      const old = path.join(legacyParked, name);
-      if (await fs.pathExists(old)) {
-        await fs.ensureDir(units);
-        await fs.move(old, path.join(units, name), { overwrite: true });
-        break;
-      }
+  const preSplit = state.baseline === null;
+  if (preSplit) {
+    await recoverLegacyParkedSkin(retailDir);
+    for (const parkedProfile of PROFILES) {
+      const old = path.join(profilesRoot, parkedProfile);
+      if (await fs.pathExists(old)) await fs.move(old, path.join(profilesRoot, 'v20', parkedProfile), { overwrite: true });
     }
   }
 
   const hasActive = await fs.pathExists(active);
+  const current = hasActive ? active : await fs.pathExists(disabled) ? disabled : null;
+  const wasDisabled = !hasActive && (current !== null || await fs.pathExists(storedSkinPath(retailDir, profile, true, era)));
+
+  if (preSplit && !options.force && era === 'v20' && (current || wasDisabled)) {
+    await writeMarker();
+    return { refreshed: false, profile, era };
+  }
+  if (preSplit && current) {
+    const kept = storedSkinPath(retailDir, profile, wasDisabled, 'v20');
+    if (!(await fs.pathExists(kept))) {
+      await fs.ensureDir(path.dirname(kept));
+      await fs.move(current, kept);
+    }
+  }
+
+  await fs.remove(active);
+  await fs.remove(disabled);
+  await fs.remove(storedSkinPath(retailDir, profile, false, era));
+  await fs.remove(storedSkinPath(retailDir, profile, true, era));
+  const destination = wasDisabled ? storedSkinPath(retailDir, profile, true, era) : active;
+  await fs.ensureDir(path.dirname(destination));
+  await fs.copy(template, destination, { overwrite: true });
+  await writeMarker();
+  console.log(`[UnitSkin] Rebuilt ${era} ${profile} unitskin from baseline ${UNIT_SKIN_BASELINE}${wasDisabled ? ' (disabled)' : ''}`);
+  return { refreshed: true, profile, era };
+}
+
+/** Keep one profile active and every other profile of either era under QMoff. */
+export async function switchUnitSkinProfile(
+  retailDir: string,
+  quenchingDir: string,
+  desired: UnitSkinProfile,
+  desiredEra: UnitSkinEra,
+): Promise<{ created: boolean; switched: boolean }> {
+  const units = path.join(retailDir, 'units');
+  const active = path.join(units, 'unitskin.txt');
+  const disabled = path.join(units, 'unitskin-dis.txt');
+  const outdated = await refreshUnitSkinBaseline(retailDir, quenchingDir, desired, desiredEra);
+  const state = await readMarker(retailDir);
+  const oldProfile = state.profile || 'hd';
+  const oldEra = state.era || desiredEra;
+  const template = unitSkinTemplate(quenchingDir, desired, desiredEra);
+  if (!(await fs.pathExists(template))) throw new Error(`Missing ${desiredEra} ${desired} unit skin template: ${template}`);
+
+  const hasActive = await fs.pathExists(active);
   const hasDisabled = await fs.pathExists(disabled);
   if (hasActive && hasDisabled) await fs.remove(disabled);
-  const wasDisabled = !hasActive && (hasDisabled || await fs.pathExists(storedSkinPath(retailDir, oldProfile, true)));
+  const wasDisabled = !hasActive && (hasDisabled || await fs.pathExists(storedSkinPath(retailDir, oldProfile, true, oldEra)));
+  const unchanged = state.profile === desired && oldEra === desiredEra;
 
-  if (previous === desired && (hasActive || (!hasDisabled && wasDisabled))) {
-    return { created: false, switched: false };
+  if (unchanged && (hasActive || (!hasDisabled && wasDisabled))) {
+    return { created: outdated.refreshed, switched: false };
   }
 
   if (hasActive || hasDisabled) {
     const old = hasActive ? active : disabled;
-    const parked = storedSkinPath(retailDir, oldProfile, wasDisabled);
-    await fs.ensureDir(path.dirname(parked));
-    await fs.move(old, parked, { overwrite: true });
+    if (outdated.refreshed && oldProfile === 'hd-retro') {
+      // A just-rebuilt retro file is the raw template, not a merged skin; regenerate it on return.
+      await fs.remove(old);
+    } else {
+      const parked = storedSkinPath(retailDir, oldProfile, wasDisabled, oldEra);
+      await fs.ensureDir(path.dirname(parked));
+      await fs.move(old, parked, { overwrite: true });
+    }
   }
 
-  const destination = wasDisabled ? storedSkinPath(retailDir, desired, true) : active;
-  const parkedDesired = storedSkinPath(retailDir, desired, wasDisabled);
-  const alternateParked = storedSkinPath(retailDir, desired, !wasDisabled);
+  const destination = wasDisabled ? storedSkinPath(retailDir, desired, true, desiredEra) : active;
+  const parkedDesired = storedSkinPath(retailDir, desired, wasDisabled, desiredEra);
+  const alternateParked = storedSkinPath(retailDir, desired, !wasDisabled, desiredEra);
   let created = false;
   await fs.ensureDir(units);
   if (parkedDesired === destination && await fs.pathExists(destination)) {
@@ -94,6 +194,6 @@ export async function switchUnitSkinProfile(
     await fs.copy(template, destination, { overwrite: true });
     created = true;
   }
-  await fs.outputJson(marker(retailDir), { schema: 1, profile: desired });
-  return { created, switched: previous !== desired };
+  await fs.outputJson(marker(retailDir), { schema: 1, profile: desired, era: desiredEra, baseline: UNIT_SKIN_BASELINE });
+  return { created, switched: !unchanged };
 }

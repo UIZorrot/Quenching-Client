@@ -30,11 +30,13 @@ import { isNewerClientVersion } from '../../../shared/client-version';
 import { GameChannel, gameChannelFolder } from '../../../shared/game-channel';
 import { GraphicsSelection, VersionSelection } from '../../../shared/mod-profile';
 import { activeSkinArtSet } from '../../../shared/active-skin-art-set';
+import { buildCombinedUpdatePrompt } from '../../../shared/combined-update-prompt';
 // import styles from './MainWindow.module.less';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
 const FULL_PACKAGE_GUIDE_URL = 'https://qm.txzy.net/special/players';
+const UPDATE_INITIAL_CHECK_DELAY_MS = 10_000;
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
 const UPDATE_FOCUS_RECHECK_MS = 5 * 60 * 1000;
 
@@ -109,6 +111,12 @@ const PROFILE_STEP_FALLBACKS: Record<string, string> = {
 const profileStepText = (step: string, translate: (key: string, fallback?: string) => string) =>
   translate(`msg.settings.step.${step}`, PROFILE_STEP_FALLBACKS[step] || '正在应用设置...');
 
+const formatUpdateBytes = (bytes: number) => {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 MB';
+  const mib = bytes / 1024 ** 2;
+  return mib >= 1024 ? `${(mib / 1024).toFixed(2)} GB` : `${mib.toFixed(mib >= 100 ? 0 : 1)} MB`;
+};
+
 export const MainWindow: React.FC = () => {
   const { t } = useTranslation();
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -119,11 +127,17 @@ export const MainWindow: React.FC = () => {
   const [checkingModUpdate, setCheckingModUpdate] = useState(false);
   const [checkingFullPackageUpdate, setCheckingFullPackageUpdate] = useState(false);
   const [updatingMod, setUpdatingMod] = useState(false);
+  const [modUpdateProgress, setModUpdateProgress] = useState<ModUpdateProgress | null>(null);
   const [clientUpdateVersion, setClientUpdateVersion] = useState('');
   const [clientUpdateStatus, setClientUpdateStatus] = useState<ClientUpdateStatus | null>(null);
   const [updatingClient, setUpdatingClient] = useState(false);
   const [clientUpdateProgress, setClientUpdateProgress] = useState('');
+  const [modUpdateChecked, setModUpdateChecked] = useState(false);
+  const [clientUpdateChecked, setClientUpdateChecked] = useState(false);
   const modStatusRequestId = useRef(0);
+  const updateStartupAt = useRef(Date.now());
+  const promptedUpdateSignature = useRef('');
+  const combinedUpdatePromptOpen = useRef(false);
   const { showLoading, hideLoading, updateLoading } = useGlobalLoading();
 
   // War3 检测和MOD安装
@@ -196,6 +210,10 @@ export const MainWindow: React.FC = () => {
     return () => window.removeEventListener('mod-install-progress', handleProgress);
   }, []);
 
+  useEffect(() => window.electronAPI.onModUpdateProgress?.((progress) => {
+    setModUpdateProgress(progress);
+  }), []);
+
   const { playMain, playSmall, playHover } = useSound();
 
   // 同步全局 Loading 状态
@@ -219,7 +237,14 @@ export const MainWindow: React.FC = () => {
     } else if (installingFullPackage) {
       showLoading(installProgress?.message || t('msg.install.full_package'), installProgress?.percent);
     } else if (updatingMod) {
-      showLoading(t('msg.update.applying', '正在下载并安装 MOD 更新...'));
+      const byteDetail = modUpdateProgress?.totalBytes
+        ? `${formatUpdateBytes(modUpdateProgress.completedBytes || 0)} / ${formatUpdateBytes(modUpdateProgress.totalBytes)}`
+        : undefined;
+      showLoading(
+        modUpdateProgress?.message || t('msg.update.applying', '正在下载并安装 MOD 更新...'),
+        modUpdateProgress?.percent ?? 0,
+        byteDetail,
+      );
     } else if (switchingGraphics || switchingChannel) {
       showLoading(
         applyStatus?.title || t('msg.settings.updating'),
@@ -229,7 +254,7 @@ export const MainWindow: React.FC = () => {
     } else {
       hideLoading();
     }
-  }, [isModToggling, modToggleStatus, installingFullPackage, installProgress, updatingMod, switchingGraphics, switchingChannel, applyStatus, showLoading, hideLoading, t]);
+  }, [isModToggling, modToggleStatus, installingFullPackage, installProgress, updatingMod, modUpdateProgress, switchingGraphics, switchingChannel, applyStatus, showLoading, hideLoading, t]);
 
   // 窗口控制
   const handleMinimize = useCallback(() => {
@@ -296,12 +321,10 @@ export const MainWindow: React.FC = () => {
     const requestId = ++modStatusRequestId.current;
     setCheckingModUpdate(true);
     try {
-      const installed = await window.electronAPI.getInstalledModState(war3Path);
-      if (requestId === modStatusRequestId.current) setInstalledModState(installed);
       const status = await window.electronAPI.getModUpdateStatus(war3Path);
       if (requestId === modStatusRequestId.current) {
         if (status.decision !== 'unavailable') setModUpdateStatus(status);
-        if (status.current) setInstalledModState(status.current);
+        setInstalledModState(status.current);
       }
       return status;
     } catch (error: any) {
@@ -326,41 +349,59 @@ export const MainWindow: React.FC = () => {
     modStatusRequestId.current += 1;
     setInstalledModState(null);
     setModUpdateStatus(null);
-    const war3Path = currentInstallation?.path;
-    if (!war3Path) return () => { modStatusRequestId.current += 1; };
+    setModUpdateChecked(false);
+    const war3Path = currentInstallation?.path || savedGamePath;
+    if (!war3Path) {
+      setModUpdateChecked(true);
+      return () => { modStatusRequestId.current += 1; };
+    }
 
     let disposed = false;
     let inFlight = false;
     let lastCheckedAt = 0;
+    let initialCheckStarted = false;
     const check = (force = false) => {
       if (disposed || inFlight || (!force && Date.now() - lastCheckedAt < UPDATE_FOCUS_RECHECK_MS)) return;
       lastCheckedAt = Date.now();
       inFlight = true;
-      void refreshModUpdateStatus(war3Path).finally(() => { inFlight = false; });
+      setModUpdateChecked(false);
+      void refreshModUpdateStatus(war3Path).finally(() => {
+        inFlight = false;
+        if (!disposed) setModUpdateChecked(true);
+      });
     };
-    const onFocus = () => check();
-    const onOnline = () => check(true);
-    check(true);
+    const startInitialCheck = () => {
+      initialCheckStarted = true;
+      check(true);
+    };
+    const onFocus = () => { if (initialCheckStarted) check(); };
+    const onOnline = () => { if (initialCheckStarted) check(true); };
+    const initialTimer = window.setTimeout(startInitialCheck,
+      Math.max(0, UPDATE_INITIAL_CHECK_DELAY_MS - (Date.now() - updateStartupAt.current)));
     const interval = window.setInterval(() => check(true), UPDATE_CHECK_INTERVAL_MS);
     window.addEventListener('focus', onFocus);
     window.addEventListener('online', onOnline);
     return () => {
       disposed = true;
+      window.clearTimeout(initialTimer);
       window.clearInterval(interval);
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('online', onOnline);
       modStatusRequestId.current += 1;
     };
-  }, [currentInstallation?.path, gameChannel, refreshModUpdateStatus]);
+  }, [currentInstallation?.path, savedGamePath, gameChannel, refreshModUpdateStatus]);
 
   useEffect(() => {
+    setClientUpdateChecked(false);
     let disposed = false;
     let inFlight = false;
     let lastCheckedAt = 0;
+    let initialCheckStarted = false;
     const check = (force = false) => {
       if (disposed || inFlight || (!force && Date.now() - lastCheckedAt < UPDATE_FOCUS_RECHECK_MS)) return;
       lastCheckedAt = Date.now();
       inFlight = true;
+      setClientUpdateChecked(false);
       void window.electronAPI.getClientUpdateStatus()
         .then(async (status) => {
           if (!disposed) {
@@ -374,16 +415,25 @@ export const MainWindow: React.FC = () => {
           }
         })
         .catch(() => { /* Keep the last successful result until the next check. */ })
-        .finally(() => { inFlight = false; });
+        .finally(() => {
+          inFlight = false;
+          if (!disposed) setClientUpdateChecked(true);
+        });
     };
-    const onFocus = () => check();
-    const onOnline = () => check(true);
-    check(true);
+    const startInitialCheck = () => {
+      initialCheckStarted = true;
+      check(true);
+    };
+    const onFocus = () => { if (initialCheckStarted) check(); };
+    const onOnline = () => { if (initialCheckStarted) check(true); };
+    const initialTimer = window.setTimeout(startInitialCheck,
+      Math.max(0, UPDATE_INITIAL_CHECK_DELAY_MS - (Date.now() - updateStartupAt.current)));
     const interval = window.setInterval(() => check(true), UPDATE_CHECK_INTERVAL_MS);
     window.addEventListener('focus', onFocus);
     window.addEventListener('online', onOnline);
     return () => {
       disposed = true;
+      window.clearTimeout(initialTimer);
       window.clearInterval(interval);
       window.removeEventListener('focus', onFocus);
       window.removeEventListener('online', onOnline);
@@ -394,22 +444,27 @@ export const MainWindow: React.FC = () => {
     setClientUpdateProgress(`${progress.message} (${progress.completed}/${progress.total})`);
   }), []);
 
+  const applyClientUpdateNow = useCallback(async (): Promise<boolean> => {
+    setUpdatingClient(true);
+    try {
+      await window.electronAPI.applyClientUpdate();
+      return true;
+    } catch (error: any) {
+      message.error(`客户端更新失败：${error?.message || String(error)}`);
+      setUpdatingClient(false);
+      return false;
+    }
+  }, []);
+
   const startClientUpdate = useCallback(() => {
     Modal.confirm({
       title: '更新客户端',
       content: '更新包校验完成后，客户端会自动关闭、替换文件并重新启动。请先保存正在进行的操作。',
       okText: '下载并更新',
       cancelText: '取消',
-      onOk: async () => {
-        setUpdatingClient(true);
-        try { await window.electronAPI.applyClientUpdate(); }
-        catch (error: any) {
-          message.error(`客户端更新失败：${error?.message || String(error)}`);
-          setUpdatingClient(false);
-        }
-      },
+      onOk: applyClientUpdateNow,
     });
-  }, []);
+  }, [applyClientUpdateNow]);
 
   useEffect(() => {
     let cancelled = false;
@@ -441,6 +496,7 @@ export const MainWindow: React.FC = () => {
         try {
           await window.electronAPI.switchGameChannel(next);
           setGameChannel(next);
+          if (currentInstallation?.path) await window.electronAPI.syncVersionedShaders(currentInstallation.path);
           await detectInstallations();
           await refreshFullPackageStatus();
           await refreshBranchModStates();
@@ -489,7 +545,6 @@ export const MainWindow: React.FC = () => {
       return t('main.home.v30', '3.0 及以上');
     };
     const graphicsLabel = (value: GraphicsSelection) => {
-      if (value === 'auto') return t('main.home.auto', '自动检测');
       if (value === 'sd') return t('main.home.sd', 'SD · 经典');
       if (value === 'de') return t('main.home.de', 'DE · 决定版');
       return t('main.home.hd', 'HD · 高清');
@@ -548,6 +603,9 @@ export const MainWindow: React.FC = () => {
         return;
       }
       setBranchModStates(result.states);
+      if (enabled && channel === gameChannel && currentInstallation?.path) {
+        await window.electronAPI.syncUISettings(currentInstallation.path);
+      }
       await refreshFullPackageStatus();
       message.success(`${channel === 'ptr' ? 'PTR' : 'Retail'} MOD 已${enabled ? '启用' : '关闭'}`);
     } catch (error: any) {
@@ -744,14 +802,15 @@ export const MainWindow: React.FC = () => {
     }
   };
 
-  const handleModUpdate = async () => {
-    if (updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel || isModToggling) return;
+  const handleModUpdate = async (): Promise<boolean> => {
+    if (updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel || isModToggling) return false;
     const war3Path = currentInstallation?.path || await window.electronAPI?.getConfig?.('war3Path');
     if (!war3Path) {
       message.warning(t('install.not_found'));
-      return;
+      return false;
     }
 
+    setModUpdateProgress({ phase: 'preparing', percent: 0, message: '正在准备 MOD 更新' });
     setUpdatingMod(true);
     try {
       const status = await window.electronAPI.getModUpdateStatus(war3Path);
@@ -761,9 +820,17 @@ export const MainWindow: React.FC = () => {
       if (status.decision === 'patch') {
         const result = await window.electronAPI.applyModUpdate(war3Path);
         if (!result.applied) throw new Error(result.error || result.status.reason);
-        message.success(t('msg.update.success', 'MOD 已更新'));
+        if (result.configurationError) {
+          Modal.warning({
+            title: t('msg.update.configuration_pending', 'MOD 已更新，但部分资源设置未生效'),
+            content: result.configurationError,
+          });
+        } else {
+          message.success(t('msg.update.success', 'MOD 已更新'));
+        }
         await refreshFullPackageStatus(war3Path);
         await refreshModUpdateStatus(war3Path);
+        return true;
       } else if (status.decision === 'requiresFullPackage') {
         promptFullPackageGuide(
           t('main.home.fullMissing', '需要安装完整版 MOD'),
@@ -778,18 +845,100 @@ export const MainWindow: React.FC = () => {
         message.warning(t('msg.update.service_unavailable', '更新服务暂不可用，请稍后再试'));
       } else {
         message.info(t('msg.update.up_to_date', 'MOD 已是最新版本'));
+        return true;
       }
+      return false;
     } catch (error: any) {
       const detail = String(error?.message || error);
       message.error(/public key is not configured|all manifest sources failed/.test(detail)
         ? t('msg.update.service_unavailable', '更新服务暂不可用，请稍后再试')
         : `${t('msg.update.failed', 'MOD 更新失败')}: ${detail}`);
+      return false;
     } finally {
       setUpdatingMod(false);
+      setModUpdateProgress(null);
     }
   };
 
-  const handleInstallFullPackage = async (targetChannel: GameChannel = gameChannel) => {
+  useEffect(() => {
+    if (!clientUpdateChecked || !modUpdateChecked || combinedUpdatePromptOpen.current ||
+        updatingClient || updatingMod || installingFullPackage || switchingGraphics || switchingChannel || isModToggling) return;
+
+    const prompt = buildCombinedUpdatePrompt(clientUpdateStatus, clientUpdateVersion, modUpdateStatus);
+    if (!prompt || promptedUpdateSignature.current === prompt.signature) return;
+    promptedUpdateSignature.current = prompt.signature;
+    combinedUpdatePromptOpen.current = true;
+
+    const clientCurrent = prompt.client?.currentVersion.replace(/^v/i, '');
+    const clientTarget = prompt.client?.targetVersion.replace(/^v/i, '');
+    const modCurrent = prompt.mod?.currentVersion?.replace(/^v/i, '') || t('main.home.notInstalled', '未安装或无法识别');
+    const modTarget = prompt.mod?.targetVersion.replace(/^v/i, '');
+    const hasAutomaticUpdate = prompt.client?.automatic || prompt.mod?.automatic;
+
+    Modal.confirm({
+      centered: true,
+      title: t('main.home.combinedUpdateTitle', '发现可用更新'),
+      content: (
+        <div style={{ display: 'grid', gap: 12, paddingTop: 8 }}>
+          {prompt.client && (
+            <div>
+              <strong>{t('main.home.clientLabel', '客户端')}</strong>
+              <div>{t('main.home.currentVersion', '当前版本')}：v{clientCurrent}</div>
+              <div>{t('main.home.latestVersion', '最新版本')}：v{clientTarget}</div>
+              {!prompt.client.automatic && <small>{t('main.home.clientManualUpdate', '该版本需要重新下载便携客户端。')}</small>}
+            </div>
+          )}
+          {prompt.mod && (
+            <div>
+              <strong>{t('main.home.modLabel', 'MOD 资源包')}</strong>
+              <div>{t('main.home.currentVersion', '当前版本')}：{prompt.mod.currentVersion ? `v${modCurrent}` : modCurrent}</div>
+              <div>{t('main.home.latestVersion', '最新版本')}：v{modTarget}</div>
+              {!prompt.mod.automatic && <small>{t('main.home.modManualUpdate', '当前安装无法使用增量补丁，需要重新获取完整包。')}</small>}
+            </div>
+          )}
+          <div>{prompt.client?.automatic && prompt.mod?.automatic
+            ? t('main.home.combinedUpdateOrder', '确定后将先更新 MOD 资源包，再更新客户端并自动重启。')
+            : hasAutomaticUpdate
+              ? t('main.home.combinedUpdateMixed', '确定后会执行可自动完成的更新，并打开需要手动下载的页面。')
+              : t('main.home.combinedUpdateManual', '确定后将打开对应的下载页面。')}</div>
+        </div>
+      ),
+      okText: hasAutomaticUpdate
+        ? t('main.home.confirmUpdate', '确定并更新')
+        : t('main.home.openDownload', '前往下载'),
+      cancelText: t('main.home.later', '稍后'),
+      onOk: () => {
+        // Do not return the update Promise to Ant Design. Returning it keeps the
+        // confirmation modal mounted for the whole download and leaves it
+        // visibly trapped behind the progress overlay.
+        void (async () => {
+          if (prompt.mod?.automatic) {
+            const updated = await handleModUpdate();
+            if (!updated) return;
+          } else if (prompt.mod) {
+            await openFullPackageGuide();
+          }
+
+          if (prompt.client?.automatic) {
+            await applyClientUpdateNow();
+          } else if (prompt.client) {
+            await window.electronAPI.openExternal('https://qm.txzy.net/qm/qmdownload.html');
+          }
+        })().catch((error: any) => {
+          message.error(`更新失败：${error?.message || String(error)}`);
+        });
+      },
+      afterClose: () => {
+        combinedUpdatePromptOpen.current = false;
+      },
+    });
+  }, [
+    clientUpdateChecked, modUpdateChecked, clientUpdateStatus, clientUpdateVersion, modUpdateStatus,
+    updatingClient, updatingMod, installingFullPackage, switchingGraphics, switchingChannel, isModToggling,
+    applyClientUpdateNow, t,
+  ]);
+
+  const handleInstallFullPackage = async () => {
     if (updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel) return;
     if (!window.electronAPI?.installFullPackage) {
       return;
@@ -798,20 +947,25 @@ export const MainWindow: React.FC = () => {
     try {
       setInstallingFullPackage(true);
       setInstallProgress(null);
-      const zipPath = await window.electronAPI.selectFile?.({
+      const zipPaths = await window.electronAPI.selectFiles({
         title: t('msg.install.select_zip'),
         filters: [{ name: 'Zip Archive', extensions: ['zip'] }]
       });
 
-      if (!zipPath) {
+      if (!zipPaths.length) {
         setInstallingFullPackage(false);
         return;
       }
 
-      const result = await window.electronAPI.installFullPackage(zipPath, targetChannel);
+      const result = await window.electronAPI.installFullPackage(zipPaths);
 
       if (result && result.success) {
-        if (result.skipped) {
+        if (result.configurationError) {
+          Modal.warning({
+            title: t('msg.install.configuration_pending', '完整包已安装，但部分资源设置未生效'),
+            content: result.configurationError,
+          });
+        } else if (result.skipped) {
           message.info(t('msg.install.already_installed'));
         } else {
           message.success(t('msg.install.success'));
@@ -988,7 +1142,7 @@ export const MainWindow: React.FC = () => {
         </div>
       </div>
 
-      <Content className="home-content" style={{ flex: '1 1 0', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <Content className="home-content" style={{ flex: '1 1 0', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <div className="home-shell">
           <section className="home-hero" aria-label={t('main.title.primary')}>
             <div className="home-hero-top">
@@ -1109,27 +1263,6 @@ export const MainWindow: React.FC = () => {
 
             <div className="home-control-group">
               <div className="home-group-heading">
-                <strong>Retail / PTR MOD</strong>
-                <small>{t('main.channel.modHint')}</small>
-              </div>
-              <div className="home-options home-options-branch" role="group" aria-label="分支 MOD 开关">
-                {(['retail', 'ptr'] as const).map((channel) => {
-                  const state = branchModStates?.[channel];
-                  return <button key={channel} type="button"
-                    className={`home-option ${state?.enabled ? 'is-active' : ''}`}
-                    aria-pressed={!!state?.enabled}
-                    disabled={!state?.available || switchingChannel || switchingGraphics || installingFullPackage || isModToggling || updatingMod}
-                    onClick={() => void handleBranchModToggle(channel)}>
-                    {channel === 'ptr' ? 'PTR' : 'Retail'} MOD：{state?.enabled ? t('main.channel.modOn') : t('main.channel.modOff')}
-                    {state && !state.available ? `（${t('main.channel.modMissing', '未安装')}）`
-                      : state && !state.installed ? `（${t('main.channel.basicOnly', '基础功能')}）` : ''}
-                  </button>;
-                })}
-              </div>
-            </div>
-
-            <div className="home-control-group">
-              <div className="home-group-heading">
                 <strong>02&nbsp; {t('main.home.gameVersion', 'Warcraft III version')}</strong>
                 <small>{detectedVersion ? `${t('main.home.detected', 'Detected')}: ${detectedVersion}` : t('main.home.detectUnknown', 'Version not detected')}</small>
               </div>
@@ -1157,7 +1290,6 @@ export const MainWindow: React.FC = () => {
               </div>
               <div className="home-options home-options-graphics" role="group" aria-label={t('main.home.graphics', 'Graphics profile')}>
                 {([
-                  ['auto', t('main.home.auto', 'Auto')],
                   ['sd', t('main.home.sd', 'SD · Classic')],
                   ['hd', t('main.home.hd', 'HD · Reforged')],
                   ['de', t('main.home.de', 'DE · Definitive')],

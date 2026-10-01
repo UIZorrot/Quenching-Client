@@ -39,6 +39,20 @@ async function sameTree(a, b) {
   for (const relative of left) await same(path.join(a, relative), path.join(b, relative));
   return left.length;
 }
+async function sameComposedTree(target, sources) {
+  const expected = new Map();
+  for (const { root: source, prefix } of sources) {
+    for (const relative of await filesUnder(source)) {
+      const targetRelative = path.join(prefix, relative);
+      assert.equal(expected.has(targetRelative), false, `Duplicate composed shader path: ${targetRelative}`);
+      expected.set(targetRelative, path.join(source, relative));
+    }
+  }
+  const actual = await filesUnder(target);
+  assert.deepEqual(actual, [...expected.keys()].sort(), `Different composed file list: ${target}`);
+  for (const relative of actual) await same(path.join(target, relative), expected.get(relative));
+  return actual.length;
+}
 async function verifyPublicEnvironment(zipPath, environmentDir) {
   return new Promise((resolve, reject) => {
     yauzl.open(zipPath, { lazyEntries: true }, (openError, zip) => {
@@ -73,7 +87,6 @@ async function verifyPublicEnvironment(zipPath, environmentDir) {
 for (const relative of [
   'replaceabletextures/water', 'terrainart/water.slk',
   'textures/shoreline1.dds', 'textures/shorelineparticlexy.dds',
-  'shaders',
 ]) assert.equal(await exists(path.join(root, relative)), false, `Unexpected active override: ${relative}`);
 for (const relative of [
   'replaceabletextures/water-rel', 'replaceabletextures/water-trans',
@@ -87,8 +100,8 @@ for (const name of ['shoreline1.dds', 'shorelineparticlexy.dds']) {
   await same(path.join(root, 'textures', 'fx', name), path.join(assets, 'water', 'shoreline', name));
 }
 
-await same(path.join(root, 'units/unitskin.txt'), path.join(root, 'units/unitskin2.txt'));
 await same(path.join(root, 'units/unitskin.txt'), path.join(assets, 'skin/unitskin-new.txt'));
+assert.equal(await exists(path.join(root, 'units/unitskin2.txt')), false, 'Obsolete unitskin2.txt is still present');
 const treeSkin = (await fs.readFile(path.join(root, 'units/destructableskin.txt'), 'utf8')).replaceAll('\\', '/').toLowerCase();
 assert.match(treeSkin, /replaceabletextures\/tree\/t20\//);
 assert.match(treeSkin, /doodads\/que\/d20\//);
@@ -105,8 +118,13 @@ for (const name of ['ashenvale', 'cityscape', 'cityscaperuins', 'felwood', 'lord
 }
 
 const dnc = await sameTree(path.join(root, 'environment/dnc'), path.join(assets, 'dnc/dnc30-hd'));
+const activeShaders = await sameComposedTree(path.join(root, 'shaders'), [
+  { root: path.join(assets, 'shaders/shaders-300-hd/vs'), prefix: 'vs' },
+  { root: path.join(assets, 'shaders/shaders-300-hd/ps/standard'), prefix: 'ps' },
+]);
+const manual20Shaders = await sameTree(path.join(root, '_manual/_20/shaders'), path.join(assets, 'shaders/shaders203'));
 const manualHdShaders = await sameTree(path.join(root, '_manual/_30/shaders-hd'), path.join(assets, 'shaders/shaders-300-hd'));
 const manualDeShaders = await sameTree(path.join(root, '_manual/_30/shaders-de'), path.join(assets, 'shaders/shaders-300-de'));
 const publicEnvironment = await verifyPublicEnvironment(path.join(assets, 'env-20-30-public.zip'), path.join(root, 'environment'));
 
-console.log(JSON.stringify({ result: 'HD full-package audit passed', dncFiles: dnc, hdShaderFiles: manualHdShaders, deShaderFiles: manualDeShaders, publicEnvironmentFiles: publicEnvironment, water: 'Warcraft default', terrain: 't20/HD', units: 'unitskin2/HD', t30: 'parked' }, null, 2));
+console.log(JSON.stringify({ result: 'HD full-package audit passed', dncFiles: dnc, activeShaderFiles: activeShaders, manual20ShaderFiles: manual20Shaders, hdShaderFiles: manualHdShaders, deShaderFiles: manualDeShaders, publicEnvironmentFiles: publicEnvironment, water: 'Warcraft default', terrain: 't20/HD', units: 'unitskin/HD', t30: 'parked' }, null, 2));

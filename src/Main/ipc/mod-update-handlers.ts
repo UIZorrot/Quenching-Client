@@ -3,8 +3,7 @@ import { applyModUpdate, getInstalledModState, getModUpdateStatus } from '../ser
 import { verifyModIntegrity } from '../services/mod-integrity-service';
 import { getChannelModEnabled, getSelectedGameChannel, getSelectedGameDir } from '../services/game-channel';
 import { isBranchModDisabled } from '../services/branch-mod-toggle';
-import { syncBlightOnStartup } from '../services/blight-service';
-import { configManager } from '../services/config-manager';
+import { applyInstalledProfile } from '../services/post-install-profile';
 
 function assertWar3Path(war3Path: unknown): asserts war3Path is string {
   if (typeof war3Path !== 'string' || !war3Path.trim()) throw new Error('未提供魔兽路径');
@@ -16,20 +15,28 @@ export function registerModUpdateHandlers() {
     return getModUpdateStatus(war3Path);
   });
 
-  ipcMain.handle('mod-update:apply', async (_event, war3Path: string) => {
+  ipcMain.handle('mod-update:apply', async (event, war3Path: string) => {
     assertWar3Path(war3Path);
     if (!getChannelModEnabled(getSelectedGameChannel()) || await isBranchModDisabled(getSelectedGameDir(war3Path))) {
       throw new Error('Enable the selected branch MOD before applying an update');
     }
-    const result = await applyModUpdate(war3Path);
-    // The patch is already committed at this point. A visual-profile problem
-    // must not turn a successful MOD update into an apparent rollback.
-    try {
-      await syncBlightOnStartup(war3Path, configManager.get('modSettings') || {});
-    } catch (error) {
-      console.warn('[ModUpdate] Could not apply the independent Blight preference after upgrade:', error);
-    }
-    return result;
+    const result = await applyModUpdate(war3Path, {
+      onProgress: (progress) => {
+        // File installation finishes before the selected profile is reapplied.
+        if (progress.phase !== 'complete' && !event.sender.isDestroyed()) event.sender.send('mod-update:progress', progress);
+      },
+    });
+    if (!result.applied) return result;
+    // The patch is already committed. Report profile failures separately so
+    // users never mistake "updated files" for "settings applied".
+    if (!event.sender.isDestroyed()) event.sender.send('mod-update:progress', {
+      phase: 'finalizing', percent: 99, message: '正在应用当前资源设置',
+    });
+    const warnings = await applyInstalledProfile(war3Path);
+    if (!event.sender.isDestroyed()) event.sender.send('mod-update:progress', {
+      phase: 'complete', percent: 100, message: warnings.length ? '更新完成，部分设置未生效' : 'MOD 更新完成',
+    });
+    return { ...result, configurationError: warnings.join('；') || undefined };
   });
 
   ipcMain.handle('mod-update:get-installed-state', async (_event, war3Path: string) => {

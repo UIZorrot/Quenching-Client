@@ -39,6 +39,7 @@ const electronAPI: ElectronAPI = {
       previousLightingBrightness
     ),
   updateUISettings: (war3Path: string, uiMode: string) => ipcRenderer.invoke('ui:update-settings', war3Path, uiMode),
+  syncUISettings: (war3Path: string) => ipcRenderer.invoke('ui:sync-settings', war3Path),
   updateTerrainSettings: (war3Path: string, terrainMode: string, waterMode?: string, previousTerrainMode?: string) => ipcRenderer.invoke('terrain:update-settings', war3Path, terrainMode, waterMode, previousTerrainMode),
   updateTreeSettings: (war3Path: string, treeMode: string) => ipcRenderer.invoke('tree:update-settings', war3Path, treeMode),
   updateWaterSettings: (war3Path: string, waterMode: string) => ipcRenderer.invoke('water:update-settings', war3Path, waterMode),
@@ -46,12 +47,12 @@ const electronAPI: ElectronAPI = {
   updateBlightSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('blight:update-settings', war3Path, enabled),
   updateObjectShader: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-object-shader', war3Path, enabled),
   updatePostProcessing: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-post-processing', war3Path, enabled),
+  updatePostProcessingGlow: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-post-processing-glow', war3Path, enabled),
   /** @deprecated Manual toggle removed; always syncs shaders from detected War3 version. */
   updateLegacyWar3Shader: (war3Path: string, enabled?: boolean) => ipcRenderer.invoke('shader:update-legacy-war3', war3Path, enabled),
   syncVersionedShaders: (war3Path?: string) => ipcRenderer.invoke('shader:sync-versioned', war3Path),
   detectWar3Version: (war3Path?: string) => ipcRenderer.invoke('war3:detect-version', war3Path),
   updateIntelAmdShaderFix: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('shader:update-intel-amd', war3Path, enabled),
-  updateEnvRenderSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('script:update-env-render', war3Path, enabled),
   updateGlowSettings: (war3Path: string, enabled: boolean) => ipcRenderer.invoke('glow:update-settings', war3Path, enabled),
   getAntiHarmonyStatus: (war3Path?: string) => ipcRenderer.invoke('anti-harmony:get-status', war3Path),
   setAntiHarmonyEnabled: (war3Path: string | undefined, enabled: boolean) =>
@@ -71,6 +72,7 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.invoke('retro-skin:apply', options),
   selectModelFile: () => ipcRenderer.invoke('file:select-model'),
   selectFile: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => ipcRenderer.invoke('file:select', options),
+  selectFiles: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => ipcRenderer.invoke('file:select-multiple', options),
   selectDirectory: (title?: string) => ipcRenderer.invoke('file:select-directory', title),
   readModelResource: (path: string, basePath?: string, artSet?: 'sd' | 'hd' | 'de') => ipcRenderer.invoke('model:read-resource', { path, basePath, artSet }),
   listCustomSkins: (targetId?: string) => ipcRenderer.invoke('custom-skin:list', targetId),
@@ -91,6 +93,11 @@ const electronAPI: ElectronAPI = {
   // MOD 增量更新
   getModUpdateStatus: (war3Path: string) => ipcRenderer.invoke('mod-update:get-status', war3Path),
   applyModUpdate: (war3Path: string) => ipcRenderer.invoke('mod-update:apply', war3Path),
+  onModUpdateProgress: (callback) => {
+    const handler = (_event: Electron.IpcRendererEvent, progress: ModUpdateProgress) => callback(progress);
+    ipcRenderer.on('mod-update:progress', handler);
+    return () => ipcRenderer.removeListener('mod-update:progress', handler);
+  },
   getInstalledModState: (war3Path: string) => ipcRenderer.invoke('mod-update:get-installed-state', war3Path),
   verifyModIntegrity: (war3Path: string, fullHash = false) => ipcRenderer.invoke('mod-update:verify-integrity', war3Path, fullHash),
 
@@ -151,7 +158,7 @@ const electronAPI: ElectronAPI = {
   switchGameChannel: (channel: 'retail' | 'ptr') => ipcRenderer.invoke('game:switch-channel', channel),
   getBranchModStates: () => ipcRenderer.invoke('mod:get-branch-states'),
   setBranchModEnabled: (channel: 'retail' | 'ptr', enabled: boolean) => ipcRenderer.invoke('mod:set-branch-enabled', channel, enabled),
-  installFullPackage: (zipPath: string, channel?: 'retail' | 'ptr') => ipcRenderer.invoke('mod:install-full-package', zipPath, channel),
+  installFullPackage: (zipPaths: string | string[]) => ipcRenderer.invoke('mod:install-full-package', zipPaths),
   syncAssets: (war3Path?: string) => ipcRenderer.invoke('mod:sync-assets', war3Path),
 
   // Mod Management

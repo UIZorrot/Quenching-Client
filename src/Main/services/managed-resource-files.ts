@@ -36,18 +36,10 @@ async function listFiles(root: string): Promise<string[]> {
   return results;
 }
 
-/** Same size and mtime as the bundled source: copies keep timestamps, so this means already installed. */
-async function isInstalledCopy(source: string, target: string): Promise<boolean> {
-  const [src, dst] = await Promise.all([fs.stat(source), fs.lstat(target).catch(() => null)]);
-  return !!dst?.isFile() && dst.size === src.size && Math.trunc(dst.mtimeMs) === Math.trunc(src.mtimeMs);
-}
-
 async function copyResource(source: string, target: string): Promise<void> {
-  if (await isInstalledCopy(source, target)) return;
-  const stat = await fs.lstat(target).catch(() => null);
-  if (stat && !stat.isFile()) await fs.remove(target);
+  await fs.remove(target);
   await fs.ensureDir(path.dirname(target));
-  await fs.copy(source, target, { overwrite: true, preserveTimestamps: true });
+  await fs.copy(source, target);
 }
 
 async function removeLegacyMarker(targetDir: string, markerName: string): Promise<void> {
@@ -55,9 +47,8 @@ async function removeLegacyMarker(targetDir: string, markerName: string): Promis
 }
 
 /**
- * Install the desired bundled variant into targetDir.
- * Paths that exist in any known variant but not in the desired one are deleted;
- * paths no bundled variant knows about are left alone.
+ * Delete every path any known variant uses, then copy the desired variant in.
+ * Paths no bundled variant knows about are left alone.
  */
 export async function syncBundledResourceFiles(
   targetDir: string,
@@ -81,19 +72,12 @@ export async function syncBundledResourceFiles(
       file: path.join(root.source, relative),
     }));
 
-  const desired = new Map<string, string>();
-  for (const root of desiredRoots) {
-    for (const { key, file } of await keysOf(root)) desired.set(key.toLowerCase(), file);
-  }
-
   if (options.removeAbsent !== false) {
     const known = new Map<string, string>();
     for (const root of knownRoots) {
       for (const { key } of await keysOf(root)) known.set(key.toLowerCase(), key);
     }
-    for (const [lower, key] of known) {
-      if (!desired.has(lower)) await fs.remove(path.join(targetDir, key));
-    }
+    for (const key of known.values()) await fs.remove(path.join(targetDir, key));
   }
 
   for (const root of desiredRoots) {

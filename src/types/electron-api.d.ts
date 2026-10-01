@@ -14,6 +14,14 @@ interface ClientUpdateProgress {
   total: number;
 }
 
+interface ModUpdateProgress {
+  phase: 'preparing' | 'downloading' | 'verifying' | 'extracting' | 'installing' | 'finalizing' | 'complete';
+  percent: number;
+  message: string;
+  completedBytes?: number;
+  totalBytes?: number;
+}
+
 interface ThirdPartyFeature {
   id: string;
   blocked: boolean;
@@ -133,6 +141,7 @@ interface ElectronAPI {
     previousLightingBrightness?: number
   ) => Promise<boolean>;
   updateUISettings: (war3Path: string, uiMode: string) => Promise<boolean>;
+  syncUISettings: (war3Path: string) => Promise<boolean>;
   updateTerrainSettings: (war3Path: string, terrainMode: string, waterMode?: string, previousTerrainMode?: string) => Promise<boolean>;
   updateTreeSettings: (war3Path: string, treeMode: string) => Promise<boolean>;
   updateWaterSettings: (war3Path: string, waterMode: string) => Promise<boolean>;
@@ -140,6 +149,7 @@ interface ElectronAPI {
   updateBlightSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateObjectShader: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updatePostProcessing: (war3Path: string, enabled: boolean) => Promise<boolean>;
+  updatePostProcessingGlow: (war3Path: string, enabled: boolean) => Promise<boolean>;
   /** @deprecated Always auto-syncs from War3 version; `enabled` ignored. */
   updateLegacyWar3Shader: (war3Path: string, enabled?: boolean) => Promise<boolean>;
   syncVersionedShaders: (war3Path?: string) => Promise<{
@@ -163,7 +173,6 @@ interface ElectronAPI {
     shaderZip: string;
   }>;
   updateIntelAmdShaderFix: (war3Path: string, enabled: boolean) => Promise<boolean>;
-  updateEnvRenderSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
   updateGlowSettings: (war3Path: string, enabled: boolean) => Promise<boolean>;
   getAntiHarmonyStatus: (war3Path?: string) => Promise<boolean>;
   setAntiHarmonyEnabled: (
@@ -182,7 +191,7 @@ interface ElectronAPI {
   switchGameChannel: (channel: 'retail' | 'ptr') => Promise<boolean>;
   getBranchModStates: () => Promise<Record<'retail' | 'ptr', { available: boolean; installed: boolean; enabled: boolean }>>;
   setBranchModEnabled: (channel: 'retail' | 'ptr', enabled: boolean) => Promise<{ needsZip: boolean; states: Record<'retail' | 'ptr', { available: boolean; installed: boolean; enabled: boolean }> }>;
-  installFullPackage: (zipPath: string, channel?: 'retail' | 'ptr') => Promise<FullPackageInstallResult>;
+  installFullPackage: (zipPaths: string | string[]) => Promise<FullPackageInstallResult>;
   syncAssets: (war3Path?: string) => Promise<void>;
 
   // Mod Management
@@ -235,6 +244,7 @@ interface ElectronAPI {
   }>;
   selectModelFile: () => Promise<string | null>;
   selectFile: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => Promise<string | null>;
+  selectFiles: (options: { title?: string, filters?: { name: string, extensions: string[] }[] }) => Promise<string[]>;
   selectDirectory: (title?: string) => Promise<string | null>;
   readModelResource: (path: string, basePath?: string, artSet?: 'sd' | 'hd' | 'de') => Promise<{
     data: string;
@@ -257,6 +267,7 @@ interface ElectronAPI {
   // MOD 增量更新
   getModUpdateStatus: (war3Path: string) => Promise<ModUpdateStatus>;
   applyModUpdate: (war3Path: string) => Promise<ModUpdateResult>;
+  onModUpdateProgress: (callback: (progress: ModUpdateProgress) => void) => () => void;
   getInstalledModState: (war3Path: string) => Promise<InstalledModState | null>;
   verifyModIntegrity: (war3Path: string, fullHash?: boolean) => Promise<ModIntegrityReport>;
 }
@@ -315,6 +326,7 @@ interface ModUpdateResult {
   applied: boolean;
   downloadedFrom?: string;
   error?: string;
+  configurationError?: string;
 }
 
 interface CustomSkinRecord {
@@ -438,6 +450,7 @@ interface FullPackageInstallResult {
   success: boolean;
   skipped?: boolean;
   error?: string;
+  configurationError?: string;
   freeBytes?: number;
   requiredBytes?: number;
 }

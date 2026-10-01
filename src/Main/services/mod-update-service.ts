@@ -12,14 +12,15 @@ import { fileURLToPath } from 'url';
 import { extractZipArchive } from './zip-extraction';
 import { isFullPackageInstalled, resolveRetailDir } from './full-package-service';
 import { fetchReleaseGate, previewUpdatesEnabled } from './release-gate-service';
+import { hasLegacy34Sentinels, resolveManagedSequence } from './mod-version-detection';
 import {
   loadIntegrityManifest,
   MOD_INTEGRITY_PATHS,
   ModIntegrityReport,
   integrityBackupRelativePath,
   prepareUpdatedIntegrityManifest,
+  readCurrentModMarker,
   readCurrentModVersion,
-  verifyModIntegrity,
   writeCurrentModVersion,
   writeUpdatedIntegrityManifest,
 } from './mod-integrity-service';
@@ -101,6 +102,16 @@ export interface ModUpdateOptions {
   stagingRoot?: string;
   /** Test/publisher integration override. Never expose this through renderer IPC. */
   publicKeyPem?: string;
+  /** Runtime-only progress callback. It is supplied by the main-process IPC handler. */
+  onProgress?: (progress: ModUpdateProgress) => void;
+}
+
+export interface ModUpdateProgress {
+  phase: 'preparing' | 'downloading' | 'verifying' | 'extracting' | 'installing' | 'finalizing' | 'complete';
+  percent: number;
+  message: string;
+  completedBytes?: number;
+  totalBytes?: number;
 }
 
 export interface ModUpdateResult {
@@ -108,6 +119,7 @@ export interface ModUpdateResult {
   applied: boolean;
   downloadedFrom?: string;
   error?: string;
+  configurationError?: string;
 }
 
 const DEFAULT_MANIFEST_URLS = [
@@ -287,50 +299,28 @@ export async function fetchModManifest(options?: ModUpdateOptions): Promise<{ ma
   throw new Error(`all manifest sources failed: ${errors.join('; ')}`);
 }
 
-async function readInstalledState(war3Path: string): Promise<InstalledModState | null> {
-  const retailDir = await resolveRetailDir(war3Path);
-  const statePath = path.join(retailDir, '.quenching', 'installed-mod.json');
-  const content = await fs.readFile(statePath, 'utf8').catch((error: NodeJS.ErrnoException) => {
-    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
-    throw error;
-  });
-  if (content === null) return null;
-  const value = JSON.parse(content);
-  if (value.product !== PRODUCT || !Number.isSafeInteger(value.sequence) || typeof value.version !== 'string' || !Array.isArray(value.files)) {
-    throw new Error(`Invalid installed MOD state: ${statePath}`);
-  }
-  if (await readCurrentModVersion(war3Path) !== value.version) return null;
-  const files = value.files.map((file: any) => normalizeRelativePath(file));
-  if (value.filesDigest !== stableFilesDigest(files)) throw new Error(`Installed MOD state checksum mismatch: ${statePath}`);
-  return { ...value, displayVersion: typeof value.displayVersion === 'string' ? value.displayVersion : value.version, files };
+function lightweightState(sequence: number, version: string, displayVersion = version): InstalledModState {
+  const files: string[] = [];
+  return { product: PRODUCT, sequence, version, displayVersion, installedAt: '', files, filesDigest: stableFilesDigest(files) };
 }
 
-/** 3.4 shipped the 3.3 resource tree, whose old patch/keep.que still ends at 3.0. */
+/**
+ * Automatic checks read only _patch/keep.que. The 3.5 full package predates
+ * sequence lines, so its one known sequence is supplied here.
+ */
+async function readMarkedState(war3Path: string): Promise<InstalledModState | null> {
+  const marker = await readCurrentModMarker(war3Path);
+  if (!marker) return null;
+  const sequence = resolveManagedSequence(marker);
+  if (sequence === null) return null;
+  return lightweightState(sequence, marker.version, marker.displayVersion || marker.version);
+}
+
+/** 3.4 has no modern marker. Detect it with three fixed folder sentinels only. */
 async function readLegacy34State(war3Path: string): Promise<InstalledModState | null> {
   if (await readCurrentModVersion(war3Path)) return null;
   const retailDir = await resolveRetailDir(war3Path);
-  const marker = await fs.readFile(path.join(retailDir, 'patch', 'keep.que'), 'utf8').catch((error: NodeJS.ErrnoException) => {
-    if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return '';
-    throw error;
-  });
-  const versions = [...marker.matchAll(/^-v(\d+(?:\.\d+){1,2})-\s*$/gim)].map((match) => match[1]);
-  if (!['3.0', '3.3', '3.4'].includes(versions[versions.length - 1])) return null;
-  const baseline = await loadIntegrityManifest(war3Path, '3.4');
-  if (!baseline || baseline.manifest.sequence !== 34) return null;
-  const records = baseline.manifest.files;
-  const cosRecords = records.filter((file) => file.path.toLowerCase().startsWith('cos/'));
-  const fingerprints = (cosRecords.length >= 3 ? cosRecords : records).slice(0, 3);
-  if (fingerprints.length < 2) return null;
-  for (const file of fingerprints) {
-    const candidate = resolveSafe(retailDir, file.path);
-    const stat = await fs.stat(candidate).catch((error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
-      throw error;
-    });
-    if (!stat?.isFile()) return null;
-  }
-  const files = records.map((file) => file.path);
-  return { product: PRODUCT, sequence: 34, version: '3.4', displayVersion: '3.4', installedAt: baseline.manifest.generatedAt, files, filesDigest: stableFilesDigest(files) };
+  return await hasLegacy34Sentinels(retailDir) ? lightweightState(34, '3.4') : null;
 }
 
 export async function writeInstalledModState(war3Path: string, state: InstalledModState): Promise<void> {
@@ -403,7 +393,7 @@ export async function getModUpdateStatus(war3Path: string, options?: ModUpdateOp
       throw error;
     }
     if (reason === 'update public key is not configured' || reason.startsWith('all manifest sources failed:')) {
-      return { decision: 'unavailable', current: await readInstalledState(war3Path) || await readLegacy34State(war3Path), target: null, reason };
+      return { decision: 'unavailable', current: await readMarkedState(war3Path) || await readLegacy34State(war3Path), target: null, reason };
     }
     throw error;
   }
@@ -417,48 +407,18 @@ export async function getModUpdateStatus(war3Path: string, options?: ModUpdateOp
       const displayVersion = manifest.displayVersion || manifest.version;
       if (gate.allowed === 0 || gate.modVersion !== displayVersion) {
         return {
-          decision: 'unavailable', current: await readInstalledState(war3Path) || await readLegacy34State(war3Path), target: null,
+          decision: 'unavailable', current: await readMarkedState(war3Path) || await readLegacy34State(war3Path), target: null,
           reason: gate.allowed === 0 ? `${gate.version} is staged but not public` :
             `version.que allows MOD ${gate.modVersion}, not ${displayVersion}`,
           manifestSource: source,
         };
       }
     } catch (error: any) {
-      return { decision: 'unavailable', current: await readInstalledState(war3Path) || await readLegacy34State(war3Path), target: null,
+      return { decision: 'unavailable', current: await readMarkedState(war3Path) || await readLegacy34State(war3Path), target: null,
         reason: `release gate unavailable: ${error?.message || String(error)}`, manifestSource: source };
     }
   }
-  let current = await readInstalledState(war3Path);
-  let integrity: ModIntegrityReport | undefined;
-  if (!current) {
-    const markerVersion = await readCurrentModVersion(war3Path);
-    if (markerVersion) {
-      integrity = await verifyModIntegrity(war3Path, 'presence');
-      const baseline = integrity.ok ? await loadIntegrityManifest(war3Path, markerVersion) : null;
-      if (baseline && baseline.manifest.version === markerVersion) {
-        const files = baseline.manifest.files.map((file) => file.path);
-        current = {
-          product: PRODUCT,
-          sequence: baseline.manifest.sequence,
-          version: baseline.manifest.version,
-          displayVersion: baseline.manifest.displayVersion || baseline.manifest.version,
-          installedAt: baseline.manifest.generatedAt,
-          files,
-          filesDigest: stableFilesDigest(files),
-        };
-      } else {
-        return {
-          decision: 'unknownInstallation',
-          current: null,
-          target: { sequence: manifest.sequence, version: manifest.version, displayVersion: manifest.displayVersion || manifest.version },
-          fullPackage: manifest.fullPackage,
-          reason: integrity.reason || `the ${markerVersion} installation is incomplete (${integrity.issueCount} missing files)`,
-          manifestSource: source,
-          integrity,
-        };
-      }
-    }
-  }
+  let current = await readMarkedState(war3Path);
   if (!current) current = await readLegacy34State(war3Path);
   const target = { sequence: manifest.sequence, version: manifest.version, displayVersion: manifest.displayVersion || manifest.version };
   if (!current) {
@@ -470,14 +430,13 @@ export async function getModUpdateStatus(war3Path: string, options?: ModUpdateOp
       fullPackage: manifest.fullPackage,
       reason: complete ? 'full package exists but its managed version is unknown' : 'no managed full package is installed',
       manifestSource: source,
-      integrity,
     };
   }
   if (current.sequence < MIN_MANAGED_SEQUENCE && current.sequence !== 34) {
     return { decision: 'requiresFullPackage', current, target, fullPackage: manifest.fullPackage, reason: 'no migration exists for this MOD version', manifestSource: source };
   }
   if (current.sequence >= manifest.sequence) {
-    return { decision: 'upToDate', current, target, reason: 'installed MOD is current', manifestSource: source, integrity };
+    return { decision: 'upToDate', current, target, reason: 'installed MOD is current', manifestSource: source };
   }
   if (manifest.sequence - current.sequence > MAX_PATCH_GAP) {
     return { decision: 'requiresFullPackage', current, target, fullPackage: manifest.fullPackage, reason: `version gap exceeds ${MAX_PATCH_GAP}`, manifestSource: source };
@@ -488,10 +447,15 @@ export async function getModUpdateStatus(war3Path: string, options?: ModUpdateOp
   if (!patch) {
     return { decision: 'requiresFullPackage', current, target, fullPackage: manifest.fullPackage, reason: 'no compatible cumulative patch is published for this installed sequence', manifestSource: source };
   }
-  return { decision: 'patch', current, target, patch, reason: `cumulative patch from baseline ${patch.fromSequence} is available`, manifestSource: source, integrity };
+  return { decision: 'patch', current, target, patch, reason: `cumulative patch from baseline ${patch.fromSequence} is available`, manifestSource: source };
 }
 
-async function downloadArtifact(artifact: ModUpdateArtifact, destination: string): Promise<string> {
+async function downloadArtifact(
+  artifact: ModUpdateArtifact,
+  destination: string,
+  onDownload?: (completed: number, total: number) => void,
+  onVerifying?: () => void,
+): Promise<string> {
   const errors: string[] = [];
   const partPath = `${destination}.part`;
   for (const source of artifact.sources) {
@@ -500,13 +464,15 @@ async function downloadArtifact(artifact: ModUpdateArtifact, destination: string
       await fs.ensureDir(path.dirname(destination));
       if (typeof source === 'string' && source.startsWith('file://')) {
         await fs.copyFile(fileURLToPath(source), destination);
+        onDownload?.(artifact.size, artifact.size);
       } else if (typeof source === 'string') {
-        await downloadUrl(source, destination, artifact.size);
+        await downloadUrl(source, destination, artifact.size, 0, (received) => onDownload?.(received, artifact.size));
       } else {
+        let completed = 0;
         for (const part of source.parts) {
           for (let attempt = 1; attempt <= 3; attempt += 1) {
             try {
-              await downloadUrl(part.url, partPath, part.size);
+              await downloadUrl(part.url, partPath, part.size, 0, (received) => onDownload?.(completed + received, artifact.size));
               const partStat = await fs.stat(partPath);
               if (partStat.size !== part.size) throw new Error(`part size mismatch: expected ${part.size}, got ${partStat.size}`);
               const partHash = await sha256File(partPath);
@@ -520,10 +486,13 @@ async function downloadArtifact(artifact: ModUpdateArtifact, destination: string
           }
           await pipeline(fs.createReadStream(partPath), fs.createWriteStream(destination, { flags: 'a' }));
           await fs.remove(partPath);
+          completed += part.size;
+          onDownload?.(completed, artifact.size);
         }
       }
       const stat = await fs.stat(destination);
       if (stat.size !== artifact.size) throw new Error(`size mismatch: expected ${artifact.size}, got ${stat.size}`);
+      onVerifying?.();
       const hash = await sha256File(destination);
       if (hash !== artifact.sha256.toLowerCase()) throw new Error(`sha256 mismatch: expected ${artifact.sha256}, got ${hash}`);
       return label;
@@ -538,7 +507,13 @@ async function downloadArtifact(artifact: ModUpdateArtifact, destination: string
   throw new Error(`all artifact sources failed: ${errors.join('; ')}`);
 }
 
-async function downloadUrl(url: string, destination: string, expectedSize: number, redirects = 0): Promise<void> {
+async function downloadUrl(
+  url: string,
+  destination: string,
+  expectedSize: number,
+  redirects = 0,
+  onProgress?: (received: number) => void,
+): Promise<void> {
   // Keep patch downloads on the same direct connection path as manifest requests.
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https://') ? https : http;
@@ -546,7 +521,7 @@ async function downloadUrl(url: string, destination: string, expectedSize: numbe
       if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
         response.resume();
         if (redirects >= MAX_REDIRECTS) return reject(new Error('too many redirects'));
-        return downloadUrl(new URL(response.headers.location, url).toString(), destination, expectedSize, redirects + 1).then(resolve, reject);
+        return downloadUrl(new URL(response.headers.location, url).toString(), destination, expectedSize, redirects + 1, onProgress).then(resolve, reject);
       }
       if (response.statusCode !== 200) {
         response.resume();
@@ -558,10 +533,19 @@ async function downloadUrl(url: string, destination: string, expectedSize: numbe
         return reject(new Error(`download exceeds declared artifact size: ${declared} > ${expectedSize}`));
       }
       let received = 0;
+      let lastReportAt = 0;
+      let lastReportedPercent = -1;
       const limiter = new Transform({
         transform(chunk, _encoding, callback) {
           received += chunk.length;
           if (received > expectedSize) return callback(new Error(`download exceeds declared artifact size: ${received} > ${expectedSize}`));
+          const now = Date.now();
+          const percent = Math.floor(received / Math.max(expectedSize, 1) * 100);
+          if (received === expectedSize || (percent !== lastReportedPercent && now - lastReportAt >= 200)) {
+            lastReportAt = now;
+            lastReportedPercent = percent;
+            onProgress?.(received);
+          }
           callback(null, chunk);
         },
       });
@@ -606,11 +590,32 @@ async function assertPatchSpace(unpackedBytes: number, gameDir: string): Promise
   }
 }
 
-async function applyPatchArchive(archivePath: string, war3Path: string, current: InstalledModState, target: { sequence: number; version: string; displayVersion: string }, stagingRoot: string, checkSpace: boolean): Promise<void> {
+async function applyPatchArchive(
+  archivePath: string,
+  war3Path: string,
+  current: InstalledModState,
+  target: { sequence: number; version: string; displayVersion: string },
+  stagingRoot: string,
+  checkSpace: boolean,
+  onProgress?: (percent: number, message: string) => void,
+): Promise<void> {
+  let lastProgressPercent = -1;
+  let lastProgressMessage = '';
+  const progress = (percent: number, message: string) => {
+    const rounded = Math.max(0, Math.min(100, Math.round(percent)));
+    if (rounded === lastProgressPercent && message === lastProgressMessage) return;
+    lastProgressPercent = rounded;
+    lastProgressMessage = message;
+    onProgress?.(rounded, message);
+  };
   const legacy34 = current.sequence === 34 && current.version === '3.4';
   const patchRoot = path.join(stagingRoot, 'patch');
   await fs.remove(patchRoot);
-  const unpackedBytes = await extractZipArchive(archivePath, patchRoot);
+  progress(0, '正在解压 MOD 更新包');
+  const unpackedBytes = await extractZipArchive(archivePath, patchRoot, {
+    onProgress: (percent) => progress(percent * 0.3, '正在解压 MOD 更新包'),
+  });
+  progress(34, '正在校验更新内容');
   if (checkSpace) await assertPatchSpace(unpackedBytes, await resolveRetailDir(war3Path));
   const patchPath = path.join(patchRoot, 'patch.json');
   const document = JSON.parse(await fs.readFile(patchPath, 'utf8')) as PatchDocument;
@@ -629,8 +634,24 @@ async function applyPatchArchive(archivePath: string, war3Path: string, current:
   for (const item of deletedRecords) assertPatchResourcePath(item.path);
   const deleted = deletedRecords.map((item) => item.path);
   const deleteOnDisk: string[] = [];
-  for (const relative of deleted) {
-    if (await fs.pathExists(resolveSafe(retailDir, relative))) deleteOnDisk.push(relative);
+  for (const item of deletedRecords) {
+    const absolute = resolveSafe(retailDir, item.path);
+    const stat = await fs.lstat(absolute).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+      throw error;
+    });
+    if (!stat) continue;
+    if (!stat.isFile() || stat.isSymbolicLink()) {
+      console.warn(`[ModUpdate] Preserved non-file at deleted managed path: ${item.path}`);
+      continue;
+    }
+    const accepted = new Set([item.previousSha256, ...(item.acceptedPreviousSha256 ?? [])]
+      .filter((hash): hash is string => typeof hash === 'string' && /^[a-f0-9]{64}$/i.test(hash))
+      .map((hash) => hash.toLowerCase()));
+    if (accepted.size === 0) throw new Error(`patch deletion has no trusted previous hash: ${item.path}`);
+    const existingHash = await sha256File(absolute);
+    if (accepted.has(existingHash)) deleteOnDisk.push(item.path);
+    else console.warn(`[ModUpdate] Preserved player-modified file removed from the official package: ${item.path}`);
   }
   const nextIntegrity = await prepareUpdatedIntegrityManifest(
     war3Path,
@@ -652,7 +673,8 @@ async function applyPatchArchive(archivePath: string, war3Path: string, current:
   await fs.ensureDir(backupRoot);
   await fs.writeJson(journalPath, { product: PRODUCT, fromSequence: current.sequence, toSequence: target.sequence, touched, backupRoot, createdAt: new Date().toISOString() }, { spaces: 2 });
   try {
-    for (const relative of touched) {
+    for (let index = 0; index < touched.length; index += 1) {
+      const relative = touched[index];
       const existing = resolveSafe(retailDir, relative);
       if (await fs.pathExists(existing)) {
         existedBefore.add(relative);
@@ -660,16 +682,20 @@ async function applyPatchArchive(archivePath: string, war3Path: string, current:
         await fs.ensureDir(path.dirname(backup));
         await fs.copy(existing, backup, { overwrite: true });
       }
+      progress(40 + (index + 1) / Math.max(touched.length, 1) * 25, '正在备份将被更新的文件');
     }
-    for (const item of files) {
+    for (let index = 0; index < files.length; index += 1) {
+      const item = files[index];
       const targetPath = resolveSafe(retailDir, item.path);
       await fs.ensureDir(path.dirname(targetPath));
       await fs.copy(resolveSafe(payloadRoot, item.path), targetPath, { overwrite: true });
+      progress(65 + (index + 1) / Math.max(files.length, 1) * 30, '正在安装 MOD 更新');
     }
     for (const relative of deleteOnDisk) await fs.remove(resolveSafe(retailDir, relative));
     if (legacy34) await fs.remove(resolveSafe(retailDir, 'patch/keep.que'));
     await writeUpdatedIntegrityManifest(war3Path, target.version, nextIntegrity);
-    await writeCurrentModVersion(war3Path, target.version);
+    await writeCurrentModVersion(war3Path, target.version, target.sequence, target.displayVersion);
+    progress(98, '正在写入版本信息');
     const nextFiles = [...new Set([...current.files.map(normalizeRelativePath), ...files.map((item) => item.path)].filter((item) => !deleted.includes(item)))].sort();
     await writeInstalledModState(war3Path, { product: PRODUCT, sequence: target.sequence, version: target.version, displayVersion: target.displayVersion, installedAt: new Date().toISOString(), files: nextFiles, filesDigest: stableFilesDigest(nextFiles) });
     // The transaction is committed once the state marker is atomically moved.
@@ -689,6 +715,10 @@ async function applyPatchArchive(archivePath: string, war3Path: string, current:
 }
 
 export async function applyModUpdate(war3Path: string, options?: ModUpdateOptions): Promise<ModUpdateResult> {
+  const report = (phase: ModUpdateProgress['phase'], percent: number, message: string, completedBytes?: number, totalBytes?: number) => {
+    options?.onProgress?.({ phase, percent: Math.max(0, Math.min(100, Math.round(percent))), message, completedBytes, totalBytes });
+  };
+  report('preparing', 0, '正在准备 MOD 更新');
   const status = await getModUpdateStatus(war3Path, options);
   if (status.decision !== 'patch' || !status.patch || !status.current || !status.target) return { status, applied: false };
   // A portable Warcraft install may live on a roomy game drive while the
@@ -700,8 +730,36 @@ export async function applyModUpdate(war3Path: string, options?: ModUpdateOption
   const archivePath = path.join(runRoot, 'patch.qdelta');
   try {
     await assertWarcraftNotRunning();
-    const downloadedFrom = await downloadArtifact(status.patch, archivePath);
-    await applyPatchArchive(archivePath, war3Path, status.current, status.target, runRoot, !options?.stagingRoot);
+    report('preparing', 3, '正在读取已安装版本');
+    // The full file list is deliberately loaded only after the player has
+    // accepted the update. It never participates in automatic version checks.
+    const baseline = await loadIntegrityManifest(war3Path, status.current.version);
+    if (!baseline || baseline.manifest.sequence !== status.current.sequence) {
+      throw new Error(`no trusted file list is available for installed MOD ${status.current.version}`);
+    }
+    const managedFiles = baseline.manifest.files.map((file) => file.path);
+    const current = {
+      ...status.current,
+      installedAt: baseline.manifest.generatedAt,
+      files: managedFiles,
+      filesDigest: stableFilesDigest(managedFiles),
+    };
+    const downloadedFrom = await downloadArtifact(
+      status.patch,
+      archivePath,
+      (completed, total) => report('downloading', 5 + completed / Math.max(total, 1) * 65, '正在下载 MOD 更新', completed, total),
+      () => report('verifying', 72, '正在校验下载文件', status.patch?.size, status.patch?.size),
+    );
+    await applyPatchArchive(
+      archivePath,
+      war3Path,
+      current,
+      status.target,
+      runRoot,
+      !options?.stagingRoot,
+      (percent, message) => report(percent < 34 ? 'extracting' : percent < 98 ? 'installing' : 'finalizing', 74 + percent * 0.25, message),
+    );
+    report('complete', 100, 'MOD 更新完成');
     return { status, applied: true, downloadedFrom };
   } catch (error: any) {
     return { status, applied: false, error: error?.message || String(error) };
@@ -711,15 +769,7 @@ export async function applyModUpdate(war3Path: string, options?: ModUpdateOption
 }
 
 export async function getInstalledModState(war3Path: string): Promise<InstalledModState | null> {
-  const saved = await readInstalledState(war3Path);
-  if (saved) return saved;
-  const version = await readCurrentModVersion(war3Path);
-  if (!version) return readLegacy34State(war3Path);
-  const integrity = await verifyModIntegrity(war3Path, 'presence');
-  const loaded = integrity.ok ? await loadIntegrityManifest(war3Path, version) : null;
-  if (!loaded) return null;
-  const files = loaded.manifest.files.map((file) => file.path);
-  return { product: PRODUCT, sequence: loaded.manifest.sequence, version, displayVersion: loaded.manifest.displayVersion || version, installedAt: loaded.manifest.generatedAt, files, filesDigest: stableFilesDigest(files) };
+  return await readMarkedState(war3Path) || await readLegacy34State(war3Path);
 }
 
 export const MOD_UPDATE_DEFAULTS = { product: PRODUCT, minManagedSequence: MIN_MANAGED_SEQUENCE, maxPatchGap: MAX_PATCH_GAP, manifestUrls: DEFAULT_MANIFEST_URLS } as const;

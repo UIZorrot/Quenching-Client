@@ -6,18 +6,25 @@ import { resolveRetailDir } from './full-package-service';
 /** Under DE, these doodad roots stay active; everything else parks to QMoff. */
 export const DE_DOODADS_KEEP = new Set(['que', 'terrain', 'cinematic']);
 
-/** SD parks visual packages; units and buildings have a shared priority pass. */
+/** SD keeps the skin table and its cos models; all visual override roots are parked. */
 export const SD_PARKED_DIRS = [
+  't00', 't16', 't18', 't20', 't30', 'd00', 'd16', 'd18', 'd20', 'd30',
+  'RUnits', 'Rbuildings', 'RetroTex',
   'environment',
+  'env',
   'campaign',
   'doodads',
   'fonts',
   'patch',
   'replaceabletextures',
+  'scripts',
   'shaders',
   'splats',
   'terrainart',
   'textures',
+  'ui',
+  'water',
+  'webui',
 ] as const;
 
 const ACTIVE_SKIN_FILES = new Set(['unitskin.txt', 'destructableskin.txt']);
@@ -31,6 +38,8 @@ export async function removeActiveWaterOverrides(baseDir: string): Promise<void>
     path.join('replaceabletextures', 'water'),
     path.join('terrainart', 'water.slk'),
     ...SHORELINE_NAMES.map((name) => path.join('textures', name)),
+    ...WATER_BACKUP_DIR_NAMES.map((name) => path.join('replaceabletextures', name)),
+    ...WATER_BACKUP_DIR_NAMES.map((name) => path.join('QMoff', 'replaceabletextures', name)),
     path.join('QMoff', 'water-history'),
   ];
   for (const relative of paths) await fs.remove(path.join(baseDir, relative));
@@ -98,6 +107,13 @@ export async function parkNonHdUnitsAndBuildings(war3Path: string): Promise<void
     if (ACTIVE_SKIN_FILES.has(name.toLowerCase())) continue;
     await movePath(path.join(units, name), path.join(parked, name));
   }
+}
+
+/** The vanilla tree table comes from the game archive in SD. */
+export async function parkSdDestructableSkin(war3Path: string): Promise<void> {
+  const baseDir = await resolveRetailDir(war3Path);
+  await movePath(path.join(baseDir, 'units', 'destructableskin.txt'),
+    path.join(baseDir, 'QMoff', 'units', 'destructableskin.txt'));
 }
 
 /** Restore unit models and buildings before HD skin tables are selected. */
@@ -177,39 +193,9 @@ export async function restoreParkedDoodads(war3Path: string): Promise<void> {
   }
 }
 
-/** DE parks water resources under QMoff. */
-export async function stripWaterForDe(
-  war3Path: string,
-  _assets?: { waterRoot: string; tileRoot: string }
-): Promise<void> {
-  const baseDir = await resolveRetailDir(war3Path);
-  const paths = WATER_BACKUP_DIR_NAMES.map((name) => path.join('replaceabletextures', name));
-  await removeActiveWaterOverrides(baseDir);
-  for (const relative of paths) {
-    const source = path.join(baseDir, relative);
-    if (await fs.pathExists(source)) {
-      await movePath(source, path.join(baseDir, 'QMoff', relative));
-      console.log(`[GraphicsLayout] DE: parked ${relative}`);
-    }
-  }
-}
-
-/** Restore only package backup packs; effective water is recreated from client assets. */
-export async function restoreParkedWaterDirs(war3Path: string): Promise<boolean> {
-  const baseDir = await resolveRetailDir(war3Path);
-  const rtDir = path.join(baseDir, 'replaceabletextures');
-  const parkedRt = path.join(baseDir, 'QMoff', 'replaceabletextures');
-
-  let restored = false;
-  for (const name of WATER_BACKUP_DIR_NAMES) {
-    const parked = path.join(parkedRt, name);
-    if (!(await fs.pathExists(parked))) continue;
-    const active = path.join(rtDir, name);
-    await movePath(parked, active);
-    restored = true;
-    console.log(`[GraphicsLayout] Restored replaceabletextures/${name} from QMoff`);
-  }
-  return restored;
+/** DE has no adjustable water: remove every water override. */
+export async function stripWaterForDe(war3Path: string): Promise<void> {
+  await removeActiveWaterOverrides(await resolveRetailDir(war3Path));
 }
 
 export async function parkSdResources(war3Path: string): Promise<void> {
@@ -241,6 +227,7 @@ export async function parkSdResources(war3Path: string): Promise<void> {
     await fs.move(activePath, parkedPath, { overwrite: false });
     console.log(`[GraphicsLayout] SD: parked ${dir} -> QMoff`);
   }
+  await movePath(path.join(baseDir, 'PostProcessingConfig.txt'), path.join(qmoffDir, 'PostProcessingConfig.txt'));
 }
 
 export async function restoreSdParkedResources(war3Path: string): Promise<void> {
@@ -261,40 +248,38 @@ export async function restoreSdParkedResources(war3Path: string): Promise<void> 
     await fs.move(parkedPath, activePath, { overwrite: false });
     console.log(`[GraphicsLayout] Restored ${dir} from QMoff (left SD)`);
   }
+  await movePath(path.join(qmoffDir, 'PostProcessingConfig.txt'), path.join(baseDir, 'PostProcessingConfig.txt'));
 }
 
 /**
  * Apply retail folder layout for the resolved graphics profile.
- * classicMode parking is handled separately and takes precedence — skip SD park when classic is on.
+ * SD keeps only the skin table and its model dependencies active.
  */
 export async function syncGraphicsLayout(
   war3Path: string,
   graphics: EffectiveGraphics,
-  options?: { classicMode?: boolean; waterMode?: 'transparent' | 'realistic' | 'off'; waterAssets?: { waterRoot: string; tileRoot: string } }
+  options?: { classicMode?: boolean; waterMode?: 'transparent' | 'realistic' | 'off' }
 ): Promise<{ waterNeedsReapply: boolean }> {
-  const classicMode = options?.classicMode === true;
   let waterNeedsReapply = false;
 
   if (graphics === 'sd') {
-    if (!classicMode) {
-      await parkNonHdUnitsAndBuildings(war3Path);
-      await parkSdResources(war3Path);
-    }
+    await parkNonHdUnitsAndBuildings(war3Path);
+    await parkSdDestructableSkin(war3Path);
+    await parkSdResources(war3Path);
     return { waterNeedsReapply: false };
   }
 
   if (graphics === 'de') {
     await parkNonHdUnitsAndBuildings(war3Path);
-    if (!classicMode) await restoreSdParkedResources(war3Path);
+    await restoreSdParkedResources(war3Path);
     await parkDeDoodadsExtras(war3Path);
-    await stripWaterForDe(war3Path, options?.waterAssets);
+    await stripWaterForDe(war3Path);
     waterNeedsReapply = false;
   } else {
     // HD
     await restoreHdUnitsAndBuildings(war3Path);
-    if (!classicMode) await restoreSdParkedResources(war3Path);
+    await restoreSdParkedResources(war3Path);
     await restoreParkedDoodads(war3Path);
-    const restoredWater = await restoreParkedWaterDirs(war3Path);
     const baseDir = await resolveRetailDir(war3Path);
     const activeWater = path.join(baseDir, 'replaceabletextures', 'water');
     const waterSlk = path.join(baseDir, 'terrainart', 'water.slk');
@@ -303,7 +288,7 @@ export async function syncGraphicsLayout(
     const hasShoreline = (await Promise.all(SHORELINE_NAMES.map((name) => fs.pathExists(path.join(baseDir, 'textures', name))))).some(Boolean);
     waterNeedsReapply = options?.waterMode === 'off'
       ? hasActiveWater || hasWaterSlk || hasShoreline
-      : restoredWater || !hasActiveWater || !hasWaterSlk;
+      : !hasActiveWater || !hasWaterSlk;
   }
 
   return { waterNeedsReapply };

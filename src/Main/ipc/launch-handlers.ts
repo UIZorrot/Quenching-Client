@@ -17,9 +17,10 @@ import { registerLocalFilesInBackground } from '../services/local-files-service'
 import { getSelectedGameChannel } from '../services/game-channel';
 import { gameChannelFolder } from '../../shared/game-channel';
 import { applyBranchModFilesForSwitch, isBranchModDisabled, recoverBranchModToggle } from '../services/branch-mod-toggle';
-import { assertNoPendingBranchCopy, cloneBranchPackage } from '../services/branch-package-copy';
+import { assertNoPendingBranchCopy } from '../services/branch-package-copy';
+import { installPackageArchives, resolvePackageArchives } from '../services/full-package-install';
 import { assertWarcraftNotRunning } from '../services/mod-update-service';
-import { syncBlightOnStartup } from '../services/blight-service';
+import { applyInstalledProfile } from '../services/post-install-profile';
 
 function slugFromW3nBasename(w3nPath: string): string {
     const ext = path.extname(w3nPath);
@@ -240,10 +241,7 @@ export function registerLaunchHandlers() {
         if (!(await hasGameChannelDirectory(root, channel))) throw new Error('The selected game branch is not installed');
         await assertNoPendingBranchCopy(build);
         await recoverBranchModToggle(build);
-        const installed = await isFullPackageInstalledInChannel(root, channel);
-        await applyBranchModFilesForSwitch(build, enabled, installed);
-        // Without a package or a parking journal, only change the switch.
-        // Never require a ZIP or move unknown/player-owned loose files.
+        await applyBranchModFilesForSwitch(build, enabled);
         setChannelModEnabled(channel, enabled);
         if (enabled) await AssetSyncService.ensurePostProcessingConfig(root);
         return { needsZip: false, states: await branchStates(root) };
@@ -272,7 +270,7 @@ export function registerLaunchHandlers() {
         return await isFullPackageInstalled(war3Path);
     });
 
-    ipcMain.handle('mod:install-full-package', async (event, zipPath: string, requestedChannel?: GameChannel) => {
+    ipcMain.handle('mod:install-full-package', async (event, zipInput: string | string[]) => {
         const war3Path = configManager.get('war3Path') as string | undefined;
 
         if (!war3Path) {
@@ -282,7 +280,8 @@ export function registerLaunchHandlers() {
             };
         }
 
-        if (!zipPath || !(await fs.pathExists(zipPath))) {
+        const requestedZips = Array.isArray(zipInput) ? zipInput : zipInput ? [zipInput] : [];
+        if (!requestedZips.length || !(await Promise.all(requestedZips.map(file => fs.pathExists(file)))).every(Boolean)) {
             return {
                 success: false,
                 error: 'noZip'
@@ -291,20 +290,17 @@ export function registerLaunchHandlers() {
 
         try {
             await assertWarcraftNotRunning();
+            const zipPaths = await resolvePackageArchives(requestedZips);
             const normalizedWar3Path = normalizeWar3RootPath(war3Path);
             if (normalizedWar3Path !== war3Path) {
                 configManager.set('war3Path', normalizedWar3Path);
             }
-            const channel = requestedChannel ?? getSelectedGameChannel();
-            if (channel !== 'retail' && channel !== 'ptr') throw new Error('Invalid target branch');
+            const channel = getSelectedGameChannel();
             const targetPath = path.join(normalizedWar3Path, gameChannelFolder(channel));
             if (!(await fs.pathExists(targetPath))) {
                 return { success: false, error: 'wrongChannel' };
             }
             await assertNoPendingBranchCopy(targetPath);
-            if (await isFullPackageInstalledInChannel(normalizedWar3Path, channel)) {
-                return { success: true, skipped: true };
-            }
             // The extraction stage and installed files share a drive. Check
             // the fixed reserve now; the archive size is counted while it is
             // extracted, so there is no separate ZIP directory scan.
@@ -312,51 +308,20 @@ export function registerLaunchHandlers() {
             if (space.insufficient) {
                 return { success: false, error: 'insufficientSpace', ...space };
             }
-            // Extract outside both game builds, then install only package-owned
-            // paths. Existing identical client assets are reused.
-            const staging = await fs.mkdtemp(path.join(normalizedWar3Path, '.quenching-zip-stage-'));
-            let copyCommitted = false;
-            try {
-                let lastExtractPercent = -1;
-                const archiveBytes = await AssetSyncService.extractZip(zipPath, staging, (percent, currentFile) => {
-                    const overallPercent = Math.round(percent * 0.7);
-                    if (overallPercent !== lastExtractPercent) {
-                        lastExtractPercent = overallPercent;
-                        event.sender.send('mod:install-progress', { percent: overallPercent, message: `正在解压: ${currentFile}` });
-                    }
-                }, { stripLeadingDirectory: ['_retail_', '_ptr_'] });
-                configManager.set('lastFullPackageBytes', archiveBytes);
-                let packageRoot = staging;
-                if (!(await fs.pathExists(path.join(staging, '_patch', 'keep.que')))) {
-                    const entries = await fs.readdir(staging, { withFileTypes: true });
-                    if (entries.length === 1 && entries[0].isDirectory() && !entries[0].isSymbolicLink()) {
-                        packageRoot = path.join(staging, entries[0].name);
-                    }
-                }
-                event.sender.send('mod:install-progress', { percent: 70, message: '正在安装资源包' });
-                await cloneBranchPackage(packageRoot, targetPath, {
-                    linkDisposableSource: true,
-                    onProgress: (percent, message) => event.sender.send('mod:install-progress', {
-                        percent: 70 + Math.round(percent * 0.28), message,
-                    }),
-                });
-                copyCommitted = true;
-            } finally {
-                if (copyCommitted) event.sender.send('mod:install-progress', { percent: 99, message: '正在清理临时文件' });
-                await fs.remove(staging);
-            }
+            const archiveBytes = await installPackageArchives(zipPaths, targetPath, (percent, message) => {
+                event.sender.send('mod:install-progress', { percent, message });
+            });
+            configManager.set('lastFullPackageBytes', archiveBytes);
             setChannelModEnabled(channel, true);
-            if (channel === getSelectedGameChannel()) {
-                try {
-                    await syncBlightOnStartup(normalizedWar3Path, configManager.get('modSettings') || {});
-                } catch (error) {
-                    console.warn('[FullPackage] Could not apply the independent Blight preference after install:', error);
-                }
-            }
+            const warnings = await applyInstalledProfile(normalizedWar3Path, {
+                forceUnitSkinBaseline: true,
+                onProgress: (message) => event.sender.send('mod:install-progress', { percent: 99, message }),
+            });
             event.sender.send('mod:install-progress', { percent: 100, message: '安装完成' });
             return {
                 success: true,
-                skipped: false
+                skipped: false,
+                configurationError: warnings.join('；') || undefined,
             };
         } catch (e: any) {
             console.error('[FullPackage] ZIP installation failed:', e);

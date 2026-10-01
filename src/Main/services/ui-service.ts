@@ -1,11 +1,14 @@
-import { getSelectedGameFolder } from './game-channel';
+import { getChannelModEnabled, getSelectedGameChannel, getSelectedGameFolder } from './game-channel';
 import path from 'path';
 import fs from 'fs-extra';
 import { configManager } from './config-manager';
 import { resolveUiZipName } from './war3-version';
 import { syncBundledResourceFiles } from './managed-resource-files';
+import { isFullPackageInstalled } from './full-package-service';
+import { isThirdPartyQuenchingPaused } from './third-party-resources';
 
 const UI_MARKER = '.quenching-managed-ui.json';
+const UI_STYLE_MARKER = '.quenching-ui-style';
 
 function knownUiRoots(stagingPath: string) {
     return [
@@ -15,6 +18,13 @@ function knownUiRoots(stagingPath: string) {
 }
 
 export class UIService {
+    static async syncConfiguredUI(war3Path: string, force = false): Promise<boolean> {
+        const settings = configManager.get('modSettings') || {};
+        if (!getChannelModEnabled(getSelectedGameChannel()) || settings.graphicsSelection === 'sd' || settings.classicMode === true) return false;
+        if (await isThirdPartyQuenchingPaused(war3Path) || !(await isFullPackageInstalled(war3Path))) return false;
+        return this.applyUISettings(war3Path, settings.ui || 'classic', force);
+    }
+
     /**
      * 经典模式下替换 feedback：移除 que/blz 中无法在经典版加载的 MDX，改用 ui-org 贴图。
      */
@@ -84,11 +94,10 @@ export class UIService {
      * @param war3Path Warcraft III install path
      * @param uiMode 'classic' | 'quenching' | 'carnival'
      */
-    static async applyUISettings(war3Path: string, uiMode: string): Promise<boolean> {
+    static async applyUISettings(war3Path: string, uiMode = 'classic', force = true): Promise<boolean> {
         let stagingPath = '';
 
         try {
-            console.log(`[UIService] Updating UI to mode: ${uiMode}`);
             if (!war3Path) {
                 throw new Error('Warcraft III path is required');
             }
@@ -113,6 +122,10 @@ export class UIService {
             const assetsDir = await AssetSyncService.getAssetsDir();
             const zipName = await resolveUiZipName(war3Path);
             const zipPath = path.join(assetsDir, 'quenching', zipName);
+            const styleMarker = path.join(uiPath, UI_STYLE_MARKER);
+            const style = `${zipName}:${uiMode}`;
+            if (!force && await fs.pathExists(styleMarker) && (await fs.readFile(styleMarker, 'utf8')).trim() === style) return true;
+            console.log(`[UIService] Updating UI to mode: ${uiMode}`);
 
             if (!(await fs.pathExists(zipPath))) {
                 throw new Error(`${zipName} not found at ${zipPath}`);
@@ -149,7 +162,12 @@ export class UIService {
                 await this.applyClassicFeedbackCompat(stagingPath);
             }
 
+            // Remove components absent from classic UI so the game uses its own
+            // console/framedef, including files left by an older full package.
+            await fs.remove(styleMarker);
+            for (const folder of subFolders) await fs.remove(path.join(uiPath, folder));
             await syncBundledResourceFiles(uiPath, [{ source: stagingPath }], knownUiRoots(stagingPath), UI_MARKER);
+            await fs.writeFile(styleMarker, `${style}\n`, 'utf8');
 
             console.log(`[UIService] Successfully updated UI to ${uiMode}`);
             return true;

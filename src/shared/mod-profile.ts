@@ -1,5 +1,5 @@
 export type VersionSelection = 'auto' | 'v1' | 'v20' | 'v203' | 'v30';
-export type GraphicsSelection = 'auto' | 'sd' | 'hd' | 'de';
+export type GraphicsSelection = 'sd' | 'hd' | 'de';
 
 export type EffectiveVersion = 'v1' | 'v20' | 'v203' | 'v30';
 export type EffectiveGraphics = 'sd' | 'hd' | 'de';
@@ -15,13 +15,13 @@ export interface ModProfile extends ModProfileSelection {
   version: EffectiveVersion;
   graphics: EffectiveGraphics;
   usesPublicEnvironment: boolean;
-  shaderPack: 'shaders136' | 'shaders200' | 'shaders203' | 'shaders-300-hd' | 'shaders-300-de';
-  dncPack: 'dnc20' | 'dnc30-hd' | 'dnc30-de';
+  shaderPack: 'shaders136' | 'shaders200' | 'shaders203' | 'shaders-300-hd' | 'shaders-300-de' | 'shaders-ptr-hd' | 'shaders-ptr-de';
+  dncPack: 'dnc20' | 'dnc30-hd' | 'dnc30-de' | 'dnc30-de-rpg';
 }
 
 export const DEFAULT_MOD_PROFILE_SELECTION: ModProfileSelection = {
   versionSelection: 'auto',
-  graphicsSelection: 'auto',
+  graphicsSelection: 'hd',
 };
 
 export function isHdGraphics(graphics: EffectiveGraphics): boolean {
@@ -39,7 +39,7 @@ export function normalizeVersionSelection(value: unknown): VersionSelection {
 }
 
 export function normalizeGraphicsSelection(value: unknown): GraphicsSelection {
-  return value === 'sd' || value === 'hd' || value === 'de' || value === 'auto'
+  return value === 'sd' || value === 'hd' || value === 'de'
     ? value
-    : 'auto';
+    : 'hd';
 }

@@ -1,10 +1,14 @@
-import { getSelectedGameChannel, getSelectedGameFolder, hasGameChannelDirectory } from './game-channel';
+import { getChannelModEnabled, getSelectedGameChannel, getSelectedGameFolder, hasGameChannelDirectory } from './game-channel';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs-extra';
 import { configManager } from './config-manager';
 import { AssetSyncService } from './asset-sync';
 import { syncBundledResourceFiles } from './managed-resource-files';
+import { isFullPackageInstalled } from './full-package-service';
+import { resolveModProfile } from './mod-profile';
+import { readShaderPackMarker } from './war3-version';
+import { UIService } from './ui-service';
 
 async function assertSelectedGameBuild(gamePath: string): Promise<void> {
     if (!(await hasGameChannelDirectory(gamePath, getSelectedGameChannel()))) {
@@ -13,6 +17,18 @@ async function assertSelectedGameBuild(gamePath: string): Promise<void> {
 }
 
 export class GameLauncher {
+
+    private static async syncDetectedVersionBeforeLaunch(gamePath: string): Promise<void> {
+        if (!getChannelModEnabled(getSelectedGameChannel())) return;
+        const settings = configManager.get('modSettings') || {};
+        const profile = await resolveModProfile(gamePath, settings);
+        const shadersDir = path.join(gamePath, getSelectedGameFolder(), 'shaders');
+        if (await readShaderPackMarker(shadersDir) !== profile.shaderPack) {
+            if (!(await isFullPackageInstalled(gamePath))) return;
+            await AssetSyncService.syncConfiguredAssets(gamePath);
+        }
+        await UIService.syncConfiguredUI(gamePath);
+    }
 
     /**
      * Custom .w3n campaigns keep war3campImported / music / sound next to the archive;
@@ -91,6 +107,7 @@ export class GameLauncher {
             throw new Error(`Could not find Warcraft III executable at: ${exePath || 'configured path'}`);
         }
 
+        await this.syncDetectedVersionBeforeLaunch(gamePath);
 
         console.log(`Launching game from: ${exePath}`);
 
@@ -161,6 +178,7 @@ export class GameLauncher {
             throw new Error(`Could not find Warcraft III executable in: ${gamePath}`);
         }
 
+        await this.syncDetectedVersionBeforeLaunch(gamePath);
 
         console.log(`Launching map from: ${exePath} with map: ${mapPath}`);
 
@@ -247,6 +265,7 @@ export class GameLauncher {
             throw new Error(`Could not find Warcraft III executable in: ${gamePath}`);
         }
 
+        await this.syncDetectedVersionBeforeLaunch(gamePath);
 
         const assetsDir = await AssetSyncService.getAssetsDir();
         const sourceMap = path.join(assetsDir, 'quenching', 'camp', 'cfix.w3x');

@@ -2,6 +2,7 @@ import { ipcMain } from 'electron';
 import { UIService } from '../services/ui-service';
 
 export function registerUIHandlers() {
+    ipcMain.handle('ui:sync-settings', async (_event, war3Path: string) => UIService.syncConfiguredUI(war3Path));
     /**
      * 更新 UI 风格设置
      * @param uiMode 'classic' | 'quenching' | 'carnival'

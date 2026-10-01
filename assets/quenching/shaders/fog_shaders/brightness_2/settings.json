@@ -1,0 +1,11 @@
+{
+  "brightness": 4,
+  "ao_strength": 0.68,
+  "relative_strength": 0.85,
+  "ao_radius": 80,
+  "build": "builds\\ao_0.680",
+  "sha256": {
+    "fog": "2ca1ca39f182c7466b52dffbc290d5ef7ddea78f9f95c66dcab8522b6c255ab2",
+    "volumetricfog": "336916b974a35089703ee0f015684676453979c298679e7c67404d22cd2d0bc8"
+  }
+}

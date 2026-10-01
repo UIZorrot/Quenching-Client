@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import { Storage } from '@jamiephan/casclib';
 import { originalSkin, parseSkinSections, scopedSkin, writeVersionSkins, preserveVersionSkins } from '../src/shared/skin-versions';
 import { SKIN_CONFIG } from '../src/Renderer/assets/data/skin-config';
@@ -52,6 +54,30 @@ for (const race of Object.keys(SKIN_CONFIG)) {
 assert.equal(sdCount, LEGACY_SD_SKINS.size);
 assert.equal(skinTargets('neutral', 'hero').length, 8);
 assert.equal(skinTargets('neutral', 'unit').length, 0);
+
+// 3.0 has mode-specific fields and some sections intentionally omit fields.
+// A skin choice must not add empty overrides or discard original qualifiers.
+const text30 = fs.readFileSync(path.join('assets', 'quenching', 'skin', 'unitskin-new.txt'), 'utf8');
+const baseline30 = parseSkinSections(text30);
+const noSound = writeVersionSkins(text30, baseline30, 'hd', [
+  { unitId: 'osp1', skinId: 'custom', changes: [{ field: 'file', value: 'cos/custom/model' }] },
+]);
+assert.equal(parseSkinSections(noSound).osp1['unitSound:hd'], undefined);
+const deChoice = writeVersionSkins(text30, baseline30, 'de', [
+  { unitId: 'hmpr', skinId: 'custom', changes: [{ field: 'file', value: 'cos/custom/priest' }] },
+]);
+assert.equal(parseSkinSections(deChoice).hmpr['Art:de'], undefined);
+assert.equal(parseSkinSections(deChoice).hmpr['file:de'], 'cos/custom/priest');
+const qualifiedId = Object.keys(baseline30).find(id => baseline30[id]['Art:hd:melee,V0']);
+assert(qualifiedId, '3.0 template should contain a qualified HD icon');
+const changedQualified = writeVersionSkins(text30, baseline30, 'hd', [
+  { unitId: qualifiedId, skinId: 'custom', changes: [{ field: 'Art', value: 'CustomIcon.blp' }] },
+]);
+assert.equal(parseSkinSections(changedQualified)[qualifiedId]['Art:hd:melee,V0'], undefined);
+const restoredQualified = writeVersionSkins(changedQualified, baseline30, 'hd', [
+  { unitId: qualifiedId, skinId: 'original', changes: [] },
+]);
+assert.equal(parseSkinSections(restoredQualified)[qualifiedId]['Art:hd:melee,V0'], baseline30[qualifiedId]['Art:hd:melee,V0']);
 
 // Optional read-only verification against an installed game. Never writes to the installation.
 if (process.argv[2]) {

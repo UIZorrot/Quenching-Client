@@ -247,26 +247,26 @@ body {
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  justify-content: safe center;
   flex: 1 1 0;
   height: auto;
   min-height: 0;
   width: 100%;
-  padding: 52px 28px 12px;
-  overflow: hidden;
+  padding: 62px 32px 28px;
+  overflow: auto;
   box-sizing: border-box;
 }
 
 .home-shell {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  grid-template-rows: minmax(0, 1fr);
-  gap: 18px;
+  align-items: stretch;
+  gap: 22px;
   width: 100%;
   max-width: 1400px;
-  margin-inline: auto;
-  flex: 1;
-  min-height: 0;
+  margin: auto;
+  flex: 0 0 auto;
   position: relative;
   z-index: 2;
 }
@@ -283,11 +283,9 @@ body {
 .home-hero {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  overflow-y: auto;
-  padding: clamp(18px, 2.2vw, 32px);
-  min-height: 0;
-  max-height: 100%;
+  justify-content: flex-start;
+  padding: clamp(24px, 3vw, 38px);
+  height: auto;
   background: linear-gradient(160deg, rgba(42, 30, 55, 0.82), rgba(17, 15, 28, 0.83) 73%);
 }
 
@@ -320,7 +318,7 @@ body {
   white-space: nowrap;
 }
 
-.home-brand { margin: 18px 0 22px; }
+.home-brand { margin: 34px 0 40px; }
 
 .home-logo-toggle {
   display: block;
@@ -382,7 +380,7 @@ body {
 .home-status-dot.is-ready { background: #8ecb96; box-shadow: 0 0 12px rgba(142, 203, 150, 0.65); }
 .home-hero-status strong { display: block; color: #f2dfb2; font-size: 14px; }
 .home-hero-status small { display: block; color: #aea6ae; font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
-.home-hero-footer { align-items: flex-start; flex-direction: column; margin-top: 20px; color: #b6aab1; font-size: 12px; }
+.home-hero-footer { align-items: flex-start; flex-direction: column; margin-top: auto; padding-top: 20px; color: #b6aab1; font-size: 12px; }
 .home-hero-actions { display: flex; flex-wrap: wrap; gap: 9px; width: 100%; }
 
 .home-install-actions button,
@@ -400,10 +398,10 @@ body {
 .home-hero-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
 
 .home-control-card {
-  padding: clamp(16px, 2vw, 26px);
-  min-height: 0;
-  max-height: 100%;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(22px, 2.5vw, 32px);
+  height: auto;
   scrollbar-color: rgba(223, 182, 80, 0.55) transparent;
 }
 
@@ -417,7 +415,7 @@ body {
 .home-update-notice button { flex-shrink: 0; min-height: 30px; padding: 5px 10px; border: 1px solid rgba(226, 191, 100, 0.55); border-radius: 6px; background: rgba(226, 191, 100, 0.13); color: #f5d47b; cursor: pointer; font: 600 11px/1.3 'Microsoft YaHei UI', sans-serif; }
 .home-update-notice button:hover:not(:disabled) { background: rgba(226, 191, 100, 0.24); }
 .home-update-notice button:disabled { opacity: 0.5; cursor: not-allowed; }
-.home-control-group { padding: 12px 0; border-top: 1px solid rgba(226, 191, 100, 0.15); }
+.home-control-group { padding: 15px 0; border-top: 1px solid rgba(226, 191, 100, 0.15); }
 .home-group-heading { align-items: baseline; margin-bottom: 12px; }
 .home-group-heading strong { color: #eed396; font-size: 13px; }
 .home-group-heading small { color: #a9a1aa; font-size: 11px; text-align: right; }
@@ -441,7 +439,7 @@ body {
 .home-option.is-active:disabled { opacity: 0.78; }
 .home-profile-note { display: block; margin-top: 10px; color: #a9a1aa; line-height: 1.5; }
 .home-space-warning { padding: 10px 12px; border: 1px solid rgba(255, 132, 113, 0.5); border-radius: 8px; background: rgba(165, 53, 43, 0.19); color: #ffb7a8; font-size: 12px; }
-.home-launch-row { align-items: end; position: sticky; bottom: 0; padding-top: 14px; border-top: 1px solid rgba(226, 191, 100, 0.15); background: linear-gradient(180deg, rgba(13, 13, 24, 0), rgba(13, 13, 24, 0.94) 28%); }
+.home-launch-row { align-items: end; margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(226, 191, 100, 0.15); }
 .home-install-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; font-size: 12px; }
 .home-install-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
 .home-launch-button.ant-btn { min-width: 164px; height: 48px; border: 1px solid #f4d37f; border-radius: 10px; background: linear-gradient(110deg, #f6d579, #dcae3e); color: #211807; font-weight: 800; font-size: 15px; box-shadow: 0 6px 20px rgba(218, 167, 55, 0.22); }
@@ -514,25 +512,24 @@ body {
   0% { transform: translateX(-130%); }
   100% { transform: translateX(320%); }
 }
-.home-site-link { position: relative; z-index: 3; flex: none; margin-top: 8px; text-align: center; font-size: 11px; }
+.home-site-link { position: relative; z-index: 3; flex: 0 0 auto; width: 100%; max-width: 1400px; margin-top: 16px; text-align: center; font-size: 11px; }
 .home-site-link button { text-decoration: none; opacity: 0.76; }
 
-@media (max-width: 960px), (max-height: 760px) {
-  .home-content { padding: 46px 16px 8px; }
+@media (max-width: 960px), (max-height: 620px) {
+  .home-content { padding: 50px 18px 20px; }
   .home-shell { gap: 12px; }
-  .home-hero { min-height: 0; }
-  .home-brand { margin: 12px 0; }
-  .home-control-card { padding: 14px; }
-  .home-control-group { padding: 8px 0; }
+  .home-brand { margin: 18px 0; }
+  .home-control-card { padding: 18px; }
+  .home-control-group { padding: 10px 0; }
 }
 
 @media (max-width: 760px) {
-  .home-shell { display: block; overflow-y: auto; }
-  .home-hero { min-height: 0; margin-bottom: 12px; }
+  .home-shell { display: block; }
+  .home-hero { margin-bottom: 12px; }
   .home-brand { display: flex; align-items: center; gap: 16px; margin: 16px 0; }
   .home-logo-toggle { width: 66px; height: 66px; flex: none; }
   .home-brand h1 { margin-top: 0; }
-  .home-control-card { overflow-y: auto; }
+  .home-control-card { overflow: visible; }
 }
 
 /* 新闻面板 */

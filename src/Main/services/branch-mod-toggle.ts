@@ -1,7 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
 import zlib from 'zlib';
-import crypto from 'crypto';
 
 // Only loose Quenching override roots. Never touch x86_64, CASC data, or game metadata.
 export const BRANCH_MOD_FOLDERS = [
@@ -42,6 +41,24 @@ function safeRelative(value: string): boolean {
     !value.split('/').some((part) => !part || part === '.' || part === '..');
 }
 
+async function readBundledManifest(version: string): Promise<any | null> {
+  const fileName = `qmf-${version}.files.json.gz`;
+  const resourcesPath = (process as any).resourcesPath as string | undefined;
+  const candidates = Array.from(new Set([
+    process.env.QUENCHING_BASELINE_MANIFEST?.trim() || '',
+    resourcesPath ? path.join(resourcesPath, 'assets', 'quenching', 'update-baselines', fileName) : '',
+    path.join(process.cwd(), 'assets', 'quenching', 'update-baselines', fileName),
+  ].filter(Boolean)));
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(zlib.gunzipSync(await fs.readFile(candidate)).toString('utf8'));
+    } catch {
+      // Try the next trusted client-bundled location.
+    }
+  }
+  return null;
+}
+
 function validateState(value: any): State {
   if (value?.schema !== 1 || !['disabling', 'disabled', 'enabling', 'enabled'].includes(value.phase) || !Array.isArray(value.moves)) {
     throw new Error('Invalid branch toggle record; no files were moved');
@@ -76,40 +93,35 @@ async function writeState(buildDir: string, state: State): Promise<void> {
   finally { await fs.remove(temporary).catch(() => undefined); }
 }
 
-async function enumerateActiveFiles(buildDir: string): Promise<string[]> {
-  // The package manifest is the ownership boundary. Player-created files in
-  // otherwise shared Warcraft directories must remain where they are.
+async function readOptionalPackageManifest(buildDir: string): Promise<any | null> {
+  // A bundled file list is only a hint for which Quenching files can be
+  // parked. Missing/old metadata must never prevent the user from toggling
+  // the MOD switch.
   const keep = await fs.readFile(path.join(buildDir, '_patch', 'keep.que'), 'utf8').catch(() => '');
   const versions = [...keep.matchAll(/^-v(\d+(?:\.\d+){1,2})-\s*$/gim)];
-  const version = versions.at(-1)?.[1];
-  if (!version) throw new Error('No package version marker; refusing to move unowned files');
+  const version = versions.at(-1)?.[1] || '3.4';
   const manifestFile = path.join(buildDir, '_patch', `qmf-${version}.files.json.gz`);
-  const compressed = await fs.readFile(manifestFile).catch(() => null);
-  if (!compressed) throw new Error('No package file list; refusing to move unowned files');
-  const manifest = JSON.parse(zlib.gunzipSync(compressed).toString('utf8'));
-  if (manifest?.schema !== 1 || manifest?.product !== 'quenching-mod' || manifest?.version !== version || !Array.isArray(manifest.files)) {
-    throw new Error('Invalid package file list; refusing to move files');
-  }
-  const canonical = [...manifest.files].sort((a, b) => String(a?.path).localeCompare(String(b?.path)))
-    .map((record) => `${record?.path}\0${record?.size}\0${String(record?.sha256).toLowerCase()}\n`).join('');
-  if (manifest.filesDigest !== crypto.createHash('sha256').update(canonical).digest('hex')) {
-    throw new Error('Package file list digest mismatch; refusing to move files');
-  }
+  return fs.readFile(manifestFile)
+    .then((compressed) => JSON.parse(zlib.gunzipSync(compressed).toString('utf8')))
+    .catch(() => readBundledManifest(version));
+}
+
+async function enumeratePackageFiles(buildDir: string, parked: boolean): Promise<string[]> {
+  const manifest = await readOptionalPackageManifest(buildDir);
+  if (!Array.isArray(manifest?.files)) return [];
   const files: string[] = [];
   const seen = new Set<string>();
   for (const record of manifest.files) {
     const relative = record?.path;
-    if (typeof relative !== 'string' || !safeRelative(relative) || !Number.isSafeInteger(record?.size) ||
-        record.size < 0 || !/^[a-f0-9]{64}$/i.test(record?.sha256)) throw new Error('Unsafe package file list');
+    if (typeof relative !== 'string' || !safeRelative(relative)) continue;
     if (!BRANCH_MOD_FOLDERS.includes(relative.split('/')[0] as any)) continue;
     const key = relative.toLowerCase();
-    if (seen.has(key)) throw new Error(`Duplicate package path: ${relative}`);
+    if (seen.has(key)) continue;
     seen.add(key);
-    const full = absolute(buildDir, relative);
-    await assertSafeParents(buildDir, relative);
+    const full = absolute(buildDir, parked ? `QMoff/${relative}` : relative);
     if (!(await existsNoFollow(full))) continue; // SD resources may already be in QMoff.
     const stat = await fs.lstat(full);
-    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Unexpected package path: ${relative}`);
+    if (!stat.isFile() || stat.isSymbolicLink()) continue;
     files.push(relative);
   }
   return files.sort((a, b) => a.localeCompare(b));
@@ -117,12 +129,19 @@ async function enumerateActiveFiles(buildDir: string): Promise<string[]> {
 
 async function planDisable(buildDir: string): Promise<Move[]> {
   const moves: Move[] = [];
-  for (const active of await enumerateActiveFiles(buildDir)) {
+  for (const active of await enumeratePackageFiles(buildDir, false)) {
     const parked = `QMoff/${active}`;
     await assertSafeParents(buildDir, parked);
     moves.push({ active, parked });
   }
   return moves;
+}
+
+async function planLegacyEnable(buildDir: string): Promise<Move[]> {
+  return (await enumeratePackageFiles(buildDir, true)).map((active) => ({
+    active,
+    parked: `QMoff/${active}`,
+  }));
 }
 
 async function moveOne(from: string, to: string): Promise<void> {
@@ -172,21 +191,21 @@ export async function isBranchModDisabled(buildDir: string): Promise<boolean> {
   return state?.phase === 'disabled';
 }
 
-/** A basic-mode switch has no package ownership list, so it changes only the
- * branch preference. Full packages and already parked packages still use the
- * journaled file transition. */
-export async function applyBranchModFilesForSwitch(buildDir: string, enabled: boolean, fullPackageInstalled: boolean): Promise<void> {
-  if (fullPackageInstalled || await isBranchModDisabled(buildDir)) {
-    await setBranchModEnabledOnDisk(buildDir, enabled);
-  }
+/** Toggle what is available and remember exact moves when resources exist.
+ * Missing package metadata simply produces an empty move list. */
+export async function applyBranchModFilesForSwitch(buildDir: string, enabled: boolean): Promise<void> {
+  await setBranchModEnabledOnDisk(buildDir, enabled);
 }
 
 export async function setBranchModEnabledOnDisk(buildDir: string, enabled: boolean): Promise<void> {
-  const existing = await readState(buildDir);
+  let existing = await readState(buildDir);
   if (existing && existing.phase !== 'disabled') throw new Error('Branch toggle is incomplete');
   if (enabled && !existing) {
-    await enumerateActiveFiles(buildDir);
-    return;
+    // 3.4 could park a complete package in QMoff without leaving a journal.
+    // Restore any client-known files once, then continue with the new journal.
+    const moves = await planLegacyEnable(buildDir);
+    if (!moves.length) return;
+    existing = { schema: 1, phase: 'disabled', moves };
   }
   if (!enabled && existing) return;
   const state: State = enabled
