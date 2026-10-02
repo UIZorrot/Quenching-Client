@@ -58,7 +58,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ open, onClose }) => {
     },
     {
       title: t('about.category.translation'),
-      members: '蓝蓝子 / Andreiki / AzashBR / Azqswxzeman沐恩大军 / 远古杀戮者 / 成都第二菜包子 / yhx1129 / Allen / Su夜樱梦琉 / 安哥唯是我 / bili_54272497996 / 王师天下 / Tomcat沉诣 / ThomasDetective / eitac / 茶几先生丶 / 小生意気なロリコン / SunMoonman / LoreCraft / 蓝色的天空之意 / icywreck / MeantIt / 老白人生 / Corgiloveartisanyoung / 略嗨PuTonSpeeD / Yang大侠不迟到 / 慕雪时晴 / 超魔导师马哈德 / 凡尘不动我心 / 中华唯我霸天健 / DandLX / 阿祁_51 / 捉奸大师PetersJulian / DanielbimFreelancer / Euljan-Nick / 呢喃的寻梦者老白 / 憨憨人士 / 大青蛙 / 杨声耀 / 带着铅笔去流浪 / 杰 / jerry / kusanagi浮幽者叶羽星辰 / 傲瑰 / 万事屋银银银酱 / 彼岸无垠 / 不看不看-辉耀狂战'
+      members: '蓝蓝子 / Andreiki / Antraxis / AzashBR / Azqswxzeman沐恩大军 / 远古杀戮者 / 成都第二菜包子 / yhx1129 / Allen / Su夜樱梦琉 / 安哥唯是我 / bili_54272497996 / 王师天下 / Tomcat沉诣 / ThomasDetective / eitac / 茶几先生丶 / 小生意気なロリコン / SunMoonman / LoreCraft / 蓝色的天空之意 / icywreck / MeantIt / 老白人生 / Corgiloveartisanyoung / 略嗨PuTonSpeeD / Yang大侠不迟到 / 慕雪时晴 / 超魔导师马哈德 / 凡尘不动我心 / 中华唯我霸天健 / DandLX / 阿祁_51 / 捉奸大师PetersJulian / DanielbimFreelancer / Euljan-Nick / 呢喃的寻梦者老白 / 憨憨人士 / 大青蛙 / 杨声耀 / 带着铅笔去流浪 / 杰 / jerry / kusanagi浮幽者叶羽星辰 / 傲瑰 / 万事屋银银银酱 / 彼岸无垠 / 不看不看-辉耀狂战'
     }
   ];
 
