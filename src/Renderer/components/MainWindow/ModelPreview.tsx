@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../utils/i18n';
+import { describePreviewError, resolvePreviewStatus, type PreviewStatus } from './preview-status';
 
 interface ModelPreviewProps {
   modelPath?: string;
@@ -15,22 +16,15 @@ interface ModelPreviewProps {
   paused?: boolean;
 }
 function decode(value: string) { return Uint8Array.from(atob(value), c => c.charCodeAt(0)); }
-function previewError(error: unknown, t: (key: string, fallback?: string) => string) {
-  const detail = error instanceof Error ? error.message : String(error);
-  if (/no handler registered|readModelResource is not a function/i.test(detail))
-    return t('skin.panel.model.notReady', '模型预览服务未就绪，请完全退出并重新启动客户端');
-  if (/chunkloaderror|loading chunk/i.test(detail))
-    return t('skin.panel.model.chunk', '模型渲染模块未加载，请重新启动客户端');
-  return t('skin.panel.model.loadFailed', '模型加载失败：{{detail}}').replace(/\{\{detail\}\}/g, detail);
-}
 
 export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback, alt, scale = 1, className, enabled = true, artSet = 'hd', teamColor = 8, transparent = false, viewDistance = 1, paused = false }) => {
   const { t } = useTranslation();
   const host = useRef<HTMLDivElement>(null);
   const suspended = useRef(paused);
-  const [state, setState] = useState('');
+  const [status, setStatus] = useState<PreviewStatus | null>(null);
+  const state = resolvePreviewStatus(status, t);
   const [isLoadingModel, setIsLoadingModel] = useState(true);
-  const showState = (text: string) => { setState(text); setIsLoadingModel(false); };
+  const showState = (next: PreviewStatus) => { setStatus(next); setIsLoadingModel(false); };
   const [ready, setReady] = useState(false);
   const [retry, setRetry] = useState(0);
   const [placeholder, setPlaceholder] = useState<'model' | 'logo' | 'none'>('model');
@@ -48,7 +42,7 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback,
     canvas.setAttribute('aria-label', alt);
     Object.assign(canvas.style, { width: '100%', height: '100%', position: 'absolute', inset: '0', opacity: '0', cursor: 'grab' });
     host.current?.appendChild(canvas);
-    setReady(false); setState(''); setIsLoadingModel(true);
+    setReady(false); setStatus(null); setIsLoadingModel(true);
     const read = async (path: string, basePath?: string) => {
       const resource = await window.electronAPI.readModelResource(path, basePath, mode);
       return { bytes: decode(resource.data), resolvedPath: resource.resolvedPath };
@@ -63,8 +57,8 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback,
     canvas.onpointerup = () => { lastX = undefined; };
     canvas.onpointercancel = () => { lastX = undefined; };
     (async () => {
-      if (!enabled) { showState(t('skin.panel.model.unavailableSkin', '当前皮肤的模型预览暂不可用')); return; }
-      if (!modelPath) { showState(t('skin.panel.model.noPath', '未找到这个单位的模型路径')); return; }
+      if (!enabled) { showState({ key: 'skin.panel.model.unavailableSkin', fallback: '当前皮肤的模型预览暂不可用' }); return; }
+      if (!modelPath) { showState({ key: 'skin.panel.model.noPath', fallback: '未找到这个单位的模型路径' }); return; }
       try {
         if (typeof window.electronAPI?.readModelResource !== 'function')
           throw new Error('readModelResource is not a function');
@@ -78,7 +72,7 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback,
         preview = await createPreview(canvas, source, read, { scale, signal: abort.signal, teamColor, transparent, viewDistance });
         if (abort.signal.aborted) { preview.dispose(); return; }
         canvas.style.opacity = '1'; setReady(true);
-        showState(preview.missing.length ? t('skin.panel.model.missing', '缺少 {{count}} 项资源').replace(/\{\{count\}\}/g, String(preview.missing.length)) : Object.values(preview.omitted).some(Boolean) ? t('skin.panel.model.liveSimplified', '实时模型 · 简化特效/面部') : t('skin.panel.model.live', '实时模型'));
+        showState(preview.missing.length ? { key: 'skin.panel.model.missing', fallback: '缺少 {{count}} 项资源', params: { count: String(preview.missing.length) } } : Object.values(preview.omitted).some(Boolean) ? { key: 'skin.panel.model.liveSimplified', fallback: '实时模型 · 简化特效/面部' } : { key: 'skin.panel.model.live', fallback: '实时模型' });
         let previous = performance.now();
         const step = (now: number) => {
           if (abort.signal.aborted) return;
@@ -89,12 +83,12 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback,
               previous = now;
             }
           }
-          catch (error) { console.warn('[ModelPreview]', error); setReady(false); showState(t('skin.panel.model.renderFailed', '模型渲染失败：{{detail}}').replace(/\{\{detail\}\}/g, error instanceof Error ? error.message : String(error))); canvas.style.opacity = '0'; preview.dispose(); return; }
+          catch (error) { console.warn('[ModelPreview]', error); setReady(false); showState({ key: 'skin.panel.model.renderFailed', fallback: '模型渲染失败：{{detail}}', params: { detail: error instanceof Error ? error.message : String(error) } }); canvas.style.opacity = '0'; preview.dispose(); return; }
           frame = requestAnimationFrame(step);
         };
         frame = requestAnimationFrame(step);
       } catch (error) {
-        if (!abort.signal.aborted) { console.warn('[ModelPreview]', error); showState(previewError(error, t)); }
+        if (!abort.signal.aborted) { console.warn('[ModelPreview]', error); showState(describePreviewError(error)); }
       }
     })();
     return () => { abort.abort(); cancelAnimationFrame(frame); observer.disconnect(); preview?.dispose(); canvas.remove(); };
