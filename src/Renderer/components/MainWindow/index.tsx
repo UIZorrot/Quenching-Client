@@ -655,7 +655,7 @@ export const MainWindow: React.FC = () => {
         } catch {}
       }
       if (!valid) {
-        message.warning('请先在首页设置正确的魔兽争霸 III 目录，再打开涂装。');
+        message.warning(t('skin.panel.needGamePath', '请先在首页设置正确的魔兽争霸 III 目录，再打开涂装。'));
         void detectInstallations();
         return;
       }
