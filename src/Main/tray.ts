@@ -15,6 +15,7 @@ app.whenReady().then(() => {
 			'pt-BR': { show: 'Mostrar janela principal', exit: 'Sair' },
 			'ru-RU': { show: 'Показать главное окно', exit: 'Выход' },
 			'es-ES': { show: 'Mostrar ventana principal', exit: 'Salir' },
+			'pl-PL': { show: 'Pokaż okno główne', exit: 'Zakończ' },
 		};
 		const { show: showLabel, exit: exitLabel } = labels[lang] || labels['zh-CN'];
 		const tooltip = lang === 'zh-CN' ? '淬火试炼 - Quenching Mod Client' : 'Quenching Mod Client';

@@ -11,7 +11,7 @@ interface AppConfig {
     gameChannel: GameChannel;
     channelModEnabled: Partial<Record<GameChannel, boolean>>;
     lastFullPackageBytes: number;
-    language: 'zh-CN' | 'en-US' | 'ko-KR' | 'fr-FR' | 'pt-BR' | 'ru-RU' | 'es-ES';
+    language: 'zh-CN' | 'en-US' | 'ko-KR' | 'fr-FR' | 'pt-BR' | 'ru-RU' | 'es-ES' | 'pl-PL';
     theme: string;
     // Mods
     antiHarmony: boolean;
@@ -53,7 +53,7 @@ const schema = {
     },
     language: {
         type: 'string',
-        enum: ['zh-CN', 'en-US', 'ko-KR', 'fr-FR', 'pt-BR', 'ru-RU', 'es-ES'],
+        enum: ['zh-CN', 'en-US', 'ko-KR', 'fr-FR', 'pt-BR', 'ru-RU', 'es-ES', 'pl-PL'],
         default: 'zh-CN'
     },
     theme: {
