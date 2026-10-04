@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { CloseOutlined } from '@ant-design/icons';
 import { useSound } from '../../hooks/useSound';
 
 interface OverlayModalProps {
@@ -128,7 +129,7 @@ export const OverlayModal: React.FC<OverlayModalProps> = ({
             height: '36px',
             cursor: 'pointer',
             color: '#d4af37',
-            fontSize: '24px',
+            fontSize: '16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -148,7 +149,7 @@ export const OverlayModal: React.FC<OverlayModalProps> = ({
             e.currentTarget.style.color = '#d4af37';
           }}
         >
-          ×
+          <CloseOutlined />
         </div>
       </div>
     </div>,
