@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Button, Space, message } from 'antd';
+import { Button, Modal, Space, message } from 'antd';
 import { useTranslation } from '../../utils/i18n';
 import { OverlayModal } from './OverlayModal';
 import { useSound } from '../../hooks/useSound';
 import { useGlobalLoading } from '../GlobalLoadingProvider';
 import { CampaignPanel } from './CampaignPanel';
+import { CampaignUnlockSteps, playUnlockCopyProgress } from './CampaignUnlockGuide';
 
 interface CampaignModalProps {
   open: boolean;
@@ -46,17 +47,52 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
     }
   };
 
-  const unlockCampaign = async () => {
-    playSmall();
+  const runCampaignUnlock = async (mapName?: string) => {
     try {
+      if (mapName) {
+        await playUnlockCopyProgress(showLoading, {
+          copying: t('campaign.unlock.copying'),
+          copied: t('campaign.unlock.copied'),
+          target: t('campaign.unlock.target'),
+        });
+      }
       showLoading(t('msg.launching'));
-      await window.electronAPI?.unlockCampaign();
+      await window.electronAPI?.unlockCampaign(mapName);
       message.success(t('campaign.unlock.success'));
     } catch (e: any) {
       message.error(e?.message || t('msg.game.start.failed'));
     } finally {
       hideLoading();
     }
+  };
+
+  const unlockCampaign = async () => {
+    playSmall();
+    const unlockMode = await window.electronAPI?.getCampaignUnlockMode?.().catch(() => 'direct' as const);
+    if (unlockMode !== 'battlenet') {
+      await runCampaignUnlock();
+      return;
+    }
+    const mapName = t('campaign.unlock.mapName');
+    Modal.confirm({
+      centered: true,
+      title: t('campaign.unlock.title'),
+      content: (
+        <CampaignUnlockSteps
+          lead={t('campaign.unlock.steps.lead')}
+          steps={[
+            t('campaign.unlock.steps.singlePlayer'),
+            t('campaign.unlock.steps.customGame'),
+            t('campaign.unlock.steps.folder'),
+            t('campaign.unlock.steps.map').replace('{{name}}', () => mapName),
+            t('campaign.unlock.steps.start'),
+          ]}
+        />
+      ),
+      okText: t('main.btn.start'),
+      cancelText: t('btn.cancel'),
+      onOk: () => runCampaignUnlock(mapName),
+    });
   };
 
   const sectionTitle: React.CSSProperties = {

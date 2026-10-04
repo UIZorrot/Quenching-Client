@@ -50,23 +50,30 @@ async function findBattleNetExe(): Promise<string | null> {
 }
 
 /**
+ * Battle.net exe that can start this Warcraft III install, or null (non-Windows, Battle.net missing,
+ * or the configured folder is not the install Battle.net manages).
+ */
+export async function resolveBattleNetExe(gamePath: string): Promise<string | null> {
+    if (process.platform !== 'win32') return null;
+    const registeredWar3 = await readInstallLocation('Warcraft III');
+    if (!registeredWar3 || !isSameWar3Root(gamePath, registeredWar3)) {
+        console.warn('[GameLauncher] Configured Warcraft III folder is not the Battle.net install; using direct launch');
+        return null;
+    }
+    const battleNetExe = await findBattleNetExe();
+    if (!battleNetExe) console.warn('[GameLauncher] Battle.net app not found; using direct launch');
+    return battleNetExe;
+}
+
+/**
  * Launch retail Warcraft III through the Battle.net app so the game reuses the app's signed-in session.
  * A direct `Warcraft III.exe -launch` start shows the in-game login (and authenticator) on every launch.
  * Mod files still load: they rely on the "Allow Local Files" registry value, not on the launch path.
  * Returns false (caller falls back to a direct start) when Battle.net is missing or manages another install.
  */
 export async function launchViaBattleNet(gamePath: string): Promise<boolean> {
-    if (process.platform !== 'win32') return false;
-    const registeredWar3 = await readInstallLocation('Warcraft III');
-    if (!registeredWar3 || !isSameWar3Root(gamePath, registeredWar3)) {
-        console.warn('[GameLauncher] Configured Warcraft III folder is not the Battle.net install; using direct launch');
-        return false;
-    }
-    const battleNetExe = await findBattleNetExe();
-    if (!battleNetExe) {
-        console.warn('[GameLauncher] Battle.net app not found; using direct launch');
-        return false;
-    }
+    const battleNetExe = await resolveBattleNetExe(gamePath);
+    if (!battleNetExe) return false;
     console.log(`Launching game via Battle.net: ${battleNetExe}`);
     const { args, options } = buildBattleNetLaunch(battleNetExe);
     spawn(battleNetExe, args, options).unref();

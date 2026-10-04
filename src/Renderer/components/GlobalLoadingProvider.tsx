@@ -3,15 +3,15 @@ import ReactDOM from 'react-dom';
 
 interface GlobalLoadingState {
   visible: boolean;
-  message: string;
+  message: ReactNode;
   percent?: number;
   detail?: string;
 }
 
 interface GlobalLoadingContextType {
-  showLoading: (message: string, percent?: number, detail?: string) => void;
+  showLoading: (message: ReactNode, percent?: number, detail?: string) => void;
   hideLoading: () => void;
-  updateLoading: (message: string, percent?: number, detail?: string) => void;
+  updateLoading: (message: ReactNode, percent?: number, detail?: string) => void;
 }
 
 const GlobalLoadingContext = createContext<GlobalLoadingContextType | undefined>(undefined);
@@ -30,7 +30,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     message: '',
   });
 
-  const showLoading = useCallback((message: string, percent?: number, detail?: string) => {
+  const showLoading = useCallback((message: ReactNode, percent?: number, detail?: string) => {
     setLoadingState({
       visible: true,
       message,
@@ -43,7 +43,7 @@ export const GlobalLoadingProvider: React.FC<{ children: ReactNode }> = ({ child
     setLoadingState(prev => prev.visible ? { ...prev, visible: false } : prev);
   }, []);
 
-  const updateLoading = useCallback((message: string, percent?: number, detail?: string) => {
+  const updateLoading = useCallback((message: ReactNode, percent?: number, detail?: string) => {
     setLoadingState(prev => {
       if (!prev.visible) return prev;
       return { ...prev, message, percent, detail: detail === undefined ? prev.detail : detail };

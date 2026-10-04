@@ -99,7 +99,8 @@ interface ElectronAPI {
   launchGame: (executablePath?: string) => Promise<boolean>;
   ensureLocalFiles: () => Promise<boolean>;
   launchMap: (mapPath: string, difficulty: number) => Promise<boolean>;
-  unlockCampaign: () => Promise<boolean>;
+  unlockCampaign: (mapName?: string) => Promise<boolean>;
+  getCampaignUnlockMode: () => Promise<'battlenet' | 'direct'>;
   extractCampaignW3n: (w3nPath: string) => Promise<{
     success: boolean;
     outputDir: string;

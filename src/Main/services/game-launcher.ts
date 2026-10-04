@@ -5,7 +5,9 @@ import fs from 'fs-extra';
 import { configManager } from './config-manager';
 import { AssetSyncService } from './asset-sync';
 import { syncBundledResourceFiles } from './managed-resource-files';
-import { launchViaBattleNet } from './battle-net-launcher';
+import { app } from 'electron';
+import { launchViaBattleNet, resolveBattleNetExe } from './battle-net-launcher';
+import { writeMapName } from './map-name';
 
 async function assertSelectedGameBuild(gamePath: string): Promise<void> {
     if (!(await hasGameChannelDirectory(gamePath, getSelectedGameChannel()))) {
@@ -207,11 +209,18 @@ export class GameLauncher {
         }
     }
 
+    /** 'battlenet' when the unlock map is started by the player from Custom Game, 'direct' for `-loadfile`. */
+    static async getCampaignUnlockMode(): Promise<'battlenet' | 'direct'> {
+        const gamePath = configManager.get('war3Path');
+        if (!gamePath || getSelectedGameChannel() !== 'retail') return 'direct';
+        return (await resolveBattleNetExe(gamePath)) ? 'battlenet' : 'direct';
+    }
+
     /**
      * Unlock official campaign progress by launching the built-in cfix.w3x map
      * (same flow as the legacy client: mapdiff 1 + WorldEdit profile + fixedseed).
      */
-    static async unlockCampaign(): Promise<boolean> {
+    static async unlockCampaign(mapName?: string): Promise<boolean> {
         const isMac = process.platform === 'darwin';
         const gamePath = configManager.get('war3Path');
 
@@ -257,6 +266,17 @@ export class GameLauncher {
         const sourceMap = path.join(assetsDir, 'quenching', 'camp', 'cfix.w3x');
         if (!(await fs.pathExists(sourceMap))) {
             throw new Error(`Campaign unlock map not found: ${sourceMap}`);
+        }
+
+        // `-loadfile` cannot go through Battle.net, and a direct start loses the map behind the in-game login.
+        // Put the map in the user maps folder instead; the player starts it from Custom Game.
+        const battleNetExe = getSelectedGameChannel() === 'retail' ? await resolveBattleNetExe(gamePath) : null;
+        if (battleNetExe) {
+            const userMap = path.join(app.getPath('documents'), 'Warcraft III', 'Maps', 'Quenching', 'cfix.w3x');
+            await fs.copy(sourceMap, userMap, { overwrite: true });
+            if (mapName) await writeMapName(userMap, mapName);
+            console.log(`Campaign unlock map copied to ${userMap}; launching via Battle.net`);
+            return launchViaBattleNet(gamePath);
         }
 
         const exeDir = path.dirname(exePath);

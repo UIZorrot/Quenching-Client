@@ -77,9 +77,11 @@ export function registerLaunchHandlers() {
         }
     });
 
-    ipcMain.handle('campaign:unlock', async () => {
+    ipcMain.handle('campaign:unlock-mode', async () => GameLauncher.getCampaignUnlockMode());
+
+    ipcMain.handle('campaign:unlock', async (event, mapName?: string) => {
         try {
-            return await GameLauncher.unlockCampaign();
+            return await GameLauncher.unlockCampaign(typeof mapName === 'string' ? mapName.slice(0, 120) : undefined);
         } catch (e: any) {
             console.error(e);
             throw e;
