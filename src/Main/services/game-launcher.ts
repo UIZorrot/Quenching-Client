@@ -5,6 +5,7 @@ import fs from 'fs-extra';
 import { configManager } from './config-manager';
 import { AssetSyncService } from './asset-sync';
 import { syncBundledResourceFiles } from './managed-resource-files';
+import { launchViaBattleNet } from './battle-net-launcher';
 
 async function assertSelectedGameBuild(gamePath: string): Promise<void> {
     if (!(await hasGameChannelDirectory(gamePath, getSelectedGameChannel()))) {
@@ -45,6 +46,10 @@ export class GameLauncher {
             throw new Error("Warcraft III path is not configured or does not exist.");
         }
         await assertSelectedGameBuild(gamePath);
+
+        if (!exePath && getSelectedGameChannel() === 'retail' && await launchViaBattleNet(gamePath)) {
+            return true;
+        }
 
         if (!exePath) {
             if (isMac) {

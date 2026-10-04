@@ -8,6 +8,7 @@
 		"test:de-model": "tsx scripts/test-de-model.ts",
 		"test:i18n": "node scripts/check-i18n.mjs",
 		"test:preview-status": "tsx scripts/test-preview-status.ts",
+		"test:battle-net-launch": "tsx scripts/test-battle-net-launch.ts",
 		"start": "tsx scripts/webpack.start/index.ts 4410",
 		"electron": "tsx scripts/electron.start/index.ts",
 		"pack": "tsx scripts/webpack.build production",
