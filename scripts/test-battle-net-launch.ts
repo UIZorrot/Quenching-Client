@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { buildBattleNetLaunch, isSameWar3Root } from '../src/Main/services/battle-net-launcher';
+import { buildBattleNetLaunch, isSameWar3Root, spawnDetached } from '../src/Main/services/battle-net-launcher';
 
 // Battle.net only reuses its session for the install it manages.
 assert.equal(isSameWar3Root('C:\\Program Files (x86)\\Warcraft III', 'C:\\Program Files (x86)\\Warcraft III\\'), true);
@@ -23,5 +23,9 @@ if (process.platform === 'win32') {
     assert.equal(result.status, 0, result.stderr);
     assert.deepEqual(JSON.parse(result.stdout), ['--exec=launch W3']);
 }
+
+// A missing exe resolves false (caller falls back) instead of an unhandled 'error' event.
+assert.equal(await spawnDetached('C:\\missing\\Battle.net.exe', [], { detached: true, stdio: 'ignore' }), false);
+assert.equal(await spawnDetached(process.execPath, ['-e', ''], { detached: true, stdio: 'ignore' }), true);
 
 console.log('Battle.net launch test passed');

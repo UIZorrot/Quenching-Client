@@ -276,7 +276,7 @@ export class GameLauncher {
             await fs.copy(sourceMap, userMap, { overwrite: true });
             if (mapName) await writeMapName(userMap, mapName);
             console.log(`Campaign unlock map copied to ${userMap}; launching via Battle.net`);
-            return launchViaBattleNet(gamePath);
+            if (await launchViaBattleNet(gamePath)) return true;
         }
 
         const exeDir = path.dirname(exePath);

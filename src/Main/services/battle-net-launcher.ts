@@ -69,13 +69,29 @@ export async function resolveBattleNetExe(gamePath: string): Promise<string | nu
  * Launch retail Warcraft III through the Battle.net app so the game reuses the app's signed-in session.
  * A direct `Warcraft III.exe -launch` start shows the in-game login (and authenticator) on every launch.
  * Mod files still load: they rely on the "Allow Local Files" registry value, not on the launch path.
- * Returns false (caller falls back to a direct start) when Battle.net is missing or manages another install.
+ * Returns false (caller falls back to a direct start) when Battle.net is missing, manages another install,
+ * or fails to start.
  */
 export async function launchViaBattleNet(gamePath: string): Promise<boolean> {
     const battleNetExe = await resolveBattleNetExe(gamePath);
     if (!battleNetExe) return false;
     console.log(`Launching game via Battle.net: ${battleNetExe}`);
     const { args, options } = buildBattleNetLaunch(battleNetExe);
-    spawn(battleNetExe, args, options).unref();
-    return true;
+    return spawnDetached(battleNetExe, args, options);
+}
+
+/** Start a detached process; resolves false instead of crashing when the exe is missing or blocked. */
+export function spawnDetached(command: string, args: string[], options: SpawnOptions): Promise<boolean> {
+    const child = spawn(command, args, options);
+    // spawn reports a missing or blocked exe through the async 'error' event, not a throw.
+    return new Promise<boolean>((resolve) => {
+        child.once('spawn', () => {
+            child.unref();
+            resolve(true);
+        });
+        child.once('error', (error) => {
+            console.warn(`[GameLauncher] ${command} failed to start; using direct launch`, error);
+            resolve(false);
+        });
+    });
 }
