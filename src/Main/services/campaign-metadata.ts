@@ -28,7 +28,8 @@ const localeFolderByLanguage: Record<string, string> = {
     'fr-FR': 'frFR.w3mod',
     'pt-BR': 'ptBR.w3mod',
     'ru-RU': 'ruRU.w3mod',
-    'es-ES': 'esES.w3mod'
+    'es-ES': 'esES.w3mod',
+    'pl-PL': 'plPL.w3mod'
 };
 
 function readInt(buffer: Buffer, state: { offset: number }): number {
