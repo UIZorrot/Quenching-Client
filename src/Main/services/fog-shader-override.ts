@@ -1,6 +1,7 @@
 import fs from 'fs-extra';
 import path from 'path';
 import type { ModProfile } from '../../shared/mod-profile';
+import { isHdShaderPack } from '../../shared/mod-profile';
 import { normalizeBrightnessLevel } from './dnc-lighting';
 
 export const OBJECT_SHADER_FILES = [
@@ -43,7 +44,7 @@ export function pickFogVariant(
     lighting: unknown,
     brightnessLevel: unknown,
 ): string | null {
-    if (profile.graphics !== 'hd' || profile.shaderPack !== 'shaders-300-hd') return null;
+    if (profile.graphics !== 'hd' || !['shaders-300-hd', 'shaders-300-legacy-hd'].includes(profile.shaderPack)) return null;
     const level = normalizeBrightnessLevel(brightnessLevel);
     const mode = typeof lighting === 'string' && lighting ? lighting : 'standard';
     if (mode === 'battle') return level >= 4 ? 'brightness_3' : 'brightness_2';
@@ -70,7 +71,7 @@ export async function applyPostProcessingShaders(
     if (modSettings?.postProcessing === false) return;
     const variant = pickFogVariant(profile, modSettings?.lighting, modSettings?.lightingBrightness);
     if (!variant) return;
-    const sourceDir = path.join(quenchingDir, 'shaders', 'fog_shaders', variant, 'ps');
+    const sourceDir = path.join(quenchingDir, 'shaders', profile.shaderPack === 'shaders-300-legacy-hd' ? 'fog_shaders-legacy' : 'fog_shaders', variant, 'ps');
     for (const file of FOG_FILES) {
         const source = path.join(sourceDir, file);
         if (!(await fs.pathExists(source))) throw new Error(`Fog shader missing: ${source}`);
@@ -89,5 +90,15 @@ export async function applyShaderToggles(
     if (modSettings?.objectShader === false) {
         for (const file of OBJECT_SHADER_FILES) await fs.remove(path.join(shadersDir, file));
     }
-    await applyPostProcessingShaders(shadersDir, quenchingDir, profile, modSettings);
+  await applyPostProcessingShaders(shadersDir, quenchingDir, profile, modSettings);
+}
+
+/** Apply the compatibility override last, without resurrecting disabled glow. */
+export async function applyIntelAmdBloomForProfile(
+    shadersDir: string, shaderSource: string, profile: ModProfile, modSettings: any,
+): Promise<void> {
+    if (modSettings?.useIntelAmdShaderFix !== true || modSettings?.postProcessingGlow === false) return;
+    const source = path.join(shaderSource, ...(isHdShaderPack(profile.shaderPack) ? [] : ['ps']), 'bloomextract.bls');
+    if (!await fs.pathExists(source)) throw new Error(`Intel/AMD bloom fix resource missing: ${source}`);
+    await fs.copy(source, path.join(shadersDir, 'ps', 'bloomextract.bls'), { overwrite: true });
 }

@@ -8,6 +8,7 @@ import { BrowserWindow, BrowserWindowConstructorOptions, screen } from 'electron
 import path from 'path';
 import net from 'node:net';
 import { startupTelemetry } from './services/startup-telemetry';
+import { scheduleStartupRendering } from './services/startup-rendering';
 import { acknowledgeClientUpdate } from './services/client-update-service';
 
 
@@ -46,7 +47,9 @@ export const initializeMainWindow = async (
 	const { calcActualAppSize } = reaxel_ScreenAdapter();
 	const actualAppSize = await calcActualAppSize();
 	const defaultOptions: BrowserWindowConstructorOptions = {
-		show: !process.env.QUENCHING_TEST_CONFIG_DIR,
+		// Isolated settings are also used by interactive portable test clients.
+		// Only explicitly headless automation may suppress the visible window.
+		show: process.env.QUENCHING_AUTOMATED_TEST_HEADLESS !== '1',
 		webPreferences: {
 			devTools: true,
 			contextIsolation: true,
@@ -89,6 +92,7 @@ export const initializeMainWindow = async (
 		}
 		await acknowledgeClientUpdate();
 		startupTelemetry.markStartupSuccess();
+        scheduleStartupRendering(mainWindow);
 	} catch (error) {
 		startupTelemetry.recordStartupFailure(error);
 		throw error;

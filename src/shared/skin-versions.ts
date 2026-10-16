@@ -3,7 +3,7 @@ export interface VersionSkinChange { field: string; value: string }
 export interface VersionSkinChoice { unitId: string; skinId: string; changes: VersionSkinChange[] }
 export type SkinSelections = Partial<Record<SkinArtSet, Record<string, string>>>;
 export type SkinSections = Record<string, Record<string, string>>;
-export const SKIN_FIELDS = ['file', 'Art', 'unitSound', 'modelScale', 'fileVerFlags'];
+export const SKIN_FIELDS = ['file', 'Art', 'unitSound', 'modelScale', 'fileVerFlags', 'portrait'];
 
 export function assertArtSet(value: string): asserts value is SkinArtSet {
   if (!['sd', 'hd', 'de'].includes(value)) throw new Error('无效的皮肤版本');

@@ -13,7 +13,6 @@ try {
   await fs.outputFile(path.join(templates, 'water', 'shoreline', 'shoreline1.dds'), 'shoreline 1 source');
   await fs.outputFile(path.join(templates, 'water', 'shoreline', 'shorelineparticlexy.dds'), 'shoreline 2 source');
   await fs.outputFile(path.join(templates, 'tile', 'water-trans.slk'), 'transparent table source');
-  await fs.outputFile(path.join(templates, 'tile', 'water-rel.slk'), 'realistic table source');
 
   const transparent = path.join(root, 'game-transparent');
   await copyWaterModeFromAssets(transparent, assets, 'transparent');
@@ -22,10 +21,11 @@ try {
   assert.equal(await fs.readFile(path.join(transparent, 'terrainart', 'water.slk'), 'utf8'), 'transparent table source');
 
   const realistic = path.join(root, 'game-realistic');
+  await fs.outputFile(path.join(realistic, 'terrainart', 'water.slk'), 'old transparent or realistic override');
   await copyWaterModeFromAssets(realistic, assets, 'realistic');
   assert.equal(await fs.readFile(path.join(realistic, 'replaceabletextures', 'water', 'texture.dds'), 'utf8'), 'realistic source');
   assert.equal(await fs.pathExists(path.join(realistic, 'textures', 'shoreline1.dds')), false);
-  assert.equal(await fs.readFile(path.join(realistic, 'terrainart', 'water.slk'), 'utf8'), 'realistic table source');
+  assert.equal(await fs.pathExists(path.join(realistic, 'terrainart', 'water.slk')), false);
 
   // Sources must still be usable for a second installation and later switches.
   await verifyWaterModeAssets(assets, 'transparent');

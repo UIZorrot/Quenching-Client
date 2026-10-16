@@ -2,6 +2,7 @@ import { getSelectedGameFolder } from './game-channel';
 import fs from 'fs-extra';
 import path from 'path';
 import { configManager } from './config-manager';
+import { openGameCascStorage, normalizeCascRoot } from './casc-storage';
 
 /**
  * Anti-harmony principle (same as old-client anitvio):
@@ -39,7 +40,7 @@ type Manifest = {
 };
 
 function normalizeWar3Root(war3Path: string): string {
-    return path.normalize(war3Path.replace(/\\/g, '/').replace(/\/$/, ''));
+    return normalizeCascRoot(war3Path);
 }
 
 export async function resolveRetailDir(war3Path: string): Promise<string> {
@@ -49,11 +50,6 @@ export async function resolveRetailDir(war3Path: string): Promise<string> {
         return retail;
     }
     return root;
-}
-
-function getCascOpenCandidates(war3Path: string): string[] {
-    const root = normalizeWar3Root(war3Path);
-    return [root, path.join(root, getSelectedGameFolder())];
 }
 
 export function getAntiHarmonyMarkerPath(retailDir: string): string {
@@ -212,24 +208,10 @@ function applyDisabledDirRedirect(retailDir: string, relativePath: string): stri
     return temps;
 }
 
-async function openCascStorage(war3Path: string): Promise<{ storage: any; openedAt: string }> {
+async function openCascStorage(war3Path: string) {
     const { Storage } = await import('@jamiephan/casclib');
-    const errors: string[] = [];
-
-    for (const candidate of getCascOpenCandidates(war3Path)) {
-        if (!(await fs.pathExists(candidate))) {
-            continue;
-        }
-        try {
-            const storage = new Storage();
-            storage.open(candidate);
-            return { storage, openedAt: candidate };
-        } catch (error: any) {
-            errors.push(`${candidate}: ${error?.message || String(error)}`);
-        }
-    }
-
-    throw new Error(`???????? CASC ?????${errors.join(' | ') || '??????????????'}`);
+    const storage = new Storage();
+    return { storage, ...await openGameCascStorage(storage, war3Path) };
 }
 
 function collectTeenFiles(storage: any): string[] {
@@ -301,7 +283,7 @@ async function enableAntiHarmony(
     }
 
     // 2) Extract any still-missing NON-teen originals (first enable / incomplete set)
-    const { storage, openedAt } = await openCascStorage(war3Path);
+    const { storage, openedAt, release } = await openCascStorage(war3Path);
     console.log(`[AntiHarmony] Opened CASC at: ${openedAt}`);
     console.log('[AntiHarmony] Principle: list teen paths ?? extract NON-teen HD originals ?? write local overrides');
 
@@ -384,6 +366,7 @@ async function enableAntiHarmony(
         } catch {
             // ignore
         }
+        release();
     }
 }
 
@@ -401,7 +384,7 @@ async function disableAntiHarmony(
 
     // If legacy marker has no list, rebuild from a quick CASC teen scan (paths only, no extract)
     if (files.length === 0) {
-        const { storage } = await openCascStorage(war3Path);
+        const { storage, release } = await openCascStorage(war3Path);
         try {
             files = collectTeenFiles(storage).map((teen) => toRelativeKey(cascTeenPathToRelative(teen)));
         } finally {
@@ -410,6 +393,7 @@ async function disableAntiHarmony(
             } catch {
                 // ignore
             }
+            release();
         }
     }
 
@@ -472,7 +456,7 @@ export async function setAntiHarmonyEnabled(
     onProgress?: (progress: AntiHarmonyProgress) => void
 ): Promise<{ success: boolean; enabled: boolean }> {
     if (!war3Path) {
-        throw new Error('?????????????III????');
+        throw new Error('请先选择魔兽争霸安装目录');
     }
 
     if (enabled) {

@@ -12,6 +12,7 @@ import { AssetSyncService } from './asset-sync';
 
 const RESERVED_DIRS = new Set(['_merged', '_merge_work']);
 const ASCII_PATH_RE = /^[\x00-\x7F]+$/;
+const MPQ_INTERNAL_FILES = new Set(['(listfile)', '(signature)', '(attributes)', '(patch_metadata)']);
 
 export type CampaignExtractProgressPhase =
     | 'prepare'
@@ -41,17 +42,20 @@ function parseListfileContent(raw: string): string[] {
     return t.split(/\s+/).filter(Boolean);
 }
 
-/** Same filters as legacy client when blanking (listfile) lines before merge. */
+function isMpqInternalFile(name: string): boolean {
+    return MPQ_INTERNAL_FILES.has(name.toLowerCase());
+}
+
+/** Shared campaign resources, excluding metadata and scenario archives. */
 function isExcludedFromCampaignSharedMerge(listLine: string): boolean {
     const s = listLine;
-    if (s === '(listfile)' || s === '(signature)' || s === '(attributes)' || s === '(patch_metadata)') {
+    if (isMpqInternalFile(s) || /\.w3[xm]$/i.test(s)) {
         return true;
     }
     return (
         s.includes('war3campImported')
         || s.includes('music')
         || s.includes('sound')
-        || s.includes('w3x')
         || s.includes('Music')
         || s.includes('Sound')
         || s.includes('UI\\')
@@ -190,57 +194,60 @@ async function mergeOneMap(params: {
     const src = new Archive();
     src.open(mapOnDisk);
 
-    let listRaw: string;
     try {
-        listRaw = src.readFileAsString('(listfile)');
-    } catch {
+        let listRaw: string;
+        try {
+            listRaw = src.readFileAsString('(listfile)');
+        } catch {
+            throw new Error(`Map has no (listfile): ${mapInternalPath}`);
+        }
+        // StormLib regenerates metadata on flush; adding it as a normal file
+        // is rejected, and source signatures/checksums do not describe the merged map.
+        const mapListLines = parseListfileContent(listRaw).filter((name) => !isMpqInternalFile(name));
+
+        const merged = new Archive();
+        merged.open(mergedOutPath);
+        try {
+            const neededSlots = mapListLines.length + sharedPaths.length + 256;
+            if (merged.getMaxFileCount() < neededSlots) {
+                merged.setMaxFileCount(neededSlots);
+            }
+
+            const addOpts = { flags: MPQ_FILE_REPLACEEXISTING };
+
+            for (const internalName of mapListLines) {
+                const tempFile = diskPathFromInternal(mapWork, internalName);
+                await fs.ensureDir(path.dirname(tempFile));
+                if (!src.extractFile(internalName, tempFile)) {
+                    console.warn(`[CampaignMerge] skip missing map entry: ${internalName}`);
+                    continue;
+                }
+                if (!merged.addFile(tempFile, internalName, addOpts)) {
+                    throw new Error(`Failed to add map file into merged archive: ${internalName}`);
+                }
+            }
+
+            for (const shared of sharedPaths) {
+                const abs = diskPathFromInternal(campRoot, shared);
+                if (!(await fs.pathExists(abs))) {
+                    console.warn(`[CampaignMerge] shared path missing, skip: ${shared}`);
+                    continue;
+                }
+                if (!(await fs.stat(abs)).isFile()) {
+                    continue;
+                }
+                if (!merged.addFile(abs, shared, addOpts)) {
+                    throw new Error(`Failed to add shared file into merged map: ${shared}`);
+                }
+            }
+
+            merged.flush();
+        } finally {
+            merged.close();
+        }
+    } finally {
         src.close();
-        throw new Error(`Map has no (listfile): ${mapInternalPath}`);
     }
-    const mapListLines = parseListfileContent(listRaw);
-
-    const merged = new Archive();
-    merged.open(mergedOutPath);
-
-    const neededSlots = mapListLines.length + sharedPaths.length + 256;
-    if (merged.getMaxFileCount() < neededSlots) {
-        merged.setMaxFileCount(neededSlots);
-    }
-
-    const addOpts = { flags: MPQ_FILE_REPLACEEXISTING };
-
-    for (const internalName of mapListLines) {
-        const tempFile = diskPathFromInternal(mapWork, internalName);
-        await fs.ensureDir(path.dirname(tempFile));
-        if (!src.extractFile(internalName, tempFile)) {
-            console.warn(`[CampaignMerge] skip missing map entry: ${internalName}`);
-            continue;
-        }
-        if (!merged.addFile(tempFile, internalName, addOpts)) {
-            src.close();
-            merged.close();
-            throw new Error(`Failed to add map file into merged archive: ${internalName}`);
-        }
-    }
-    src.close();
-
-    for (const shared of sharedPaths) {
-        const abs = diskPathFromInternal(campRoot, shared);
-        if (!(await fs.pathExists(abs))) {
-            console.warn(`[CampaignMerge] shared path missing, skip: ${shared}`);
-            continue;
-        }
-        if (!(await fs.stat(abs)).isFile()) {
-            continue;
-        }
-        if (!merged.addFile(abs, shared, addOpts)) {
-            merged.close();
-            throw new Error(`Failed to add shared file into merged map: ${shared}`);
-        }
-    }
-
-    merged.flush();
-    merged.close();
 }
 
 export async function extractCampaignW3nMerged(

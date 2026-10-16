@@ -68,7 +68,7 @@ function sha256File(filePath: string): Promise<string> {
 
 function filesDigest(files: ModIntegrityFileRecord[]): string {
   const canonical = [...files]
-    .sort((a, b) => a.path.localeCompare(b.path))
+    .sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0)
     .map((file) => `${file.path}\0${file.size}\0${file.sha256.toLowerCase()}\n`)
     .join('');
   return crypto.createHash('sha256').update(canonical).digest('hex');
@@ -90,7 +90,11 @@ function validateManifest(value: any): ModIntegrityManifest {
     return { path: relative, size: item.size, sha256: item.sha256.toLowerCase() };
   });
   const digest = filesDigest(files);
-  if (typeof value.filesDigest !== 'string' || value.filesDigest.toLowerCase() !== digest) throw new Error('integrity manifest digest mismatch');
+  // Accept the original transmitted order for historical locale-sorted lists,
+  // just like file-sync-snapshot. New lists have a locale-independent digest.
+  const transmittedDigest = crypto.createHash('sha256').update(files
+    .map((file) => `${file.path}\0${file.size}\0${file.sha256}\n`).join('')).digest('hex');
+  if (typeof value.filesDigest !== 'string' || ![digest, transmittedDigest].includes(value.filesDigest.toLowerCase())) throw new Error('integrity manifest digest mismatch');
   return {
     schema: 1,
     product: PRODUCT,

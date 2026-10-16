@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { reaction } from 'mobx';
 import { reaxel, createReaxable } from 'reaxes';
-import { EffectiveGraphics, GraphicsSelection, VersionSelection, normalizeGraphicsSelection } from '../../shared/mod-profile';
+import { EffectiveGraphics, EffectiveVersion, GraphicsSelection, VersionSelection, normalizeGraphicsSelection } from '../../shared/mod-profile';
 import { graphicsFromHdValue, hdValueForGraphics, patchWar3Preferences, warcraftPreferencesFolder } from '../../shared/war3-preferences';
 
 async function getSelectedGameBuildDir(war3Path: string): Promise<string> {
@@ -30,6 +30,8 @@ export interface CameraSettings {
 export interface ModSettings {
   versionSelection: VersionSelection;
   graphicsSelection: GraphicsSelection;
+  resolvedGraphics?: EffectiveGraphics; // Last successfully applied profile, not the current selection.
+  resolvedVersion?: EffectiveVersion;
   objectShader: boolean; // 物体着色器
   postProcessing: boolean; // 后处理阴影
   postProcessingGlow: boolean; // 后处理辉光（两份 Bloom 和 Gaussian Blur）
@@ -214,6 +216,21 @@ export const reaxel_War3Settings = reaxel(() => {
     await saveSettings(war3Path, { reswidth: width, resheight: height });
   };
 
+  // Resource synchronization resolves profiles in the main process. Refresh
+  // only its result fields, retaining the renderer's preferences/detections.
+  const readResolvedProfile = async (current: ModSettings): Promise<ModSettings> => {
+    const persisted = await window.electronAPI?.getConfig?.('modSettings');
+    if (!persisted || typeof persisted !== 'object' ||
+      persisted.graphicsSelection !== current.graphicsSelection ||
+      persisted.versionSelection !== current.versionSelection ||
+      !!persisted.classicMode !== !!current.classicMode) return current;
+    return {
+      ...current,
+      resolvedGraphics: persisted.resolvedGraphics,
+      resolvedVersion: persisted.resolvedVersion,
+    };
+  };
+
   // 加载MOD设置
   const loadModSettings = async (war3Path: string) => {
     console.log(`\n>>> [useWar3Settings] loadModSettings START for path: ${war3Path}`);
@@ -240,6 +257,9 @@ export const reaxel_War3Settings = reaxel(() => {
         }
       }
 
+      const selectedChannel = await window.electronAPI?.getConfig?.('gameChannel');
+      const branchStates = await window.electronAPI?.getBranchModStates?.().catch(() => null);
+      const branchEnabled = branchStates?.[selectedChannel === 'ptr' ? 'ptr' : 'retail']?.enabled ?? loadedSettings.modEnabled;
       console.log('[useWar3Settings] Starting file-based detection...');
 
       // 基于实际文件状态检测地形模式，高亮与真实状态一致
@@ -295,7 +315,7 @@ export const reaxel_War3Settings = reaxel(() => {
         const versionInfo = await window.electronAPI.detectWar3Version(war3Path);
         console.log('[useWar3Settings] Detected War3 version:', versionInfo);
         loadedSettings.useLegacyWar3Shaders = !!versionInfo?.useLegacyShaders;
-        if (versionInfo?.source !== 'unknown' && loadedSettings.versionSelection === 'auto' &&
+        if (branchEnabled && versionInfo?.source !== 'unknown' && loadedSettings.versionSelection === 'auto' &&
             loadedSettings.graphicsSelection !== 'sd' && !loadedSettings.classicMode) {
           try {
             await window.electronAPI.syncVersionedShaders?.(war3Path);
@@ -305,9 +325,9 @@ export const reaxel_War3Settings = reaxel(() => {
         }
       }
 
-      // SD parks visual overrides. File detection there sees the vanilla game,
-      // so keep the saved HD/DE preferences for the next profile switch.
-      if (loadedSettings.graphicsSelection === 'sd' || loadedSettings.classicMode) {
+      // SD and the MOD switch park visual overrides. Keep saved preferences
+      // rather than interpreting their absence as the player's next selection.
+      if (!branchEnabled || loadedSettings.graphicsSelection === 'sd' || loadedSettings.classicMode) {
         if (savedVisualSettings) {
           for (const key of ['terrain', 'tree', 'water', 'foliage', 'objectShader',
             'postProcessing', 'postProcessingGlow', 'glow'] as const) {
@@ -317,7 +337,8 @@ export const reaxel_War3Settings = reaxel(() => {
       }
 
       console.log('[useWar3Settings] Final merged settings to be set in store:', loadedSettings);
-      await window.electronAPI?.syncUISettings?.(war3Path);
+      if (branchEnabled) await window.electronAPI?.syncUISettings?.(war3Path);
+      loadedSettings = await readResolvedProfile(loadedSettings);
       setState({ modSettings: loadedSettings });
 
       // Detection is only for displaying the current file state. Persisting it
@@ -463,39 +484,39 @@ export const reaxel_War3Settings = reaxel(() => {
     onProgress?: (step: string, percent: number) => void,
   ) => {
     console.log('[useWar3Settings] saveModSettings called:', { war3Path, newSettings });
-    const previousSettings = { ...store.modSettings };
+    let previousSettings = { ...store.modSettings };
     setState({ isLoading: true });
 
     // 强制等待 UI 渲染完成 (Hack: 利用事件循环机制)
     await new Promise(resolve => setTimeout(resolve, 0));
 
     try {
+      // Do not write an old renderer snapshot over a newer applied profile.
+      previousSettings = await readResolvedProfile(previousSettings);
       const installed = await window.electronAPI?.getInstalledModState?.(war3Path);
       if (installed?.sequence === 34 && Object.keys(newSettings).some(key => key !== 'modEnabled' && key !== 'visionModPath')) {
         throw new Error('请先通过首页将 3.4 MOD 更新到 3.5，再修改资源设置');
       }
-      const nextGraphics = newSettings.graphicsSelection ?? store.modSettings.graphicsSelection;
-      const nextTerrain = newSettings.terrain ?? store.modSettings.terrain;
-      const autoDecisiveTerrain = nextGraphics === 'de' &&
-        !['original', 'decisive'].includes(nextTerrain);
-      // DE cannot retain an HD-only terrain. Treat the automatic change as a
-      // real terrain request, including the full-package prerequisite.
-      const effectiveChange = autoDecisiveTerrain
-        ? { ...newSettings, terrain: 'decisive' as const }
-        : newSettings;
-      if (requiresFullPackageChange(effectiveChange) && window.electronAPI?.getFullPackageStatus) {
+      if (requiresFullPackageChange(newSettings) && window.electronAPI?.getFullPackageStatus) {
         const installed = await window.electronAPI.getFullPackageStatus(war3Path);
         if (!installed) {
           throw new Error('完整包未安装，无法修改地形、树木或水面设置');
         }
       }
 
+      const selectedChannel = await window.electronAPI?.getConfig?.('gameChannel');
+      const branchStates = await window.electronAPI?.getBranchModStates?.().catch(() => null);
+      const branchEnabled = branchStates?.[selectedChannel === 'ptr' ? 'ptr' : 'retail']?.enabled
+        ?? newSettings.modEnabled ?? store.modSettings.modEnabled;
+
       // Apply the independent Blight toggle before persisting its preference.
       // A custom-file conflict leaves both the previous setting and files intact.
       if (newSettings.blight !== undefined) {
-        if (!window.electronAPI?.updateBlightSettings) throw new Error('腐蚀之地设置不可用');
-        const next = { ...store.modSettings, blight: newSettings.blight };
-        await window.electronAPI.updateBlightSettings(war3Path, next.blight);
+        const next = { ...previousSettings, blight: newSettings.blight };
+        if (branchEnabled) {
+          if (!window.electronAPI?.updateBlightSettings) throw new Error('腐蚀之地设置不可用');
+          await window.electronAPI.updateBlightSettings(war3Path, next.blight);
+        }
         await window.electronAPI.setConfig('modSettings', next);
         setState({ modSettings: next });
         return;
@@ -505,12 +526,11 @@ export const reaxel_War3Settings = reaxel(() => {
       const previousLighting = store.modSettings.lighting;
       const previousLightingBrightness = store.modSettings.lightingBrightness ?? 3;
       const previousTerrain =
-        newSettings.terrain !== undefined || autoDecisiveTerrain ? store.modSettings.terrain : undefined;
-      let updatedSettings = { ...store.modSettings, ...newSettings };
-      if (autoDecisiveTerrain) updatedSettings.terrain = 'decisive';
-      const selectedChannel = await window.electronAPI?.getConfig?.('gameChannel');
-      const branchStates = await window.electronAPI?.getBranchModStates?.().catch(() => null);
-      const branchEnabled = branchStates?.[selectedChannel === 'ptr' ? 'ptr' : 'retail']?.enabled ?? updatedSettings.modEnabled;
+        newSettings.terrain !== undefined ? store.modSettings.terrain : undefined;
+      let updatedSettings = { ...previousSettings, ...newSettings };
+      if (newSettings.graphicsSelection === 'de' && previousSettings.graphicsSelection !== 'de') {
+        updatedSettings.tree = 'original';
+      }
 
       // Retro terrain never uses foliage
       if (updatedSettings.terrain === 'retro') {
@@ -538,23 +558,25 @@ export const reaxel_War3Settings = reaxel(() => {
         await saveSettings(war3Path, { hd: hdValueForGraphics(newSettings.graphicsSelection) });
       }
 
+      // Store preferences while off, without recreating UI, lighting, terrain or other overrides.
+      if (!branchEnabled) {
+        onProgress?.('finish', 100);
+        return;
+      }
+
       // Version/graphics profile changes require a complete resource transition.
       const profileChanged = newSettings.versionSelection !== undefined || newSettings.graphicsSelection !== undefined;
       if (profileChanged) {
         if (!window.electronAPI?.syncAssets) throw new Error('Resource sync is unavailable');
         onProgress?.('sync-start', 24);
         await window.electronAPI.syncAssets(war3Path);
-        // Re-apply terrain/tree/water after graphics layout (DE doodads/water, HD restore).
+        updatedSettings = await readResolvedProfile(updatedSettings);
+        setState({ modSettings: updatedSettings });
+        // Tree skins are applied by syncAssets using the resolved version's table.
+        // Re-apply terrain/water after graphics layout (DE doodads/water, HD restore).
         if (branchEnabled && updatedSettings.graphicsSelection !== 'sd' && window.electronAPI?.updateTerrainSettings) {
           onProgress?.('terrain', 88);
           await window.electronAPI.updateTerrainSettings(war3Path, updatedSettings.terrain, updatedSettings.water, previousTerrain);
-          if (autoDecisiveTerrain && await detectTerrainMode(war3Path) !== 'decisive') {
-            throw new Error('淬火决定版地形未实际生效，画质切换未完成');
-          }
-        }
-        if (branchEnabled && updatedSettings.graphicsSelection !== 'sd' && window.electronAPI?.updateTreeSettings) {
-          onProgress?.('trees', 93);
-          await window.electronAPI.updateTreeSettings(war3Path, updatedSettings.tree);
         }
         if (branchEnabled && updatedSettings.graphicsSelection !== 'sd' && updatedSettings.graphicsSelection !== 'de' && window.electronAPI?.updateWaterSettings) {
           onProgress?.('water', 97);
@@ -630,7 +652,7 @@ export const reaxel_War3Settings = reaxel(() => {
       }
 
       // 如果修改了地形设置，执行地形资源切换 (terrainart <-> QMoff)
-      if ((newSettings.terrain !== undefined || autoDecisiveTerrain) && !profileChanged) {
+      if (newSettings.terrain !== undefined && !profileChanged) {
         console.log('[useWar3Settings] Terrain setting changed, triggering updateTerrainSettings...');
         if (window.electronAPI?.updateTerrainSettings) {
           console.log('[useWar3Settings] Invoking updateTerrainSettings IPC...');

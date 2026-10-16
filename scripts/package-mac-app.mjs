@@ -1,26 +1,24 @@
 /**
- * Package a macOS .app from Windows.
+ * Package and ad hoc sign a portable macOS .app on a Mac build runner.
  *
- * electron-builder refuses darwin targets on Windows. @electron/packager can
- * target darwin, but it skips the platform when the host cannot create
- * symlinks (needs Administrator or Developer Mode). This script downloads the
- * official Electron darwin zip, materializes zip symlinks as file copies,
- * then assembles QMClient.app without requiring NTFS symlinks.
+ * StormLib and CascLib have no npm darwin prebuilds. The native preparation
+ * step must run on the target architecture first. Electron framework symlinks
+ * and Unix permissions are preserved by ditto, followed by signing and smoke tests.
  *
  * Usage:
  *   node scripts/package-mac-app.mjs           # arm64 (Apple Silicon)
  *   node scripts/package-mac-app.mjs --x64     # Intel
  */
 import { spawnSync } from 'child_process';
-import archiver from 'archiver';
 import fs from 'fs-extra';
 import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
+import { validateMacNative, smokeMacNative } from './mac-native.mjs';
+import { signMacApp } from './sign-mac-app.js';
 
 const require = createRequire(import.meta.url);
-const yauzl = require('yauzl');
 const asar = require('@electron/asar');
 const plist = require('plist');
 
@@ -28,16 +26,13 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const pkg = require('../package.json');
 const electronPkg = require('electron/package.json');
 
-const arch = process.argv.includes('--x64') ? 'x64' : 'arm64';
+const arch = process.argv.includes('--x64') ? 'x64' : process.argv.includes('--arm64') ? 'arm64' : process.platform === 'darwin' ? process.arch : 'arm64';
 const appName = 'QMClient';
 const bundleId = 'com.quenching.mod.client';
 const outDir = path.join(root, '__Bin');
 const finalAppDir = path.join(outDir, `${appName}-darwin-${arch}`);
 const finalAppPath = path.join(finalAppDir, `${appName}.app`);
 
-const S_IFMT = 0o170000;
-const S_IFLNK = 0o120000;
-const S_IFDIR = 0o040000;
 
 function downloadElectronZip(version, targetArch) {
 	const filename = `electron-v${version}-darwin-${targetArch}.zip`;
@@ -70,105 +65,6 @@ function downloadElectronZip(version, targetArch) {
 	throw new Error(`Failed to download ${filename}`);
 }
 
-function unixMode(entry) {
-	return (entry.externalFileAttributes >>> 16) & 0xffff;
-}
-
-function openZip(zipPath) {
-	return new Promise((resolve, reject) => {
-		yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
-			if (err) reject(err);
-			else resolve(zipfile);
-		});
-	});
-}
-
-function readEntryBuffer(zipfile, entry) {
-	return new Promise((resolve, reject) => {
-		zipfile.openReadStream(entry, (err, stream) => {
-			if (err) return reject(err);
-			const chunks = [];
-			stream.on('data', (c) => chunks.push(c));
-			stream.on('error', reject);
-			stream.on('end', () => resolve(Buffer.concat(chunks)));
-		});
-	});
-}
-
-function saveEntryFile(zipfile, entry, destPath) {
-	return new Promise((resolve, reject) => {
-		fs.mkdirSync(path.dirname(destPath), { recursive: true });
-		zipfile.openReadStream(entry, (err, stream) => {
-			if (err) return reject(err);
-			const out = fs.createWriteStream(destPath);
-			stream.pipe(out);
-			out.on('finish', resolve);
-			out.on('error', reject);
-			stream.on('error', reject);
-		});
-	});
-}
-
-async function extractZipMaterializingSymlinks(zipPath, dest) {
-	await fs.emptyDir(dest);
-	const zipfile = await openZip(zipPath);
-	const symlinks = [];
-
-	await new Promise((resolve, reject) => {
-		zipfile.on('error', reject);
-		zipfile.on('end', resolve);
-		zipfile.on('entry', async (entry) => {
-			try {
-				const name = entry.fileName.replace(/\\/g, '/');
-				if (name.includes('..')) {
-					zipfile.readEntry();
-					return;
-				}
-				const mode = unixMode(entry);
-				const destPath = path.join(dest, ...name.split('/').filter(Boolean));
-				if (name.endsWith('/') || (mode & S_IFMT) === S_IFDIR) {
-					fs.mkdirSync(destPath, { recursive: true });
-				} else if ((mode & S_IFMT) === S_IFLNK) {
-					const target = (await readEntryBuffer(zipfile, entry)).toString('utf8').trim();
-					symlinks.push({ name, target });
-				} else {
-					await saveEntryFile(zipfile, entry, destPath);
-				}
-				zipfile.readEntry();
-			} catch (error) {
-				reject(error);
-			}
-		});
-		zipfile.readEntry();
-	});
-
-	let remaining = [...symlinks];
-	for (let pass = 0; pass < 12 && remaining.length; pass += 1) {
-		const next = [];
-		for (const link of remaining) {
-			const destPath = path.join(dest, ...link.name.split('/').filter(Boolean));
-			const sourcePath = path.resolve(path.dirname(destPath), link.target);
-			if (!fs.existsSync(sourcePath)) {
-				next.push(link);
-				continue;
-			}
-			fs.mkdirSync(path.dirname(destPath), { recursive: true });
-			const st = fs.statSync(sourcePath);
-			if (st.isDirectory()) fs.copySync(sourcePath, destPath);
-			else fs.copyFileSync(sourcePath, destPath);
-		}
-		remaining = next;
-	}
-
-	if (remaining.length) {
-		throw new Error(
-			`Failed to materialize ${remaining.length} zip symlink(s), e.g. ${remaining[0].name} -> ${remaining[0].target}`,
-		);
-	}
-
-	console.log(`[package-mac-app] extracted Electron zip (${symlinks.length} symlinks copied as files)`);
-}
-
 function listProductionTopLevelIds() {
 	const result = spawnSync('npm', ['ls', '--omit=dev', '--all', '--parseable'], {
 		cwd: root,
@@ -195,6 +91,7 @@ function listProductionTopLevelIds() {
 }
 
 function copyAppSources(stagingDir) {
+    const native = validateMacNative(root, arch);
 	fs.emptyDirSync(stagingDir);
 	fs.writeJsonSync(path.join(stagingDir, 'package.json'), {
 		name: pkg.name,
@@ -237,6 +134,15 @@ function copyAppSources(stagingDir) {
 		copied += 1;
 	}
 	console.log(`[package-mac-app] copied ${copied} production node_modules packages`);
+    // Do not ship build caches or foreign prebuilds. Use the exact binaries
+    // validated above, where node-gyp-build can resolve them inside ASAR.
+    for (const { name, file } of native) {
+        const directory = path.join(nmDest, name);
+        fs.removeSync(path.join(directory, 'build'));
+        fs.removeSync(path.join(directory, 'prebuilds'));
+        fs.copySync(file, path.join(directory, 'prebuilds', `darwin-${arch}`, `node.napi.node`));
+    }
+    validateMacNative(stagingDir, arch);
 }
 
 function updatePlist(plistPath, updates) {
@@ -294,49 +200,11 @@ function customizeMacApp(appPath) {
 	}
 }
 
-function shouldBeExecutable(relPath) {
-	const normalized = relPath.replace(/\\/g, '/');
-	const base = path.posix.basename(normalized);
-	if (normalized.includes('/Contents/MacOS/')) return true;
-	if (/\.(dylib|so)$/i.test(normalized)) return true;
-	if (normalized.includes('.framework/') && !path.posix.extname(base)) return true;
-	if (/Helper/.test(base) && !path.posix.extname(base)) return true;
-	if (base === 'chrome_crashpad_handler') return true;
-	return false;
-}
-
-function zipAppWithUnixModes(appPath, zipPath) {
-	return new Promise((resolve, reject) => {
-		if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath);
-		const output = fs.createWriteStream(zipPath);
-		const archive = archiver('zip', { zlib: { level: 4 } });
-		output.on('close', () => resolve(archive.pointer()));
-		archive.on('error', reject);
-		archive.pipe(output);
-
-		const appFolderName = path.basename(appPath);
-		const addDir = (absDir, zipDir) => {
-			archive.append(Buffer.alloc(0), {
-				name: zipDir.endsWith('/') ? zipDir : `${zipDir}/`,
-				mode: 0o40755,
-			});
-			for (const entry of fs.readdirSync(absDir, { withFileTypes: true })) {
-				const abs = path.join(absDir, entry.name);
-				const zipName = `${zipDir}/${entry.name}`.replace(/\\/g, '/');
-				if (entry.isDirectory()) addDir(abs, zipName);
-				else {
-					const mode = shouldBeExecutable(zipName) ? 0o100755 : 0o100644;
-					archive.file(abs, { name: zipName, mode });
-				}
-			}
-		};
-
-		addDir(appPath, appFolderName);
-		archive.finalize();
-	});
-}
-
 async function main() {
+    if (process.platform !== 'darwin') {
+        throw new Error('This Mac package needs native darwin modules and codesign. Run .github/workflows/build-mac.yml on a macOS runner; Windows copies of node_modules cannot produce a working signed Mac app.');
+    }
+    validateMacNative(root, arch);
 	if (!fs.existsSync(path.join(root, 'dist', 'main.js'))) {
 		throw new Error('dist/main.js is missing. Run npm run build first.');
 	}
@@ -351,7 +219,9 @@ async function main() {
 	const asarPath = path.join(workRoot, 'app.asar');
 
 	try {
-		await extractZipMaterializingSymlinks(zipPath, extractDir);
+        await fs.ensureDir(extractDir);
+        const extracted = spawnSync('ditto', ['-x', '-k', zipPath, extractDir], { stdio: 'inherit' });
+        if (extracted.status !== 0) throw new Error('Failed to extract Electron with its framework symlinks');
 		const extractedApp = path.join(extractDir, 'Electron.app');
 		if (!fs.existsSync(extractedApp)) {
 			throw new Error(`Electron.app not found after extract in ${extractDir}`);
@@ -378,7 +248,12 @@ async function main() {
 			await fs.copy(unpacked, path.join(resources, 'app.asar.unpacked'));
 		}
 
-		await fs.copy(path.join(root, 'assets'), path.join(resources, 'assets'));
+		await fs.access(path.join(root, 'assets/quenching/shaders.zip'));
+		await fs.access(path.join(root, 'assets/quenching/shaders-300-legacy.zip'));
+		await fs.copy(path.join(root, 'assets'), path.join(resources, 'assets'), { filter: source => {
+			const relative = path.relative(path.join(root, 'assets'), source).split(path.sep).join('/');
+			return relative !== 'quenching/shaders' && !relative.startsWith('quenching/shaders/');
+		} });
 		const staticsSrc = path.join(root, 'dist', 'statics');
 		if (fs.existsSync(staticsSrc)) {
 			await fs.copy(staticsSrc, path.join(resources, 'statics'));
@@ -397,12 +272,16 @@ async function main() {
 		}
 
 		const zipOut = path.join(outDir, `${appName}-darwin-${arch}.zip`);
-		console.log(`[package-mac-app] zipping with unix executable bits: ${zipOut}`);
-		const bytes = await zipAppWithUnixModes(finalAppPath, zipOut);
+        await signMacApp(finalAppPath);
+        smokeMacNative(path.join(finalAppPath, 'Contents/MacOS', appName), path.join(resources, 'app.asar'));
+        console.log(`[package-mac-app] zipping signed app with symlinks and permissions: ${zipOut}`);
+        if (fs.existsSync(zipOut)) await fs.remove(zipOut);
+        const zipped = spawnSync('ditto', ['-c', '-k', '--sequesterRsrc', '--keepParent', finalAppPath, zipOut], { stdio: 'inherit' });
+        if (zipped.status !== 0) throw new Error('Failed to ZIP the signed Mac app');
+        const bytes = (await fs.stat(zipOut)).size;
 		console.log(`[package-mac-app] .app: ${finalAppPath}`);
 		console.log(`[package-mac-app] zip: ${zipOut} (${(bytes / 1024 / 1024).toFixed(1)} MB)`);
-		console.log('\nDone. Copy the zip to a Mac (preferred over the raw folder).');
-		console.log('First launch: right-click the .app → Open, or: xattr -cr /path/to/QMClient.app');
+        console.log('Native modules and ad hoc signature passed. This build is not Developer ID notarized.');
 	} finally {
 		await fs.remove(workRoot).catch(() => {});
 	}

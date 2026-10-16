@@ -1,8 +1,9 @@
-import { getSelectedGameFolder } from './game-channel';
+import { getChannelModEnabled, getSelectedGameChannel, getSelectedGameFolder } from './game-channel';
 import fs from 'fs-extra';
 import path from 'path';
 import { rm } from 'node:fs/promises';
 import { AssetSyncService } from './asset-sync';
+import { isBranchModDisabled } from './branch-mod-toggle';
 
 export function getBlightZipName(enabled = true): string | null {
     return enabled ? 'zip-blight-que.zip' : null;
@@ -15,7 +16,10 @@ async function resolveBaseDir(war3Path: string): Promise<string> {
 
 /** Original blight = no terrainart/blight; Quenching blight = the bundled zip extracted there. */
 export async function applyBlightSettings(war3Path: string, enabled: boolean): Promise<void> {
-    const terrainArtPath = path.join(await resolveBaseDir(war3Path), 'terrainart');
+    if (!getChannelModEnabled(getSelectedGameChannel())) return;
+    const baseDir = await resolveBaseDir(war3Path);
+    if (await isBranchModDisabled(baseDir)) return;
+    const terrainArtPath = path.join(baseDir, 'terrainart');
     const blightDir = path.join(terrainArtPath, 'blight');
     await rm(blightDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
 

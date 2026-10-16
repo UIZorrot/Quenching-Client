@@ -1,0 +1,200 @@
+{
+  "source": "QMF3.5/units/destructableskin.txt compared with the legacy original table",
+  "overrides": [
+    {
+      "section": "ATtr",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/AshenvaleTree/AshenTree"
+    },
+    {
+      "section": "ATtr",
+      "field": "file",
+      "value": "Doodads/que/d20/AshenTree/AshenTree"
+    },
+    {
+      "section": "BTtw",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/BarrensTree/BarrensTree"
+    },
+    {
+      "section": "CTtr",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/AshenvaleTree/FelwoodTree"
+    },
+    {
+      "section": "CTtr",
+      "field": "file",
+      "value": "Doodads/que/d20/AshenTree/AshenTree"
+    },
+    {
+      "section": "FTtw",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronFallTree"
+    },
+    {
+      "section": "FTtw",
+      "field": "file",
+      "value": "Doodads/que/d20/lordaerontree-short/LordaeronTree"
+    },
+    {
+      "section": "LTlt",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree"
+    },
+    {
+      "section": "LTlt",
+      "field": "file",
+      "value": "Doodads/que/d20/lordaerontree-short/LordaeronTree"
+    },
+    {
+      "section": "WTtw",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronWinterTree"
+    },
+    {
+      "section": "WTtw",
+      "field": "file",
+      "value": "Doodads/que/d20/lordaerontree-short/LordaeronTree"
+    },
+    {
+      "section": "WTst",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSnowTree"
+    },
+    {
+      "section": "WTst",
+      "field": "file",
+      "value": "Doodads/que/d20/lordaerontree-short/LordaeronTree"
+    },
+    {
+      "section": "YTct",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/tc/citytree/cityscapetree"
+    },
+    {
+      "section": "YTct",
+      "field": "file",
+      "value": "Doodads/que/d20/Citytree"
+    },
+    {
+      "section": "YTwt",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/tc/citytree/cityscapetreew"
+    },
+    {
+      "section": "YTwt",
+      "field": "file",
+      "value": "Doodads/que/d20/Citytree"
+    },
+    {
+      "section": "YTft",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/tc/citytree/cityscapetreea"
+    },
+    {
+      "section": "YTft",
+      "field": "file",
+      "value": "Doodads/que/d20/Citytree"
+    },
+    {
+      "section": "VTlt",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/lordaeronvillagetree"
+    },
+    {
+      "section": "VTlt",
+      "field": "file",
+      "value": "Doodads/que/d20/lordaerontree-short/LordaeronTree"
+    },
+    {
+      "section": "ZTtw",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree"
+    },
+    {
+      "section": "ATt1",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/AshenvaleTree/AshenTree"
+    },
+    {
+      "section": "ATtc",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/AshenvaleTree/AshenCanopyTree"
+    },
+    {
+      "section": "JTct",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/lordaerontree/lordaeronsummertree"
+    },
+    {
+      "section": "JTct",
+      "field": "file",
+      "value": "Doodads/que/d20/lordaerontree-short/lordaerontree"
+    },
+    {
+      "section": "JTtw",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/lordaerontree/lordaeronsummertree"
+    },
+    {
+      "section": "JTtw",
+      "field": "file",
+      "value": "Doodads/que/d20/lordaerontree-short/LordaeronTree"
+    },
+    {
+      "section": "BTtc",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/BarrensTree/BarrensTree"
+    },
+    {
+      "section": "CTtc",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/AshenvaleTree/felwoodcanopytree"
+    },
+    {
+      "section": "ZTtc",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/tc/RuinsTree/RuinsTree"
+    },
+    {
+      "section": "LFpt",
+      "field": "file",
+      "value": "Doodads/que/d20/lordaerontree-short/LordaeronTree"
+    },
+    {
+      "section": "LFpt",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronFallTree"
+    },
+    {
+      "section": "Yts1",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree"
+    },
+    {
+      "section": "Yts1",
+      "field": "texFile:hd",
+      "value": "ReplaceableTextures/tree/tc/SilvermoonTree/SilverMoonTree"
+    },
+    {
+      "section": "Yts2",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree"
+    },
+    {
+      "section": "Yts3",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree"
+    },
+    {
+      "section": "STlt",
+      "field": "texFile",
+      "value": "ReplaceableTextures/tree/t20/LordaeronTree/LordaeronSummerTree"
+    },
+    {
+      "section": "STlt",
+      "field": "file",
+      "value": "Doodads/que/d20/lordaerontree-short/LordaeronTree"
+    }
+  ]
+}

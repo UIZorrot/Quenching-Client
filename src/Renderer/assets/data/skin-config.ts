@@ -179,6 +179,7 @@ export const CUSTOM_SKIN_CONFIG: Record<string, { name: string, units: CustomSki
       { unitId: 'Nfir', name: '火焰领主', icon: 'p055.png' },
       { unitId: 'Ntin', name: '修补匠', icon: 'p054.png' },
       { unitId: 'Nplh', name: '深渊领主', icon: 'p053.png' },
+      { unitId: 'Npal', name: '被遗忘的圣骑士', icon: 'skin-icon-npal.png' },
     ]
   }
 };
@@ -1514,6 +1515,26 @@ export const SKIN_CONFIG: Record<string, RaceConfig> = {
             ]
           }
         ]
+      },
+      {
+        id: 'forsakenpaladin',
+        unitId: 'Npal',
+        name: '被遗忘的圣骑士',
+        icon: 'skin-icon-npal.png',
+        // Warcraft 3.0 tavern hero. Each art set resolves this path in its own
+        // CASC layer; no campaign paladin or HD-only alternate is substituted.
+        skins: [{
+          id: 't25_1',
+          name: '原版',
+          preview: 'skin-icon-npal.png',
+          config: [
+            { field: 'file', value: 'Units\\Creeps\\HeroForsakenPaladin\\HeroForsakenPaladin' },
+            { field: 'Art', value: 'ReplaceableTextures\\CommandButtons\\BTNForsakenPaladin.blp' },
+            { field: 'unitSound', value: 'HeroForsakenPaladin' },
+            { field: 'modelScale:sd', value: '1.2' },
+            { field: 'modelScale:hd', value: '1.2' },
+          ],
+        }],
       }
     ]
   }

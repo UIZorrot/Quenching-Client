@@ -15,6 +15,9 @@ extraResources:
     to: statics
   - from: assets
     to: assets
+    filter:
+      - "**/*"
+      - "!quenching/shaders/**/*"
 
 win:
   icon: assets/quenching/1.ico
@@ -32,15 +35,15 @@ mac:
   icon: public/logo.png
   category: public.app-category.games
   target: dir
-  # Skip codesign in electron-builder. Windows cannot sign Mach-O binaries;
-  # the Mac-native pipeline still ad-hoc signs via scripts/sign-mac-app.js.
-  identity: null
+  # Ad hoc signing on macOS. Developer ID notarization is a separate release step.
+  identity: '-'
   electronLanguages: ['en', 'zh', 'zh_CN']
 
 # 禁用 FFMPEG 替换，使用 Electron 自带的库，避免库路径问题
 downloadAlternateFFmpeg: false
 
 asar: true
+beforePack: scripts/check-mac-native-before-pack.cjs
 
 # @jamiephan/stormlib ships N-API prebuilds, but its npm package does not ship
 # thirdparty/StormLib sources required by node-gyp rebuild. Rebuilding during

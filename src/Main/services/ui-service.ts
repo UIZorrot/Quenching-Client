@@ -95,6 +95,7 @@ export class UIService {
      * @param uiMode 'classic' | 'quenching' | 'carnival'
      */
     static async applyUISettings(war3Path: string, uiMode = 'classic', force = true): Promise<boolean> {
+        if (!getChannelModEnabled(getSelectedGameChannel())) return false;
         let stagingPath = '';
 
         try {
@@ -162,11 +163,10 @@ export class UIService {
                 await this.applyClassicFeedbackCompat(stagingPath);
             }
 
-            // Remove components absent from classic UI so the game uses its own
-            // console/framedef, including files left by an older full package.
-            await fs.remove(styleMarker);
-            for (const folder of subFolders) await fs.remove(path.join(uiPath, folder));
-            await syncBundledResourceFiles(uiPath, [{ source: stagingPath }], knownUiRoots(stagingPath), UI_MARKER);
+            // This branch's UI is fully client-managed. Prepare the selected style
+            // first, then replace the complete UI rather than merging stale files.
+            await fs.remove(uiPath);
+            await fs.copy(stagingPath, uiPath);
             await fs.writeFile(styleMarker, `${style}\n`, 'utf8');
 
             console.log(`[UIService] Successfully updated UI to ${uiMode}`);

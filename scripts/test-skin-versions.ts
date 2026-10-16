@@ -52,7 +52,8 @@ for (const race of Object.keys(SKIN_CONFIG)) {
   }
 }
 assert.equal(sdCount, LEGACY_SD_SKINS.size);
-assert.equal(skinTargets('neutral', 'hero').length, 8);
+assert.equal(skinTargets('neutral', 'hero').length, 9);
+assert(skinTargets('neutral', 'hero').some(hero => hero.unitId === 'Npal'));
 assert.equal(skinTargets('neutral', 'unit').length, 0);
 
 // 3.0 has mode-specific fields and some sections intentionally omit fields.

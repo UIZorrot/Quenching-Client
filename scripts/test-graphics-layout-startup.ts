@@ -51,7 +51,11 @@ try {
   assert.equal(await fs.readFile(path.join(retail, 'QMoff', 'shaders', 'ps', 'hd.bls'), 'utf8'), 'selected shader');
   assert.deepEqual(await syncGraphicsLayout(root, 'sd'), { waterNeedsReapply: false });
 
+  // Reproduce ENOTEMPTY: the active UI contains only nested empty directories.
+  await fs.ensureDir(path.join(retail, 'ui', 'empty', 'child'));
   assert.deepEqual(await syncGraphicsLayout(root, 'hd'), { waterNeedsReapply: false });
+  assert.equal(await fs.readFile(path.join(retail, 'ui', 'frame.fdf'), 'utf8'), 'mod UI');
+  assert.equal(await fs.pathExists(path.join(retail, 'ui', 'empty')), false);
   assert.equal(await fs.readFile(path.join(retail, 'shaders', 'ps', 'hd.bls'), 'utf8'), 'selected shader');
   assert.equal(await fs.readFile(path.join(waterDir, 'water.blp'), 'utf8'), 'existing water');
   assert.equal(await fs.readFile(path.join(retail, 'units', 'destructableskin.txt'), 'utf8'), 'mod tree skin');
@@ -112,6 +116,16 @@ try {
   assert.equal(await fs.readFile(path.join(waterAssets.tileRoot, 'water-trans.slk'), 'utf8'), 'bundled water table');
   assert.deepEqual(await syncGraphicsLayout(managedRoot, 'hd', { waterMode: 'transparent' }), { waterNeedsReapply: true });
 
+  // Realistic textures do not require a water table. Migrate old color/shore
+  // overrides once instead of treating their absence as missing resources.
+  await fs.outputFile(path.join(managedRoot, 'replaceabletextures', 'water', 'water.blp'), 'realistic water');
+  assert.deepEqual(await syncGraphicsLayout(managedRoot, 'hd', { waterMode: 'realistic' }), { waterNeedsReapply: false });
+  await fs.outputFile(path.join(managedRoot, 'terrainart', 'water.slk'), 'old realistic table');
+  assert.deepEqual(await syncGraphicsLayout(managedRoot, 'hd', { waterMode: 'realistic' }), { waterNeedsReapply: true });
+  await fs.remove(path.join(managedRoot, 'terrainart', 'water.slk'));
+  await fs.outputFile(path.join(managedRoot, 'textures', 'shoreline1.dds'), 'old transparent shoreline');
+  assert.deepEqual(await syncGraphicsLayout(managedRoot, 'hd', { waterMode: 'realistic' }), { waterNeedsReapply: true });
+
   const activeTextures = path.join(retail, 'textures');
   const parkedTextures = path.join(retail, 'QMoff', 'textures');
   await fs.outputFile(path.join(activeTextures, 'conflict.txt'), 'player-owned active file');
@@ -126,6 +140,24 @@ try {
   assert.equal(await fs.readFile(path.join(activeTextures, 'conflict.txt'), 'utf8'), 'player-owned parked file');
   assert.equal(await fs.pathExists(path.join(parkedTextures, 'conflict.txt')), false);
   assert.equal(await fs.readFile(path.join(activeTextures, 'parked-only.txt'), 'utf8'), 'parked-only');
+
+  const uiOnlyRoot = path.join(root, 'ui-reset');
+  const activeUi = path.join(uiOnlyRoot, 'ui');
+  const parkedUi = path.join(uiOnlyRoot, 'QMoff', 'ui');
+  await fs.outputFile(path.join(activeUi, 'current.fdf'), 'current UI');
+  await fs.ensureDir(path.join(parkedUi, 'empty', 'child'));
+  await syncGraphicsLayout(uiOnlyRoot, 'sd');
+  assert.equal(await fs.readFile(path.join(parkedUi, 'current.fdf'), 'utf8'), 'current UI');
+  assert.equal(await fs.pathExists(path.join(parkedUi, 'empty')), false);
+  await fs.outputFile(path.join(activeUi, 'stale.fdf'), 'stale active UI');
+  await syncGraphicsLayout(uiOnlyRoot, 'hd', { waterMode: 'off' });
+  assert.equal(await fs.readFile(path.join(activeUi, 'current.fdf'), 'utf8'), 'current UI');
+  assert.equal(await fs.pathExists(path.join(activeUi, 'stale.fdf')), false);
+  await syncGraphicsLayout(uiOnlyRoot, 'sd');
+  await fs.ensureDir(path.join(activeUi, 'empty', 'child'));
+  await syncGraphicsLayout(uiOnlyRoot, 'sd');
+  assert.equal(await fs.pathExists(activeUi), false);
+  assert.equal(await fs.readFile(path.join(parkedUi, 'current.fdf'), 'utf8'), 'current UI');
   console.log('Graphics layout startup checks passed');
 } finally {
   await fs.remove(root);

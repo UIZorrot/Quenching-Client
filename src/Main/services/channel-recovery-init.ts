@@ -3,9 +3,9 @@ import { configManager } from './config-manager';
 import { assertNoInterruptedLegacyChannelSwitch } from './game-channel-switch';
 import { gameChannelFolder } from '../../shared/game-channel';
 import { normalizeWar3RootPath } from './war3-path';
-import { recoverBranchModToggle } from './branch-mod-toggle';
+import { recoverBranchModToggle, setBranchModEnabledOnDisk } from './branch-mod-toggle';
 import { assertNoPendingBranchCopy } from './branch-package-copy';
-import { setChannelModEnabled } from './game-channel';
+import { getChannelModEnabled, setChannelModEnabled } from './game-channel';
 import path from 'path';
 import fs from 'fs-extra';
 
@@ -22,6 +22,7 @@ export const channelRecoveryReady = app.whenReady().then(async () => {
             await assertNoPendingBranchCopy(build);
             const restoredEnabled = await recoverBranchModToggle(build);
             if (restoredEnabled !== null) setChannelModEnabled(channel, restoredEnabled);
+            else if (!getChannelModEnabled(channel)) await setBranchModEnabledOnDisk(build, false);
         }
     } catch (error) {
         console.error('[GameChannel] Branch transaction requires manual attention:', error);

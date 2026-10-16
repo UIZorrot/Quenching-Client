@@ -23,7 +23,7 @@ export function skinProfileForGraphics(graphics: EffectiveGraphics, retroUnits: 
 }
 
 export function skinEraForVersion(version: string | undefined): UnitSkinEra {
-  return !version || version === 'v30' ? 'v30' : 'v20';
+  return !version || version === 'v30' || version === 'v301' ? 'v30' : 'v20';
 }
 
 export function unitSkinTemplate(quenchingDir: string, profile: UnitSkinProfile, era: UnitSkinEra): string {

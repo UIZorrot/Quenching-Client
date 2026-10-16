@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Space, message } from 'antd';
+import { Button, Modal, Space, message } from 'antd';
 import { useTranslation } from '../../utils/i18n';
 import { OverlayModal } from './OverlayModal';
 import { useSound } from '../../hooks/useSound';
@@ -46,16 +46,38 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({
     }
   };
 
-  const unlockCampaign = async () => {
-    playSmall();
+  const runCampaignUnlock = async (mapName?: string) => {
     try {
-      showLoading(t('msg.launching'));
-      await window.electronAPI?.unlockCampaign();
-      message.success(t('campaign.unlock.success'));
+      // No synthetic percent/copied state: wait for the real copy and launch IPC.
+      showLoading(t(mapName ? 'campaign.unlock.preparing' : 'msg.launching'));
+      await window.electronAPI?.unlockCampaign(mapName);
+      message.success(t(mapName ? 'campaign.unlock.ready' : 'campaign.unlock.success'));
     } catch (e: any) {
       message.error(e?.message || t('msg.game.start.failed'));
     } finally {
       hideLoading();
+    }
+  };
+
+  const unlockCampaign = async () => {
+    playSmall();
+    try {
+      const mode = await window.electronAPI?.getCampaignUnlockMode?.();
+      if (mode !== 'battlenet') {
+        await runCampaignUnlock();
+        return;
+      }
+      const mapName = t('campaign.unlock.mapName');
+      Modal.confirm({
+        centered: true,
+        title: t('campaign.unlock.title'),
+        content: <p>{t('campaign.unlock.guide', { name: mapName })}</p>,
+        okText: t('main.btn.start'),
+        cancelText: t('btn.cancel'),
+        onOk: () => runCampaignUnlock(mapName),
+      });
+    } catch (e: any) {
+      message.error(e?.message || t('msg.game.start.failed'));
     }
   };
 

@@ -1,4 +1,5 @@
 // 导入语句必须在最前面
+import "#main/services/update-test-init";
 import "#main/index";
 import "#main/reaxels/menu";
 import { reaxel_MainProcessHub } from '#main/reaxels/main-process-hub';
@@ -14,6 +15,7 @@ import { channelRecoveryReady } from '#main/services/channel-recovery-init';
 import { checkInterruptedClientUpdate, cleanupCompletedClientUpdate } from '#main/services/client-update-service';
 import { AssetSyncService } from '#main/services/asset-sync';
 import { configManager } from '#main/services/config-manager';
+import { startupResourceBarrier } from '#main/services/startup-resource-barrier';
 
 logger.initialize();
 
@@ -29,6 +31,7 @@ app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('ignore-certificate-errors');
 
 app.whenReady().then(async () => {
+	configManager.initializeSystemLanguage();
 	try {
 		const updateRecovery = await checkInterruptedClientUpdate();
 		if (updateRecovery === 'busy' || updateRecovery === 'recovering') {
@@ -61,13 +64,13 @@ app.whenReady().then(async () => {
 	// never delays startup; the resource transaction restores old files on error.
 	const configuredGamePath = configManager.get('war3Path');
 	if (configuredGamePath) {
-		void AssetSyncService.syncClientWebUIAssets(configuredGamePath).catch(error => {
+		void startupResourceBarrier.foreground(() => AssetSyncService.syncClientWebUIAssets(configuredGamePath)).catch(error => {
 			console.error('[Main] Startup WebUI asset sync failed:', error);
 		});
-		void AssetSyncService.ensurePostProcessingConfig(configuredGamePath).catch(error => {
+		void startupResourceBarrier.foreground(() => AssetSyncService.ensurePostProcessingConfig(configuredGamePath)).catch(error => {
 			console.error('[Main] Startup PostProcessingConfig check failed:', error);
 		});
-		void AssetSyncService.refreshUnitSkinBaseline(configuredGamePath).catch(error => {
+		void startupResourceBarrier.foreground(() => AssetSyncService.refreshUnitSkinBaseline(configuredGamePath)).catch(error => {
 			console.error('[Main] Startup unitskin baseline check failed:', error);
 		});
 	}

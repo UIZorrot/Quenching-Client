@@ -5,14 +5,16 @@ import path from 'node:path';
 import { normalizeWar3RootPath } from './war3-path';
 import { GraphicsSelection, VersionSelection } from '../../shared/mod-profile';
 import { GameChannel } from '../../shared/game-channel';
+import { ClientLanguage, isClientLanguage, systemLanguage } from '../../shared/system-language';
 
 interface AppConfig {
     war3Path: string;
     gameChannel: GameChannel;
     channelModEnabled: Partial<Record<GameChannel, boolean>>;
     lastFullPackageBytes: number;
-    language: 'zh-CN' | 'en-US' | 'ko-KR' | 'fr-FR' | 'pt-BR' | 'ru-RU' | 'es-ES' | 'pl-PL';
+    language: ClientLanguage;
     theme: string;
+    themeApplyToGame: boolean;
     // Mods
     antiHarmony: boolean;
     terrainMode: 'classic' | 'hd' | 'custom';
@@ -59,6 +61,10 @@ const schema = {
     theme: {
         type: 'string',
         default: 'magicstorm'
+    },
+    themeApplyToGame: {
+        type: 'boolean',
+        default: true
     },
     antiHarmony: {
         type: 'boolean',
@@ -109,6 +115,7 @@ const schema = {
 export class ConfigManager {
     private store: Store<AppConfig>;
     private backupPath: string;
+    private useSystemLanguage: boolean;
 
     constructor() {
         const isolatedConfigDir = process.env.QUENCHING_TEST_CONFIG_DIR;
@@ -136,6 +143,8 @@ export class ConfigManager {
                 console.warn(`[Config] Restored malformed configuration from backup: ${configPath}`);
             }
         }
+        // Capture this before electron-store materializes the Chinese schema default.
+        this.useSystemLanguage = !existsSync(configPath) || !isClientLanguage(JSON.parse(readFileSync(configPath, 'utf8')).language);
         const storeOptions = {
             schema: schema as any,
             clearInvalidConfig: false,
@@ -144,6 +153,17 @@ export class ConfigManager {
         this.store = new Store<AppConfig>(storeOptions);
         this.backupCurrentConfig();
         console.log(`[Config] Using persistent store: ${this.store.path}`);
+    }
+
+    /** Call after app.ready, before opening any UI. Saved manual choices take precedence. */
+    initializeSystemLanguage(): void {
+        if (!this.useSystemLanguage) return;
+        let language: ClientLanguage = 'zh-CN';
+        try {
+            const preferred = app.getPreferredSystemLanguages();
+            language = systemLanguage(preferred.length ? preferred : [app.getSystemLocale()]);
+        } catch { /* Locale detection can fail; the specified fallback is Chinese. */ }
+        this.set('language', language);
     }
 
     private backupCurrentConfig(): void {
@@ -177,6 +197,7 @@ export class ConfigManager {
             value = normalizeWar3RootPath(value) as AppConfig[K];
         }
         this.store.set(key, value);
+        if (key === 'language') this.useSystemLanguage = false;
         this.backupCurrentConfig();
     }
 

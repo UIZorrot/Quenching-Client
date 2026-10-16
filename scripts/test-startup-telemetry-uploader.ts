@@ -100,7 +100,10 @@ async function run(): Promise<void> {
   }
 
   for (const response of [
+    { status: 202, json: async () => ({ acceptedEventIds: ['inserted'], insertedEventIds: ['inserted'], duplicateEventIds: [] }) },
+    { status: 429, json: async () => ({ acceptedEventIds: ['inserted'], insertedEventIds: [], duplicateEventIds: ['inserted'] }) },
     { status: 500, json: async () => ({}) },
+    { status: 503, json: async () => ({ acceptedEventIds: ['inserted'], insertedEventIds: ['inserted'], duplicateEventIds: [] }) },
     { status: 200, json: async () => ({ acceptedEventIds: ['inserted'] }) }
   ]) {
     const retained = await uploadStartupTelemetryBatch({
@@ -110,6 +113,16 @@ async function run(): Promise<void> {
       fetchImpl: async () => response
     });
     assert.deepEqual(retained.acceptedEventIds, []);
+    assert.deepEqual(removeAcceptedStartupEvents([event('inserted')], retained.acceptedEventIds).map(item => item.id), ['inserted']);
+  }
+
+  for (const failure of [
+    async () => { throw new Error('offline'); },
+    async () => ({ status: 200, json: async () => { throw new Error('invalid JSON'); } })
+  ]) {
+    const retained = await uploadStartupTelemetryBatch({ events: [event('retry-same-id')], endpoint: 'https://example.test/events', timeoutMs: 50, fetchImpl: failure });
+    assert.deepEqual(retained.acceptedEventIds, []);
+    assert.equal(removeAcceptedStartupEvents([event('retry-same-id')], retained.acceptedEventIds)[0].id, 'retry-same-id');
   }
 
   const keepAlive = setTimeout(() => undefined, 100);

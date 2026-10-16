@@ -1,4 +1,4 @@
-import { getSelectedGameFolder } from './game-channel';
+import { getSelectedGameFolder, getChannelModEnabled, getSelectedGameChannel } from './game-channel';
 import { app } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
@@ -67,6 +67,8 @@ export class ThemeService {
     }
 
     async applyThemeToGame(themeId: string): Promise<boolean> {
+        if (configManager.get('themeApplyToGame') === false) return true;
+        if (!getChannelModEnabled(getSelectedGameChannel())) return false;
         console.log(`[ThemeService] Applying theme: ${themeId}`);
 
         const war3Path = configManager.get('war3Path');

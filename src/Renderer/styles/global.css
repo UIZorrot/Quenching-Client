@@ -380,8 +380,23 @@ body {
 .home-status-dot.is-ready { background: #8ecb96; box-shadow: 0 0 12px rgba(142, 203, 150, 0.65); }
 .home-hero-status strong { display: block; color: #f2dfb2; font-size: 14px; }
 .home-hero-status small { display: block; color: #aea6ae; font-size: 12px; margin-top: 4px; overflow-wrap: anywhere; }
+.home-directory-details { flex: 1; min-width: 0; }
+.home-directory-choice {
+  display: flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0;
+  padding: 8px 11px; border: 1px solid rgba(226, 191, 100, 0.42); border-radius: 7px;
+  background: rgba(226, 191, 100, 0.08); color: #f2d282; cursor: pointer; font: inherit;
+}
+.home-directory-choice:hover:not(:disabled) { background: rgba(226, 191, 100, 0.18); }
+.home-directory-choice:disabled { opacity: 0.45; cursor: not-allowed; }
+.forum-panel { position: fixed; inset: 48px 18px 18px; z-index: 2100; display: flex; flex-direction: column; min-height: 0; border: 1px solid rgba(226, 191, 100, 0.55); border-radius: 12px; overflow: hidden; background: #17131b; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7); }
+.forum-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 58px; padding: 8px 14px; border-bottom: 1px solid rgba(226, 191, 100, 0.22); }
+.forum-panel-header strong { color: #f2d282; font-size: 16px; }
+.forum-panel-header small { display: block; margin-top: 3px; color: #a99dae; font-size: 11px; }
+.forum-panel-actions { display: flex; align-items: center; gap: 6px; }
+.forum-panel-header, .forum-panel-actions { flex-wrap: wrap; }
+.forum-panel-content { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #c3bac7; }
 .home-hero-footer { align-items: flex-start; flex-direction: column; margin-top: auto; padding-top: 20px; color: #b6aab1; font-size: 12px; }
-.home-hero-actions { display: flex; flex-wrap: wrap; gap: 9px; width: 100%; }
+.home-hero-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; width: 100%; }
 
 .home-install-actions button,
 .home-site-link button {
@@ -396,6 +411,73 @@ body {
 .home-hero-actions button { min-height: 34px; padding: 6px 11px; border: 1px solid rgba(226, 191, 100, 0.42); border-radius: 7px; background: rgba(226, 191, 100, 0.08); color: #f2d282; cursor: pointer; font: 600 12px/1.3 'Microsoft YaHei UI', sans-serif; }
 .home-hero-actions button:hover:not(:disabled) { background: rgba(226, 191, 100, 0.18); border-color: #e6bf62; }
 .home-hero-actions button:disabled { opacity: 0.45; cursor: not-allowed; }
+.home-hero-actions .home-install-full-package,
+.home-hero-actions .home-mod-action {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; min-height: 48px; padding: 12px 18px;
+  border-color: #e4bf61; background: linear-gradient(135deg, #e6c269, #f4d276);
+  color: #241b0b; font-size: 15px; box-shadow: 0 6px 22px rgba(214, 163, 44, 0.15);
+}
+.home-hero-actions .home-install-full-package:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f0cf78, #ffe49c);
+}
+.home-hero-actions .home-mod-action[aria-checked="true"] { background: rgba(226, 191, 100, 0.13); color: #f5d47b; }
+.home-hero-actions .home-mod-action:hover:not(:disabled) { background: #f8de99; color: #241b0b; }
+.home-mod-install-hint { margin-top: 12px; color: #b6aab1; line-height: 1.6; }
+.full-package-install-modal { font-family: 'Segoe UI', 'Microsoft YaHei UI', sans-serif; }
+.full-package-install-modal .ant-modal-content {
+  padding: 28px !important; border: 1px solid rgba(226, 191, 100, 0.3) !important; border-radius: 18px !important;
+  background: radial-gradient(ellipse at top right, rgba(132, 103, 46, 0.12), transparent 65%), #1c1821 !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.7) !important;
+}
+.full-package-install-modal .ant-modal-header { background: transparent !important; border: 0 !important; margin-bottom: 22px; padding-right: 28px; }
+.full-package-install-modal .ant-modal-title { color: #f1e6cd !important; font-size: 21px !important; font-weight: 600 !important; line-height: 1.4; }
+.full-package-install-modal .ant-modal-close { top: 22px; right: 22px; width: 30px; height: 30px; color: #b9afbb; border: 0 !important; background: transparent !important; border-radius: 7px; }
+.full-package-install-modal .ant-modal-close:hover { color: #f2d282; background: rgba(255, 255, 255, 0.06) !important; }
+.full-package-install-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 0; margin: 0 0 24px; list-style: none; }
+.full-package-install-steps li { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 11px 12px; border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 9px; color: #938996; font-size: 13px; line-height: 1.5; }
+.full-package-install-steps .full-package-step-index { display: grid; place-items: center; width: 25px; height: 25px; flex-shrink: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.06); font-size: 12px; }
+.full-package-install-steps .is-active { color: #f2d282; border-color: rgba(226, 191, 100, 0.3); background: rgba(226, 191, 100, 0.06); }
+.full-package-install-steps .is-active .full-package-step-index { color: #251c0a; background: #e6c269; }
+.full-package-install-steps .is-complete { color: #bdb4c1; }
+.full-package-install-steps .is-complete .full-package-step-index { color: #a8caad; background: rgba(128, 179, 138, 0.1); }
+.full-package-install-step p { margin: 0 0 18px; color: #aaa0b0; font-size: 13px; line-height: 1.7; }
+.full-package-install-target { display: grid; gap: 11px; margin-bottom: 24px; padding: 15px 16px; background: rgba(0, 0, 0, 0.21); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 10px; }
+.full-package-target-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: #a99dae; font-size: 12px; }
+.full-package-target-heading > span:first-child { display: inline-flex; align-items: center; gap: 7px; }
+.full-package-target-branch { padding: 2px 7px; border: 1px solid rgba(226, 191, 100, 0.22); border-radius: 5px; color: #dfc384; font: 11px/1.4 'Segoe UI', sans-serif; }
+.full-package-target-heading button { margin-left: auto; padding: 2px 0; border: 0; background: none; color: #dfc384; font: inherit; cursor: pointer; }
+.full-package-target-heading button:hover:not(:disabled) { color: #ffe5a3; }
+.full-package-install-target code { color: #ded4e2; font: 12px/1.8 Consolas, 'Microsoft YaHei UI', monospace; text-transform: none !important; letter-spacing: 0; overflow-wrap: anywhere; user-select: text; }
+.full-package-install-source-heading h3 { margin-bottom: 5px; color: #e6dce9; font: 600 15px/1.5 'Segoe UI', 'Microsoft YaHei UI', sans-serif; }
+.full-package-install-source-heading p { margin-bottom: 16px; }
+.full-package-install-sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.full-package-source-card { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 18px 14px; border: 1px solid rgba(226, 191, 100, 0.27); border-radius: 11px; background: rgba(226, 191, 100, 0.04); color: #f1e6cd; text-align: left; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.full-package-source-card:hover:not(:disabled) { background: rgba(226, 191, 100, 0.1); border-color: #d4b461; }
+.full-package-source-card:focus-visible { outline: 2px solid #e6c269; outline-offset: 3px; }
+.full-package-source-icon { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 9px; background: rgba(226, 191, 100, 0.09); color: #e6c269; font-size: 21px; }
+.full-package-source-description { display: grid; gap: 6px; min-width: 0; flex: 1; font-family: 'Segoe UI', 'Microsoft YaHei UI', sans-serif; }
+.full-package-source-description strong { font-size: 14px; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.full-package-source-description small { color: #afa4b5; font-size: 11px; line-height: 1.65; overflow-wrap: anywhere; }
+.full-package-source-arrow { flex: none; color: #c5a867; font-size: 12px; }
+.full-package-install-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.full-package-install-actions .ant-btn { height: auto; min-height: 42px; padding: 10px 16px; white-space: normal; font-family: inherit; }
+.full-package-install-actions .ant-btn-default { color: #e6c681; background: transparent; border-color: rgba(226, 191, 100, 0.4); }
+.full-package-install-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px; margin-top: 24px; padding-top: 17px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.full-package-install-back { padding: 0; color: #afa3b5; background: none; border: 0; cursor: pointer; font: 12px/1.5 'Segoe UI', 'Microsoft YaHei UI', sans-serif; }
+.full-package-install-back:hover:not(:disabled) { color: #e4d4ea; }
+.full-package-install-download { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: #918595; font-size: 12px; }
+.full-package-install-download button { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: #e6c269; font: inherit; cursor: pointer; }
+.full-package-install-download button:hover:not(:disabled) { color: #ffe5a3; }
+.full-package-install-modal button:disabled { opacity: 0.45; cursor: not-allowed; }
+@media (max-width: 600px) {
+  .full-package-install-modal .ant-modal-content { padding: 22px 18px !important; }
+  .full-package-install-steps { gap: 8px; }
+  .full-package-install-steps li { gap: 7px; padding: 9px 8px; font-size: 12px; }
+  .full-package-install-sources { grid-template-columns: 1fr; }
+  .full-package-install-actions { flex-direction: column; }
+  .full-package-install-footer { align-items: flex-start; }
+}
 
 .home-control-card {
   display: flex;

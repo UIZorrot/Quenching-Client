@@ -2,7 +2,7 @@ import { ipcMain } from 'electron';
 import path from 'path';
 import { configManager } from '../services/config-manager';
 import { AssetSyncService, syncLightingResources } from '../services/asset-sync';
-import { getBrightnessMultiplier, normalizeBrightnessLevel } from '../services/dnc-lighting';
+import { normalizeBrightnessLevel } from '../services/dnc-lighting';
 
 export function registerMdlHandlers() {
     /**
@@ -27,7 +27,7 @@ export function registerMdlHandlers() {
                 }
 
                 const brightnessLevel = normalizeBrightnessLevel(lightingBrightness);
-                console.log(`[MDL] Updating lighting mode: ${lightingMode}, brightness level: ${brightnessLevel} (Intensity ×${getBrightnessMultiplier(brightnessLevel)})`);
+                console.log(`[MDL] Updating lighting mode: ${lightingMode}, brightness level: ${brightnessLevel}`);
 
                 const modSettings = configManager.get('modSettings') || {};
                 const settings = { ...modSettings, lighting: lightingMode, lightingBrightness: brightnessLevel };

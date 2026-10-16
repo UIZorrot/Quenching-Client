@@ -6,6 +6,7 @@ import { useWar3Settings } from '../../hooks/useWar3Settings';
 import { useWar3Detector } from '../../hooks/useWar3Detector';
 import { useSound } from '../../hooks/useSound';
 import { useGlobalLoading } from '../GlobalLoadingProvider';
+import { normalizeGraphicsSelection } from '../../../shared/mod-profile';
 
 const { Text } = Typography;
 
@@ -55,6 +56,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     image: null
   });
   const isClassicMode = modSettings?.classicMode === true;
+  // A previous applied DE profile must not lock an explicit HD selection.
+  const deGraphics = !isClassicMode && normalizeGraphicsSelection(modSettings.graphicsSelection) === 'de';
   const visualSettingsDisabled = isClassicMode || modSettings?.graphicsSelection === 'sd';
   const [antiHarmonyEnabled, setAntiHarmonyEnabled] = useState(false);
   const [antiHarmonyBusy, setAntiHarmonyBusy] = useState(false);
@@ -244,9 +247,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
 
     // 2b. DE graphics: water cannot be adjusted
     if (key === 'water') {
-      const graphics = modSettings.graphicsSelection;
-      const resolved = (modSettings as any).resolvedGraphics;
-      if (graphics === 'de' || resolved === 'de') {
+      if (deGraphics) {
         return { disabled: true, reason: t('settings.water.de.disabled') };
       }
     }
@@ -406,7 +407,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
     const sLighting = getSettingStatus('lighting');
     const sLightingBrightness = getSettingStatus('lightingBrightness');
     const sUi = getSettingStatus('ui'); // not used yet but good to have
-    const deTerrainOnly = modSettings.graphicsSelection === 'de' || (modSettings as any).resolvedGraphics === 'de';
 
     return (
       <div style={{ padding: '16px', height: '100%', overflowY: 'auto' }}>
@@ -426,13 +426,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ open, onClose, isF
             <Space wrap>
               {renderSettingButton(t('settings.terrain.original'), modSettings.terrain, 'original', () => handleSettingChange('terrain', 'original'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.original'), image: './assets/quenching/set6.png' }), sTerrain.disabled)}
               {renderSettingButton(t('settings.terrain.decisive'), modSettings.terrain, 'decisive', () => handleSettingChange('terrain', 'decisive'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.decisive'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), deTerrainOnly || sTerrainMod.disabled || sTerrain.disabled)}
-              {renderSettingButton(t('settings.tree.height.16'), modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set6.png' }), deTerrainOnly || sTerrainMod.disabled || sTerrain.disabled)}
-              {renderSettingButton(t('settings.tree.height.18'), modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set6.png' }), deTerrainOnly || sTerrainMod.disabled || sTerrain.disabled)}
-              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), deTerrainOnly || sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.latest'), modSettings.terrain, 'latest', () => handleSettingChange('terrain', 'latest'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.latest'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.tree.height.16'), modSettings.terrain, 'v16', () => handleSettingChange('terrain', 'v16'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.16'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.tree.height.18'), modSettings.terrain, 'v18', () => handleSettingChange('terrain', 'v18'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.tree.height.18'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
+              {renderSettingButton(t('settings.terrain.retro'), modSettings.terrain, 'retro', () => handleSettingChange('terrain', 'retro'), () => setPreviewInfo({ title: t('settings.terrain.style'), desc: t('settings.terrain.retro'), image: './assets/quenching/set6.png' }), sTerrainMod.disabled || sTerrain.disabled)}
             </Space>
-            {renderStatusPlaceholder(sTerrainMod.reason || sTerrain.reason ||
-              (deTerrainOnly ? t('settings.terrain.deOnly', '决定版画质仅支持原版地形和淬火决定版地形') : null))}
+            {renderStatusPlaceholder(sTerrainMod.reason || sTerrain.reason)}
           </Col>
           <Col span={24}>
             <h3 style={{ color: '#d4af37', marginBottom: '10px', fontSize: '16px', fontFamily: "'Trajan Pro 3', serif" }}>{t('settings.tree.style')}</h3>

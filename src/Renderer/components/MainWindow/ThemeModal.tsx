@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Typography, Button, Space, Row, Col, message } from 'antd';
+import { Typography, Button, Checkbox, Row, Col, message } from 'antd';
 import { useTranslation } from '../../utils/i18n';
 import { OverlayModal } from './OverlayModal';
 import { useSound } from '../../hooks/useSound';
@@ -87,6 +87,8 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
   const [selectedTheme, setSelectedTheme] = useState('magicstorm');
   const [hoveredTheme, setHoveredTheme] = useState<Theme | null>(null);
   const [customThemes, setCustomThemes] = useState<Theme[]>([]);
+  const [applyToGame, setApplyToGame] = useState(true);
+  const [applying, setApplying] = useState(false);
 
   // 初始化加载配置
   useEffect(() => {
@@ -96,6 +98,7 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
         if (savedTheme) {
           setSelectedTheme(savedTheme);
         }
+        setApplyToGame((await window.electronAPI?.getConfig('themeApplyToGame')) !== false);
         const savedCustomThemes = await window.electronAPI?.getConfig('customThemes');
         if (savedCustomThemes && Array.isArray(savedCustomThemes)) {
           setCustomThemes(savedCustomThemes);
@@ -110,17 +113,19 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
 
   const handleApplyTheme = async () => {
     const key = 'applyTheme';
+    setApplying(true);
     messageApi.loading({ content: t('theme.updating'), key });
 
     try {
       // 1. 立即更新 App 内部配置（即便游戏目录不对，App 也要换装）
       await window.electronAPI?.setConfig('theme', selectedTheme);
+      await window.electronAPI?.setConfig('themeApplyToGame', applyToGame);
 
       // 立即触发 App 内的主题变更事件，让背景视频刷新
       window.dispatchEvent(new CustomEvent('theme-changed', { detail: selectedTheme }));
 
       // 2. 尝试应用到游戏文件
-      const success = await window.electronAPI?.applyTheme(selectedTheme);
+      const success = !applyToGame || await window.electronAPI?.applyTheme(selectedTheme);
 
       if (success) {
         messageApi.success({ content: t('msg.settings.updated'), key });
@@ -138,6 +143,8 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
     } catch (error) {
       console.error('Failed to apply theme:', error);
       messageApi.error({ content: t('msg.mod.failed'), key });
+    } finally {
+      setApplying(false);
     }
   };
 
@@ -194,14 +201,12 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
       width="90%"
     >
       {contextHolder}
-      <div style={{
+      <div className="theme-modal-content" style={{
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        height: '100%',
-        minHeight: '600px',
-        overflowY: 'auto'
+        minHeight: '100%'
       }}>
         {/* 背景预览图 - 仅随选中的主题改变 */}
         <video
@@ -394,6 +399,8 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '24px',
             boxShadow: '0 -10px 30px rgba(0,0,0,0.5)'
           }}>
             <div style={{ flex: 1 }}>
@@ -415,10 +422,15 @@ export const ThemeModal: React.FC<ThemeModalProps> = ({ open, onClose }) => {
                 </div>
               )}
             </div>
-            <div style={{ marginLeft: '60px' }}>
+            <div className="theme-modal-actions" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+              <Checkbox checked={applyToGame} disabled={applying} onChange={event => setApplyToGame(event.target.checked)}
+                style={{ color: '#d4af37', whiteSpace: 'nowrap' }}>
+                {t('theme.applyToGame')}
+              </Checkbox>
               <Button
                 type="primary"
                 size="large"
+                loading={applying}
                 onClick={() => {
                   playSmall();
                   handleApplyTheme();

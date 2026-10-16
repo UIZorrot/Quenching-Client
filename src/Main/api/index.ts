@@ -3,6 +3,8 @@ import { RegistryOperationsAPI } from './registry-operations';
 import { WindowOperationsAPI } from './window-operations';
 import { GameLauncherAPI } from './game-launcher';
 import { AppOperationsAPI } from './app-operations';
+import { ipcMain } from 'electron';
+import { guardStartupResourceHandlers } from '../services/startup-resource-barrier';
 
 // 导入原有的各功能模块注册函数
 import { registerLaunchHandlers } from '../ipc/launch-handlers';
@@ -27,9 +29,11 @@ import { registerModelPreviewHandlers } from '../ipc/model-preview-handlers';
 import { registerCustomSkinHandlers } from '../ipc/custom-skin-handlers';
 import { registerModUpdateHandlers } from '../ipc/mod-update-handlers';
 import { registerClientUpdateHandlers } from '../ipc/client-update-handlers';
+import { registerForumHandlers } from '../ipc/forum-handlers';
 
 // 注册所有API
 export function registerAllAPIs() {
+  guardStartupResourceHandlers(ipcMain, () => {
   // 新架构 API
   FileOperationsAPI.register();
   RegistryOperationsAPI.register();
@@ -60,6 +64,8 @@ export function registerAllAPIs() {
   registerCustomSkinHandlers();
   registerModUpdateHandlers();
   registerClientUpdateHandlers();
+  registerForumHandlers();
+  });
 }
 
 export {

@@ -208,6 +208,14 @@ export async function parkSdResources(war3Path: string): Promise<void> {
     const parkedPath = path.join(qmoffDir, dir);
     if (!(await fs.pathExists(activePath))) continue;
 
+    // UI is fully client-managed. Empty directory trees are not resource backups;
+    // remove them without replacing a valid parked UI.
+    if (dir === 'ui') {
+      if (await hasDirectoryContent(activePath)) await movePath(activePath, parkedPath);
+      else await fs.remove(activePath);
+      continue;
+    }
+
     const activeHasContent = await hasDirectoryContent(activePath);
     const parkedHasContent = await hasDirectoryContent(parkedPath);
 
@@ -238,6 +246,12 @@ export async function restoreSdParkedResources(war3Path: string): Promise<void> 
     const parkedPath = path.join(qmoffDir, dir);
     const activePath = path.join(baseDir, dir);
     if (!(await fs.pathExists(parkedPath))) continue;
+    // Replace the whole client-owned UI, including stale files/empty subfolders.
+    // UIService then reapplies the selected style from bundled client assets.
+    if (dir === 'ui') {
+      await movePath(parkedPath, activePath);
+      continue;
+    }
     if (await fs.pathExists(activePath) && (await hasDirectoryContent(activePath))) {
       await mergeMoveDirectory(parkedPath, activePath);
       continue;
@@ -288,7 +302,9 @@ export async function syncGraphicsLayout(
     const hasShoreline = (await Promise.all(SHORELINE_NAMES.map((name) => fs.pathExists(path.join(baseDir, 'textures', name))))).some(Boolean);
     waterNeedsReapply = options?.waterMode === 'off'
       ? hasActiveWater || hasWaterSlk || hasShoreline
-      : !hasActiveWater || !hasWaterSlk;
+      : options?.waterMode === 'realistic'
+        ? !hasActiveWater || hasWaterSlk || hasShoreline
+        : !hasActiveWater || !hasWaterSlk;
   }
 
   return { waterNeedsReapply };

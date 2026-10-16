@@ -17,7 +17,11 @@ __Bin/
 .idea/
 .vscode/
 .codex/
-.agents/
+.agents/*
+# Share only the repository release skill; keep other local agent data private.
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/quenching-release/
 *.swp
 .DS_Store
 Thumbs.db
@@ -41,7 +45,8 @@ jamiephan-stormlib-*.tgz
 # Local analysis / backups / experiments
 analysis_outputs/
 backup/
-experiments/
+experiments/*
+!experiments/war3-lab/
 output/
 output.txt
 output-all.txt

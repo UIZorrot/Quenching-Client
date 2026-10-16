@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { selectPreviewSequence } from '../src/Renderer/model-preview/sequence-selection';
+const names = ['Birth', 'Stand Work', 'Stand 1', 'Stand Upgrade First', 'Stand Upgrade Second', 'Stand Upgrade Third', 'Stand Alternate Upgrade First'];
+const sequences = names.map(name => ({ name }));
+for (const id of ['htow', 'ogre', 'etol', 'unpl', 'hwtw', 'uzig']) assert.equal(names[selectPreviewSequence(sequences, id)], 'Stand 1');
+for (const id of ['hkee', 'ostr', 'etoa', 'unp1', 'hgtw', 'uzg1']) assert.equal(names[selectPreviewSequence(sequences, id)], 'Stand Upgrade First');
+for (const id of ['hcas', 'ofrt', 'etoe', 'unp2', 'hctw', 'uzg2']) assert.equal(names[selectPreviewSequence(sequences, id)], 'Stand Upgrade Second');
+assert.equal(names[selectPreviewSequence(sequences, 'hatw')], 'Stand Upgrade Third');
+assert.equal(selectPreviewSequence([{ name: 'Walk' }, { name: 'Stand 2' }], 'hcas'), 1);
+assert.equal(selectPreviewSequence([], 'hcas'), -1);
+console.log('PASS: four races base upgrades, human towers and undead ziggurats use the correct Stand sequence; custom models can omit upgrade sequences.');

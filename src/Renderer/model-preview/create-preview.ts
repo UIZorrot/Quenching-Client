@@ -5,11 +5,12 @@ import dds from 'mdx-m3-viewer/dist/cjs/viewer/handlers/dds/handler';
 import tga from 'mdx-m3-viewer/dist/cjs/viewer/handlers/tga/handler';
 import { parsePreviewModel } from './parse-model';
 import { cjsDefault } from './interop';
+import { selectPreviewSequence } from './sequence-selection';
 
 export type ReadPreviewResource = (path: string, basePath?: string) => Promise<{ bytes: Uint8Array; resolvedPath: string }>;
 
 export async function createPreview(canvas: HTMLCanvasElement, source: { bytes: Uint8Array; resolvedPath: string },
-  read: ReadPreviewResource, options: { scale?: number; signal?: AbortSignal; teamColor?: number; transparent?: boolean; viewDistance?: number } = {}) {
+  read: ReadPreviewResource, options: { scale?: number; signal?: AbortSignal; teamColor?: number; transparent?: boolean; viewDistance?: number; unitId?: string } = {}) {
   const parser = parsePreviewModel(source.bytes);
   // Card previews are deliberately silent and self-contained: no event-triggered
   // sound/spawn tables or child attachments. These are not core mesh animations.
@@ -63,8 +64,8 @@ export async function createPreview(canvas: HTMLCanvasElement, source: { bytes: 
     instance.setTeamColor(options.teamColor ?? 8);
     const scale = options.scale || 1;
     instance.setUniformScale(scale);
-    const stand = parser.sequences.findIndex(s => /^stand(?:\s|$)/i.test(s.name));
-    instance.setSequence(stand < 0 ? 0 : stand);
+    const stand = selectPreviewSequence(parser.sequences, options.unitId);
+    instance.setSequence(stand);
     instance.setSequenceLoopMode(2);
     instance.setScene(scene);
     const extent = parser.sequences[stand]?.extent || parser.extent;

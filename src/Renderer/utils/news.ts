@@ -1,4 +1,7 @@
 import { reaxel, createReaxable } from 'reaxes';
+import { useEffect, useState } from 'react';
+import { reaction } from 'mobx';
+import { reaxel_I18n } from './i18n';
 
 // 新闻项目接口
 export interface NewsItem {
@@ -23,53 +26,7 @@ export interface NewsCategory {
 
 const defaultNews: NewsItem[] = [];
 
-const newsUrls: Record<'cn' | 'en', string> = {
-  cn: 'https://qm.txzy.net/newscn.md',
-  en: 'https://qm.txzy.net/newsen.md'
-};
-
-const parseMarkdown = (md: string): NewsItem[] => {
-  const items: NewsItem[] = [];
-  if (!md) return items;
-  const cleanMd = md.replace(/^\u0000?/, '').replace(/^\uFEFF/, '');
-  const h1Match = cleanMd.match(/(?:^|\r?\n)#\s+([^\r\n]+)/);
-  const pageTitle = h1Match ? h1Match[1].trim() : '';
-
-  // 移除H1行
-  const contentBody = cleanMd.replace(/(?:^|\r?\n)#\s+[^\r\n]+/, '');
-  const sections = contentBody.split(/(?:\r?\n|^)##\s+(?!#)/);
-
-  for (let i = 0; i < sections.length; i++) {
-    const section = sections[i].trim();
-    if (!section) continue;
-    const lines = section.split(/\r?\n/);
-    const firstLine = lines[0].trim();
-    const dateMatch = firstLine.match(/(\d{4}-\d{2}-\d{2})/);
-    if (!dateMatch) continue;
-
-    const date = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
-    let title = pageTitle || firstLine.replace(date, '').replace(/[#\[\]\(\)]/g, '').trim();
-    const contentLines = lines.slice(1);
-    const h4Index = contentLines.findIndex(l => l.trim().startsWith('####'));
-    const h3Index = contentLines.findIndex(l => l.trim().startsWith('###'));
-    const useIndex = h4Index !== -1 ? h4Index : h3Index;
-    let content = '';
-    let sectionLabel: string | undefined;
-    if (useIndex !== -1) {
-      const headerLine = contentLines[useIndex];
-      const headerTitle = headerLine.replace(/^####\s+/, '').replace(/^###\s+/, '').trim();
-      sectionLabel = headerTitle || undefined;
-      content = contentLines.slice(useIndex + 1).join('\n').trim();
-    } else {
-      content = contentLines.join('\n').trim();
-    }
-    if (!title) title = `更新公告 ${date}`;
-    let type: NewsItem['type'] = 'update';
-
-    items.push({ id: `news-${date}-${i}`, title, content, date, type, tags: sectionLabel ? [sectionLabel] : [] });
-  }
-  return items.sort((a, b) => b.date.localeCompare(a.date));
-};
+export const newsLanguage = (language: string): 'cn' | 'en' => language === 'zh-CN' ? 'cn' : 'en';
 
 // 新闻分类
 const newsCategories: NewsCategory[] = [
@@ -88,43 +45,29 @@ export const reaxel_News = reaxel(() => {
     selectedCategory: 'all' as string,
     isLoading: false,
     lastUpdated: new Date().toISOString(),
-    errorMessage: '' as string
+    errorMessage: '' as string,
+    language: null as 'cn' | 'en' | null
   });
+  let requestId = 0;
 
   // 从远程API获取新闻（支持热加载）
-  const fetchNews = async (forceRefresh = false, lang: 'cn' | 'en' = 'cn') => {
-    if (store.isLoading && !forceRefresh) return;
+  const fetchNews = async (forceRefresh = false, lang: 'cn' | 'en' = newsLanguage(reaxel_I18n().store.currentLanguage)) => {
+    if (store.isLoading && store.language === lang && !forceRefresh) return;
+    const request = ++requestId;
 
-    setState({ isLoading: true });
+    setState({ isLoading: true, language: lang, errorMessage: '', ...(store.language !== lang ? { news: [] } : {}) });
 
     try {
       const remoteNews = await window.electronAPI?.fetchNews(lang);
-      if (remoteNews && remoteNews.length > 0) {
-        setState({
-          news: remoteNews,
-          lastUpdated: new Date().toISOString(),
-          errorMessage: ''
-        });
-      } else {
-        setState({ news: [{
-          id: 'news-unavailable', title: '暂无新闻',
-          content: '新闻源暂不可用，请稍后重试。',
-          date: new Date().toISOString().slice(0, 10), type: 'announcement', author: 'System'
-        }], errorMessage: '' });
-      }
+      if (request !== requestId) return;
+      setState({ news: remoteNews || [], lastUpdated: new Date().toISOString(), errorMessage: '' });
     } catch (error) {
       console.error('[reaxel_News] Error fetching news:', error);
-      const placeholder: NewsItem = {
-        id: `news-placeholder-${Date.now()}`,
-        title: '暂无新闻',
-        content: '暂未获取到远程新闻，可能是网络策略（CSP）限制或网络异常。请稍后重试。',
-        date: new Date().toISOString().split('T')[0],
-        type: 'announcement',
-        author: 'System'
-      };
-      setState({ news: [placeholder], errorMessage: '' });
+      if (request !== requestId) return;
+      // Let NewsPanel render its translated empty/error state, not a fabricated Chinese article.
+      setState({ news: [], errorMessage: error instanceof Error ? error.message : String(error) });
     } finally {
-      setState({ isLoading: false });
+      if (request === requestId) setState({ isLoading: false });
     }
   };
 
@@ -189,6 +132,12 @@ export const reaxel_News = reaxel(() => {
 export const useNews = () => {
   // 获取reaxel实例
   const news = reaxel_News();
+  const [, setRevision] = useState(0);
+  useEffect(() => reaction(
+    () => [news.store.news, news.store.isLoading, news.store.lastUpdated, news.store.errorMessage, news.store.selectedCategory],
+    () => setRevision(revision => revision + 1),
+    { fireImmediately: true }
+  ), [news.store]);
 
   return {
     news: news.store.news,

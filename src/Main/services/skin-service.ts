@@ -7,6 +7,7 @@ import { assertFullPackageInstalled } from './full-package-service';
 import { installBundledResourceFile } from './managed-resource-files';
 import { activeSkinEra, activeSkinProfile, skinProfileForGraphics, storedSkinPath, unitSkinTemplate } from './unit-skin-profile';
 import type { EffectiveGraphics } from '../../shared/mod-profile';
+import { isBranchModDisabled } from './branch-mod-toggle';
 
 export interface SkinChange {
   field: string;
@@ -75,6 +76,7 @@ export class SkinService {
   async enableSkins(forceRefresh: boolean = false): Promise<void> {
     const dirs = await this.getUnitsDir();
     if (!dirs) return;
+    if (await isBranchModDisabled(dirs.baseDir)) return;
 
     const unitskinPath = path.join(dirs.unitsDir, 'unitskin.txt');
     const disabledPath = path.join(dirs.unitsDir, 'unitskin-dis.txt');
@@ -108,6 +110,7 @@ export class SkinService {
   async ensureUnitSkinExists(forceRefresh: boolean = false): Promise<void> {
     const dirs = await this.getUnitsDir();
     if (!dirs) return;
+    if (await isBranchModDisabled(dirs.baseDir)) return;
 
     const { baseDir, unitsDir } = dirs;
     const unitskinPath = path.join(unitsDir, 'unitskin.txt');

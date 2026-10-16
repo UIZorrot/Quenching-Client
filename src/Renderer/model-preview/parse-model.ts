@@ -66,7 +66,12 @@ function materials(s: BinaryStream, version: number, teamTexture: () => number):
         layer.emissiveGain = l.readFloat32(); layer.fresnelColor = l.readFloat32Array(3);
         layer.fresnelOpacity = l.readFloat32(); layer.fresnelTeamColor = l.readFloat32();
         const shaderType = l.readUint32(), slotCount = l.readUint32();
-        assert(shaderType <= 1 && slotCount > 0 && slotCount <= 6, 'unsupported texture slot table');
+        assert(shaderType <= 2 && slotCount > 0 && slotCount <= 6, 'unsupported texture slot table');
+        // The 3.0 Forsaken Paladin's SD material uses type 2 with one diffuse
+        // binding and the standard SD filter/alpha fields. Keep its layer stack
+        // on the SD pipeline, not the six-map HD pipeline. Other type-2 layouts
+        // remain unsupported until verified; do not silently discard maps.
+        if (shaderType === 2) assert(slotCount === 1, 'unsupported type-2 texture slot table');
         const slots = new Map<number, Layer>();
         for (let j = 0; j < slotCount; j++) {
           assert(l.remaining >= 8, 'truncated texture slot');

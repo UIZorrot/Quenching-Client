@@ -37,10 +37,12 @@ async function waitUntilGone(pid, timeoutMs) {
     await sleep(250);
   }
 }
-function writeJournal(file, value) {
+async function writeJournal(file, value) {
   const temp = `${file}.tmp`;
   fs.writeFileSync(temp, JSON.stringify(value));
-  fs.renameSync(temp, file);
+  // Windows scanners/readers may briefly hold the old journal. Keep the
+  // durable before-replace record; never skip it or fall back to a torn write.
+  await retry(() => fs.renameSync(temp, file));
 }
 async function retry(fn, timeoutMs = 30000) {
   const end = Date.now() + timeoutMs;
@@ -89,8 +91,7 @@ async function run(planPath, oldPid) {
   const names = new Set();
   for (const file of plan.files) {
     if (!safeRelative(file.path) || !managedPath(file.path) || names.has(file.path.toLowerCase()) ||
-        (file.oldSha256 !== null && !validHash(file.oldSha256)) || !validHash(file.newSha256) ||
-        file.oldSha256 === file.newSha256) throw new Error('invalid update entry');
+        (file.oldSha256 !== null && !validHash(file.oldSha256)) || !validHash(file.newSha256)) throw new Error('invalid update entry');
     names.add(file.path.toLowerCase());
     assertNoLinks(root, file.path);
     if (hash(path.join(stage, 'new', ...file.path.split('/'))) !== file.newSha256) throw new Error(`bad staged file: ${file.path}`);
@@ -104,7 +105,7 @@ async function run(planPath, oldPid) {
   await waitUntilGone(oldPid, 60000);
   try {
     fs.mkdirSync(backup, { recursive: true });
-    writeJournal(journalPath, journal);
+    await writeJournal(journalPath, journal);
     for (const file of plan.files) {
       const target = path.join(root, ...file.path.split('/'));
       const saved = path.join(backup, ...file.path.split('/'));
@@ -117,38 +118,41 @@ async function run(planPath, oldPid) {
         if (hash(saved) !== file.oldSha256) throw new Error(`backup failed: ${file.path}`);
       }
       // Journal before each replace: recovery can always restore the saved original.
+      fs.mkdirSync(path.dirname(target), { recursive: true });
       journal.replaced.push(file.path);
-      writeJournal(journalPath, journal);
+      await writeJournal(journalPath, journal);
       await retry(() => fs.renameSync(next, target + '.quenching-incoming'));
       // rename with an existing destination is atomic on Windows. Keep the
       // original in backup rather than creating a no-EXE gap in the install.
       await retry(() => fs.renameSync(target + '.quenching-incoming', target));
     }
     journal.state = 'awaiting-health';
-    writeJournal(journalPath, journal);
+    await writeJournal(journalPath, journal);
     const childEnv = { ...process.env, QUENCHING_CLIENT_UPDATE_ACK: ack, QUENCHING_CLIENT_UPDATE_TOKEN: plan.token };
     delete childEnv.ELECTRON_RUN_AS_NODE;
     const logFd = fs.openSync(path.join(stage, 'new-client.log'), 'a');
     const child = cp.spawn(path.join(root, 'QMClient.exe'), plan.relaunchArgs, {
-      cwd: root, detached: false, stdio: ['ignore', logFd, logFd], windowsHide: false,
+      // Windows otherwise assigns the new GUI to the helper's kill-on-exit
+      // job. unref() alone does not keep it alive when the helper finishes.
+      cwd: root, detached: true, stdio: ['ignore', logFd, logFd], windowsHide: false,
       env: childEnv,
     });
     fs.closeSync(logFd);
     child.unref();
     journal.newPid = child.pid;
-    writeJournal(journalPath, journal);
+    await writeJournal(journalPath, journal);
     const end = Date.now() + 60000;
     while (Date.now() < end) {
       if (fs.existsSync(ack) && fs.readFileSync(ack, 'utf8') === plan.token) {
         journal.state = 'complete';
-        writeJournal(journalPath, journal);
+        await writeJournal(journalPath, journal);
         fs.rmSync(backup, { recursive: true, force: true });
         fs.rmSync(activePath, { force: true });
         return;
       }
       if (child.exitCode !== null) {
         journal.newExitCode = child.exitCode;
-        writeJournal(journalPath, journal);
+        await writeJournal(journalPath, journal);
         break;
       }
       await sleep(500);
@@ -160,14 +164,14 @@ async function run(planPath, oldPid) {
     throw new Error('updated client did not report healthy startup');
   } catch (error) {
     journal.state = 'rolling-back';
-    writeJournal(journalPath, journal);
+    await writeJournal(journalPath, journal);
     await restore(root, stage, journal.replaced);
     for (const file of plan.files.filter(file => file.oldSha256 === null && journal.replaced.includes(file.path))) {
       const target = path.join(root, ...file.path.split('/'));
       if (fs.existsSync(target) && hash(target) === file.newSha256) fs.rmSync(target);
     }
     journal.state = 'rolled-back';
-    writeJournal(journalPath, journal);
+    await writeJournal(journalPath, journal);
     fs.rmSync(activePath, { force: true });
     restartOriginal(root, plan.relaunchArgs);
     throw error;
@@ -191,7 +195,7 @@ async function recover(planPath, oldPid) {
       if (file.oldSha256 === null && fs.existsSync(target) && hash(target) === file.newSha256) fs.rmSync(target);
     }
     journal.state = 'rolled-back';
-    writeJournal(journalPath, journal);
+    await writeJournal(journalPath, journal);
   }
   fs.rmSync(path.join(root, '.quenching-client-update', 'active.json'), { force: true });
   restartOriginal(root, Array.isArray(plan.relaunchArgs) ? plan.relaunchArgs : []);

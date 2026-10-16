@@ -114,7 +114,7 @@ async function readVersionFromBuildInfo(war3Path: string): Promise<string | null
     const root = normalizeWar3Root(war3Path);
     const candidates = [
         path.join(root, getSelectedGameFolder(), '.build.info'),
-        ...(getSelectedGameChannel() === 'retail' ? [path.join(root, '.build.info')] : []),
+        path.join(root, '.build.info'),
     ];
 
     for (const buildInfoPath of candidates) {
@@ -132,11 +132,18 @@ async function readVersionFromBuildInfo(war3Path: string): Promise<string | null
             if (versionIdx < 0) {
                 continue;
             }
-            // Prefer the active row (Active=1) when present.
+            // A shared root manifest can contain both Retail and PTR active rows.
+            const productIdx = headers.findIndex((h) => h === 'product');
+            const product = getSelectedGameChannel() === 'ptr' ? 'w3t' : 'w3';
+            let rows = lines.slice(1);
+            if (productIdx >= 0) rows = rows.filter(line => (line.split('|')[productIdx] || '').trim().toLowerCase() === product);
+            else if (getSelectedGameChannel() === 'ptr' && buildInfoPath === path.join(root, '.build.info')) continue;
+            if (!rows.length) continue;
+            // Prefer the active row (Active=1) of THIS product when present.
             const activeIdx = headers.findIndex((h) => h === 'active');
-            let dataLine = lines[1];
+            let dataLine = rows[0];
             if (activeIdx >= 0) {
-                const activeRow = lines.slice(1).find((line) => {
+                const activeRow = rows.find((line) => {
                     const cols = line.split('|');
                     return (cols[activeIdx] || '').trim() === '1';
                 });

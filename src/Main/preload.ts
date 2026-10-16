@@ -2,6 +2,10 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 // 暴露安全的API给渲染进程
 const electronAPI: ElectronAPI = {
+  showForum: bounds => ipcRenderer.invoke('forum:show', bounds),
+  setForumBounds: bounds => ipcRenderer.invoke('forum:bounds', bounds),
+  hideForum: () => ipcRenderer.invoke('forum:hide'),
+  reloadForum: () => ipcRenderer.invoke('forum:reload'),
   // 文件操作
   readFile: (filePath: string) => ipcRenderer.invoke('file:read', filePath),
   writeFile: (filePath: string, content: string) => ipcRenderer.invoke('file:write', filePath, content),
@@ -15,8 +19,14 @@ const electronAPI: ElectronAPI = {
   // 游戏启动
   launchGame: (executablePath?: string) => ipcRenderer.invoke('game:launch', executablePath),
   ensureLocalFiles: () => ipcRenderer.invoke('game:ensure-local-files'),
+  onStartupRenderingResult: callback => {
+    const listener = (_event: unknown, result: StartupRenderingResult) => callback(result);
+    ipcRenderer.on('mod:startup-rendering-result', listener);
+    return () => ipcRenderer.removeListener('mod:startup-rendering-result', listener);
+  },
   launchMap: (mapPath: string, difficulty: number) => ipcRenderer.invoke('game:launch-map', mapPath, difficulty),
-  unlockCampaign: () => ipcRenderer.invoke('campaign:unlock'),
+  unlockCampaign: (mapName?: string) => ipcRenderer.invoke('campaign:unlock', mapName),
+  getCampaignUnlockMode: () => ipcRenderer.invoke('campaign:unlock-mode'),
   extractCampaignW3n: (w3nPath: string) => ipcRenderer.invoke('campaign:extract-w3n', w3nPath),
   listInstalledCampaigns: () => ipcRenderer.invoke('campaign:list-installed'),
   selectGamePath: () => ipcRenderer.invoke('game:select-path'),
@@ -76,8 +86,9 @@ const electronAPI: ElectronAPI = {
   selectDirectory: (title?: string) => ipcRenderer.invoke('file:select-directory', title),
   readModelResource: (path: string, basePath?: string, artSet?: 'sd' | 'hd' | 'de') => ipcRenderer.invoke('model:read-resource', { path, basePath, artSet }),
   listCustomSkins: (targetId?: string) => ipcRenderer.invoke('custom-skin:list', targetId),
-  inspectCustomSkinModel: (modelPath: string) => ipcRenderer.invoke('custom-skin:inspect-model', modelPath),
+  inspectCustomSkinModel: (modelPath: string, artSet?: 'sd' | 'hd' | 'de', portraitPath?: string) => ipcRenderer.invoke('custom-skin:inspect-model', modelPath, artSet, portraitPath),
   createCustomSkin: (input: any) => ipcRenderer.invoke('custom-skin:create', input),
+  deleteCustomSkin: (id: string) => ipcRenderer.invoke('custom-skin:delete', id),
 
   // 新闻
   fetchNews: (lang?: 'cn' | 'en') => ipcRenderer.invoke('news:fetch', lang),

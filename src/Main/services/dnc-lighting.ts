@@ -24,6 +24,7 @@ const INTENSITY_HEADER = /^intensity\b/;
 
 /** 亮度等级 1–5 对应 Intensity 乘数（不含 AmbIntensity） */
 const LIGHTING_BRIGHTNESS_MULTIPLIERS: readonly number[] = [0.7, 0.9, 1.1, 1.3, 1.5];
+const HD30_BATTLE_BRIGHTNESS_MULTIPLIERS: readonly number[] = [0.7, 0.9, 1.05, 1.2, 1.35];
 
 export function normalizeBrightnessLevel(level: unknown): number {
     const n = typeof level === 'number' ? level : parseInt(String(level), 10);
@@ -31,8 +32,10 @@ export function normalizeBrightnessLevel(level: unknown): number {
     return 3;
 }
 
-export function getBrightnessMultiplier(level: unknown): number {
-    return LIGHTING_BRIGHTNESS_MULTIPLIERS[normalizeBrightnessLevel(level) - 1];
+export function getBrightnessMultiplier(level: unknown, mode?: string, options?: DncLightingOptions): number {
+    const hd30Battle = options?.isVersion30 && !options.deMode && (mode === 'battle' || mode === 'melee');
+    const multipliers = hd30Battle ? HD30_BATTLE_BRIGHTNESS_MULTIPLIERS : LIGHTING_BRIGHTNESS_MULTIPLIERS;
+    return multipliers[normalizeBrightnessLevel(level) - 1];
 }
 
 function formatIntensityValue(value: number): string {
@@ -79,6 +82,29 @@ export function applyBrightnessToIntensity(lines: string[], multiplier: number):
         }
     }
 
+    return modified;
+}
+
+/** Keep daytime peaks and raise the dimmer keys, halving the day/night intensity difference. */
+function reduceDayNightIntensityDifference(lines: string[]): boolean {
+    let modified = false;
+    for (let i = 0; i < lines.length; i++) {
+        if (!/^Intensity\s+\d+\s*\{/i.test(lines[i].trim())) continue;
+        const keys: Array<{ index: number; value: number; time: string }> = [];
+        for (let j = i + 1; j < lines.length && !lines[j].includes('}'); j++) {
+            const match = lines[j].trim().match(/^(\d+):\s*([\d.-]+),?$/);
+            if (match) keys.push({ index: j, value: Number(match[2]), time: match[1] });
+        }
+        if (!keys.length) continue;
+        const peak = Math.max(...keys.map(key => key.value));
+        for (const key of keys) {
+            const value = peak - (peak - key.value) * 0.5;
+            if (value === key.value) continue;
+            const indent = lines[key.index].match(/^\s*/)?.[0] || '\t\t';
+            lines[key.index] = `${indent}${key.time}: ${value},`;
+            modified = true;
+        }
+    }
     return modified;
 }
 
@@ -231,6 +257,7 @@ async function patchDncMdlFile(filePath: string, mode: string, brightnessLevel: 
     const isTerrain = lowerName.includes('terrain');
     const targetAmb = getTargetAmbIntensity(category, mode);
     const isBattle = mode === 'battle' || mode === 'melee';
+    const hd30Battle = options.isVersion30 && !options.deMode && isBattle;
 
     if (category === 'surface' && !options.deMode && !options.isVersion30) {
         const useUnitBaseline = isUnit && !isTerrain;
@@ -249,7 +276,8 @@ async function patchDncMdlFile(filePath: string, mode: string, brightnessLevel: 
             if (match) {
                 const base = parseFloat(match[1]);
                 const offset = isBattle ? (options.deMode ? 0.03 : 0.05) : mode === 'rpg' ? 0.01 : 0;
-                const newVal = `\tstatic AmbIntensity ${formatIntensityValue(base + offset)},`;
+                const ambient = hd30Battle ? (category === 'underground' ? -0.1 : isTerrain ? 0.15 : 0.12) : base + offset;
+                const newVal = `\tstatic AmbIntensity ${formatIntensityValue(ambient)},`;
                 if (lines[i] !== newVal) {
                     lines[i] = newVal;
                     modified = true;
@@ -288,7 +316,8 @@ async function patchDncMdlFile(filePath: string, mode: string, brightnessLevel: 
         }
     }
 
-    if (applyBrightnessToIntensity(lines, getBrightnessMultiplier(brightnessLevel))) {
+    if (hd30Battle && reduceDayNightIntensityDifference(lines)) modified = true;
+    if (applyBrightnessToIntensity(lines, getBrightnessMultiplier(brightnessLevel, mode, options))) {
         modified = true;
     }
 

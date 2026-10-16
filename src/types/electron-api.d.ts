@@ -12,6 +12,14 @@ interface ClientUpdateProgress {
   message: string;
   completed: number;
   total: number;
+  completedBytes?: number;
+  totalBytes?: number;
+}
+
+interface StartupRenderingResult {
+  status: 'applied' | 'skipped' | 'failed';
+  reason?: string;
+  error?: string;
 }
 
 interface ModUpdateProgress {
@@ -44,6 +52,10 @@ interface ThirdPartyState {
 }
 
 interface ElectronAPI {
+  showForum: (bounds: { x: number; y: number; width: number; height: number }) => Promise<void>;
+  setForumBounds: (bounds: { x: number; y: number; width: number; height: number }) => Promise<void>;
+  hideForum: () => Promise<void>;
+  reloadForum: () => Promise<void>;
   getClientUpdateStatus: () => Promise<ClientUpdateStatus>;
   applyClientUpdate: () => Promise<{ restarting: boolean }>;
   onClientUpdateProgress: (callback: (progress: ClientUpdateProgress) => void) => () => void;
@@ -106,8 +118,10 @@ interface ElectronAPI {
   // 游戏启动
   launchGame: (executablePath?: string) => Promise<boolean>;
   ensureLocalFiles: () => Promise<boolean>;
+  onStartupRenderingResult: (callback: (result: StartupRenderingResult) => void) => () => void;
   launchMap: (mapPath: string, difficulty: number) => Promise<boolean>;
-  unlockCampaign: () => Promise<boolean>;
+  unlockCampaign: (mapName?: string) => Promise<boolean>;
+  getCampaignUnlockMode: () => Promise<'battlenet' | 'direct'>;
   extractCampaignW3n: (w3nPath: string) => Promise<{
     success: boolean;
     outputDir: string;
@@ -252,13 +266,18 @@ interface ElectronAPI {
     resolvedPath: string;
   }>;
   listCustomSkins: (targetId?: string) => Promise<CustomSkinRecord[]>;
-  inspectCustomSkinModel: (modelPath: string) => Promise<{
+  inspectCustomSkinModel: (modelPath: string, artSet?: 'sd' | 'hd' | 'de', portraitPath?: string) => Promise<{
     modelPath: string;
     references: string[];
     siblingCandidates: string[];
     unresolved: string[];
+    textureBindings: Record<string, string>;
+    gameReferences: string[];
+    gameTextureBindings: Record<string, string>;
+    portraitPath?: string;
   }>;
   createCustomSkin: (input: CreateCustomSkinInput) => Promise<CustomSkinRecord>;
+  deleteCustomSkin: (id: string) => Promise<boolean>;
 
   // 新闻操作
   fetchNews: (lang?: 'cn' | 'en') => Promise<any[]>;
@@ -299,6 +318,9 @@ interface ModUpdateStatus {
   current: InstalledModState | null;
   target: { sequence: number; version: string; displayVersion: string } | null;
   patch?: ModPatchArtifact;
+  patchChain?: import('../shared/mod-zip-update').ModZipPatch[];
+  githubMirrors?: string[];
+  fileSync?: import('../shared/file-sync').FileSyncDescriptor;
   fullPackage?: ModUpdateArtifact;
   reason: string;
   manifestSource?: string;
@@ -327,6 +349,7 @@ interface ModUpdateResult {
   downloadedFrom?: string;
   error?: string;
   configurationError?: string;
+  appliedPatches?: number;
 }
 
 interface CustomSkinRecord {
@@ -339,7 +362,9 @@ interface CustomSkinRecord {
   source: 'game-paths' | 'external';
   config: { field: string; value: string }[];
   preview?: string;
+  resourceDir?: string;
   createdAt: string;
+  portraitAssociation?: import('../Main/services/skin-portrait').PortraitAssociation;
 }
 
 interface CreateCustomSkinInput {
@@ -351,6 +376,7 @@ interface CreateCustomSkinInput {
   source: 'game-paths' | 'external';
   modelPath?: string;
   modelPathHd?: string;
+  portraitPath?: string;
   iconPath?: string;
   disabledIconPath?: string;
   unitSound?: string;

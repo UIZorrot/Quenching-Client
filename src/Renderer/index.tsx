@@ -15,7 +15,7 @@ const root = createRoot(document.getElementById("react-app-root"));
 // 错误边界组件
 class ErrorBoundary extends React.Component<
 	{ children: React.ReactNode },
-	{ hasError: boolean; error?: Error }
+	{ hasError: boolean; error?: Error; componentStack?: string }
 > {
 	constructor(props: { children: React.ReactNode }) {
 		super(props);
@@ -28,6 +28,7 @@ class ErrorBoundary extends React.Component<
 
 	componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
 		console.error('React Error Boundary caught an error:', error, errorInfo);
+		this.setState({ componentStack: errorInfo.componentStack || '' });
 	}
 
 	render() {
@@ -51,6 +52,13 @@ class ErrorBoundary extends React.Component<
 					<p style={{ marginBottom: '20px', maxWidth: '600px' }}>
 						淬火试炼遇到了一个意外错误。请重启应用程序，如果问题持续存在，请联系技术支持。
 					</p>
+					<details style={{ maxWidth: '900px', width: '100%', textAlign: 'left' }}>
+						<summary>错误详情（请复制或截图发给开发者）</summary>
+						<pre style={{ whiteSpace: 'pre-wrap', userSelect: 'text', overflow: 'auto', maxHeight: '40vh' }}>
+							{this.state.error?.stack || this.state.error?.message}
+							{'\n' + (this.state.componentStack || '')}
+						</pre>
+					</details>
 					<button
 						onClick={() => window.location.reload()}
 						style={{
@@ -81,5 +89,3 @@ root.render(
 		</ErrorBoundary>
 	</React.StrictMode>
 );
-
-

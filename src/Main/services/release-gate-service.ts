@@ -1,6 +1,7 @@
 import http from 'node:http';
 import https from 'node:https';
 import { parseReleaseGate, ReleaseGate } from '../../shared/release-gate';
+import { updateTestEnabled, updateTestUrls } from './update-channel';
 
 const DEFAULT_URLS = [
   'https://qm.txzy.net/version.que',
@@ -10,7 +11,7 @@ const DEFAULT_URLS = [
 export function previewUpdatesEnabled(): boolean {
   // Internal test launch only. A production manifest remains unavailable at
   // its default URLs while allowed=0, even if a user sets this environment flag.
-  return process.env.QUENCHING_PREVIEW_UPDATES === '1';
+  return updateTestEnabled() || process.env.QUENCHING_PREVIEW_UPDATES === '1';
 }
 
 function fetchVersionQueText(url: string, redirects = 0): Promise<string> {
@@ -44,7 +45,7 @@ function fetchVersionQueText(url: string, redirects = 0): Promise<string> {
 
 export async function fetchReleaseGate(): Promise<{ gate: ReleaseGate; source: string }> {
   const override = process.env.QUENCHING_VERSION_URL?.trim();
-  const urls = [...new Set([...(override ? [override] : []), ...DEFAULT_URLS])];
+  const urls = updateTestUrls('version.que') || [...new Set([...(override ? [override] : []), ...DEFAULT_URLS])];
   const errors: string[] = [];
   for (const source of urls) {
     try {

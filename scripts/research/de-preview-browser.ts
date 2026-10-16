@@ -19,16 +19,17 @@ const inspect = () => {
   }
   return { changedPixels: changed, hash: hash >>> 0, glError: gl.getError() };
 };
-async function load(path: string) {
+async function load(path: string, unitId?: string) {
   cancelAnimationFrame(frame); preview?.dispose();
   // A context explicitly lost on disposal cannot be reused immediately.
   const next = canvas.cloneNode() as HTMLCanvasElement; canvas.replaceWith(next); canvas = next;
   // Preserve the harness's single canvas reference for repeated loads.
   Object.defineProperty(window, 'deCanvas', { value: next, configurable: true });
   const source = await read(path);
-  preview = await createPreview(next, source, read);
+  preview = await createPreview(next, source, read, { unitId });
   (window as any).dePreview = preview;
-  const result = { path, geosets: preview.model.geosets.length, bones: preview.parser.bones.length,
+  const result = { path, unitId, sequence: preview.parser.sequences[preview.instance.sequence]?.name,
+    geosets: preview.model.geosets.length, bones: preview.parser.bones.length,
     missing: preview.missing, omitted: preview.omitted, glError: preview.viewer.gl.getError() };
   status.textContent = JSON.stringify(result, null, 2);
   const loop = () => { preview.draw(16); frame = requestAnimationFrame(loop); }; loop();

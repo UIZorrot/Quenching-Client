@@ -38,7 +38,8 @@ export function buildCombinedUpdatePrompt(
       }
     : null;
   const modDecision = modStatus?.decision;
-  const mod = modStatus?.target &&
+  // First installation belongs to the installation flow, not an update prompt.
+  const mod = modStatus?.current && modStatus.target &&
       (modDecision === 'patch' || modDecision === 'requiresFullPackage' || modDecision === 'unknownInstallation')
     ? {
         currentVersion: modStatus.current

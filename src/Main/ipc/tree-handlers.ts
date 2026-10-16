@@ -9,6 +9,8 @@ import { resolveModProfile } from '../services/mod-profile';
 import { installBundledResourceFile } from '../services/managed-resource-files';
 import { readCurrentModVersion } from '../services/mod-integrity-service';
 import { getInstalledModState } from '../services/mod-update-service';
+import { destructableSkinTemplate } from '../services/destructable-skin-profile';
+import type { ModProfile } from '../../shared/mod-profile';
 
 /**
  * 魔兽文本文件处理器 (用于处理 destructableskin.txt 等类似 INI 的文件)
@@ -54,7 +56,10 @@ class War3TextHandler {
             sectionMap = new Map();
             this.data.set(section, sectionMap);
         }
-        sectionMap.set(key, value);
+        // 3.0 moved some shared tree textures to an explicit SD field.
+        const field = key === 'texFile' && !sectionMap.has(key) && sectionMap.has('texFile:sd')
+            ? 'texFile:sd' : key;
+        sectionMap.set(field, value);
     }
 
     async saveFile(filePath: string) {
@@ -77,7 +82,17 @@ export function registerTreeHandlers() {
     /**
      * 更新树木设置
      */
-    ipcMain.handle('tree:update-settings', async (event, war3Path: string, treeMode: string) => {
+    ipcMain.handle('tree:update-settings', async (event, war3Path: string, treeMode: string) =>
+        applyTreeSettings(war3Path, treeMode));
+}
+
+/** Used by both manual tree choices and profile synchronization. */
+export async function applyTreeSettings(
+    war3Path: string,
+    treeMode: string,
+    resolvedProfile?: ModProfile,
+    quenchingDir?: string,
+) {
         console.log('\n\n==================================================');
         console.log(`[Tree] IPC RECEIVED: mode=${treeMode}, path=${war3Path}`);
         try {
@@ -91,24 +106,18 @@ export function registerTreeHandlers() {
             }
 
             // 找到基准原版文件
-            const assetsDir = await AssetSyncService.getAssetsDir();
+            const skinAssetsDir = quenchingDir ?? path.join(await AssetSyncService.getAssetsDir(), 'quenching');
             const modSettings = (await import('../services/config-manager')).configManager.get('modSettings') || {};
-            const profile = await resolveModProfile(war3Path, {
+            const profile = resolvedProfile ?? await resolveModProfile(war3Path, {
                 versionSelection: modSettings.versionSelection,
                 graphicsSelection: modSettings.graphicsSelection,
                 classicMode: modSettings.classicMode === true,
             });
-            const baselineName =
-                profile.graphics === 'de'
-                    ? 'destructableskin-de.txt'
-                    : treeMode === 'original'
-                        ? 'destructableskin.txt'
-                        : 'destructableskin-org.txt';
-            let sourcePath = path.join(assetsDir, 'quenching', 'skin', baselineName);
+            let sourcePath = destructableSkinTemplate(skinAssetsDir, profile.graphics, profile.version, treeMode);
 
             // HD/SD original prefers the dedicated destructableskin.txt; fall back to -org.
             if (treeMode === 'original' && profile.graphics !== 'de' && !(await fs.pathExists(sourcePath))) {
-                sourcePath = path.join(assetsDir, 'quenching', 'skin', 'destructableskin-org.txt');
+                sourcePath = destructableSkinTemplate(skinAssetsDir, profile.graphics, profile.version, 'tall');
             }
 
             console.log(`[Tree] Using baseline: ${sourcePath}`);
@@ -165,7 +174,6 @@ export function registerTreeHandlers() {
             console.error('[Tree] Failed to update tree settings:', error);
             throw error;
         }
-    });
 }
 
 function applyTo20(handler: War3TextHandler) {

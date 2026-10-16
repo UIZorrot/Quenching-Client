@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import fs from 'fs-extra';
 import archiver from 'archiver';
-import { installPackageArchives, resolvePackageArchives } from '../src/Main/services/full-package-install';
+import { installPackageArchives, installPackageSources, resolvePackageArchives } from '../src/Main/services/full-package-install';
 
 const work = path.resolve('_irys/work');
 await fs.ensureDir(work);
@@ -47,9 +47,38 @@ try {
   await zip(single, { 'QMF3.5/_patch/keep.que': '-v3.5-\n', 'QMF3.5/units/unitskin.txt': 'single ZIP' });
   await installPackageArchives(await resolvePackageArchives(single), target);
   assert.equal(await fs.readFile(path.join(target, 'units/unitskin.txt'), 'utf8'), 'single ZIP');
+  const loneA = path.join(root, 'one-download', 'QMF3.5-Full-A.zip');
+  await fs.ensureDir(path.dirname(loneA));
+  await fs.copy(a, loneA);
+  assert.deepEqual(await resolvePackageArchives(loneA), [loneA], 'a selected ZIP must work without its optional sibling');
+  await installPackageSources([loneA], target);
+  assert.equal(await fs.readFile(path.join(target, 'shaders/ps/hd.bls'), 'utf8'), 'shader A');
+  await installPackageSources([a, b], target);
+  assert.equal(await fs.readFile(path.join(target, 'units/unitskin.txt'), 'utf8'), 'skin B');
   // A ZIP with no marker and no file list can supplement an existing package.
   await installPackageArchives([b], target);
   assert.equal(await fs.readFile(path.join(target, 'units/unitskin.txt'), 'utf8'), 'skin B');
+
+  const folder = path.join(root, 'extracted', 'QMF3.5');
+  await fs.outputFile(path.join(folder, 'units/unitskin.txt'), 'folder skin');
+  await fs.outputFile(path.join(folder, 'textures/model.blp'), 'folder texture');
+  await fs.outputFile(path.join(folder, 'QMF3.5-Full-A.zip'), 'do not install a nested download');
+  let prepared = 0;
+  await installPackageSources([path.dirname(folder)], target, undefined, async () => { prepared++; });
+  assert.equal(prepared, 1);
+  assert.equal(await fs.readFile(path.join(target, 'units/unitskin.txt'), 'utf8'), 'folder skin');
+  assert.equal(await fs.readFile(path.join(folder, 'units/unitskin.txt'), 'utf8'), 'folder skin');
+  assert.equal(await fs.readFile(path.join(target, 'units/player-custom.txt'), 'utf8'), 'keep me');
+  assert.equal(await fs.pathExists(path.join(target, 'QMF3.5-Full-A.zip')), false);
+
+  const client = path.join(root, 'QMC3.5-Win.zip');
+  await zip(client, { 'resources/app.asar': 'not a real asar', 'QMClient.exe': 'client' });
+  await assert.rejects(installPackageSources([client], target, undefined, async () => { prepared++; }), /客户端文件.*不是 MOD 资源包/);
+  assert.equal(prepared, 1, 'rejecting a client archive must not enable or mutate the branch');
+  const clientFolder = path.join(root, 'client-folder');
+  await fs.outputFile(path.join(clientFolder, 'resources/app.asar'), 'not a real asar');
+  await assert.rejects(installPackageSources([clientFolder], target), /客户端文件/);
+  assert.equal(await fs.readFile(path.join(target, 'units/unitskin.txt'), 'utf8'), 'folder skin');
 
   const broken = path.join(root, 'broken.zip');
   await fs.writeFile(broken, 'not a ZIP');
@@ -57,7 +86,7 @@ try {
   await fs.outputFile(path.join(failedTarget, 'player.txt'), 'untouched');
   await assert.rejects(installPackageArchives([a, broken], failedTarget));
   assert.deepEqual(await fs.readdir(failedTarget), ['player.txt']);
-  console.log('PASS: A/B auto-pair, merge, single ZIP, missing metadata, custom-file preservation and failed extraction.');
+  console.log('PASS: A/B and folder installation; sources/custom files preserved; wrong client ZIP/folder rejected before mutation; failed extraction leaves target unchanged.');
 
   if (process.argv.includes('--real')) {
     const source = 'D:/Quenching/QM/3.5/QMF3.5';

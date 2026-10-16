@@ -1,0 +1,48 @@
+name: Build Mac portable candidates
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mac:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+            script: dist:mac:app
+          - arch: x64
+            runner: macos-15-intel
+            script: dist:mac:app:x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+      # npm bindings' install scripts cannot build until thirdparty sources exist.
+      # Install dependencies without scripts, then run the required scripts explicitly.
+      - name: Install dependencies
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+          yarn install --frozen-lockfile --ignore-scripts
+          node node_modules/electron/install.js
+          yarn run postinstall
+      - name: Build, sign and test native modules inside ASAR
+        run: yarn run ${{ matrix.script }}
+      - name: Save candidate ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: QMClient-darwin-${{ matrix.arch }}-candidate
+          path: __Bin/QMClient-darwin-${{ matrix.arch }}.zip
+          if-no-files-found: error
+          retention-days: 14

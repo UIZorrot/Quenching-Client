@@ -12,7 +12,7 @@ import { auditTerrainSlk } from './terrain-slk-utils.mjs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ASSETS = path.join(__dirname, '..', 'assets', 'quenching', 'tile');
 
-const FILES = ['terrain00.slk', 'terrain16.slk', 'terrain18.slk', 'terrain20.slk'];
+const FILES = ['terrain00.slk', 'terrain16.slk', 'terrain18.slk', 'terrain20.slk', 'terrain30.slk'];
 
 async function main() {
     for (const out of FILES) {

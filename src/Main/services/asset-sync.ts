@@ -6,15 +6,17 @@ import { rm } from 'node:fs/promises';
 import { app } from 'electron';
 import { configManager } from './config-manager';
 import { isFullPackageInstalled, resolveRetailDir } from './full-package-service';
-import { effectiveLightingMode, getDncResourcePath, getKnownDncRoots, getQuenchingResourcePath, getShaderResourcePath, resolveModProfile } from './mod-profile';
-import { ModProfile } from '../../shared/mod-profile';
+import { effectiveLightingMode, getDncResourcePath, getKnownDncRoots, getQuenchingResourcePath, getShaderPackRoot, getShaderResourcePath, resolveModProfile } from './mod-profile';
+import { ModProfile, isHdShaderPack, isVersion30OrLater } from '../../shared/mod-profile';
+import { shaderBundlePath, withShaderBundle } from './shader-bundle';
 import { applyDncLighting } from './dnc-lighting';
-import { applyShaderToggles } from './fog-shader-override';
+import { applyIntelAmdBloomForProfile, applyShaderToggles } from './fog-shader-override';
 import { isThirdPartyQuenchingPaused, markKnownQuenching } from './third-party-resources';
-import { BundledResourceRoot, createResourceSourceCache, installBundledResourceFile, syncBundledResourceFiles } from './managed-resource-files';
+import { BundledResourceRoot, createResourceSourceCache, syncBundledResourceFiles } from './managed-resource-files';
 import { getInstalledModState } from './mod-update-service';
 import { readCurrentModVersion } from './mod-integrity-service';
 import { refreshUnitSkinBaseline, skinEraForVersion, skinProfileForGraphics, switchUnitSkinProfile, unitSkinTemplate } from './unit-skin-profile';
+import { destructableSkinTemplate } from './destructable-skin-profile';
 import { syncClientWebUIFiles } from './webui-assets-service';
 import { copyPostProcessingConfigIfMissing, POST_PROCESSING_CONFIG_FILE, setPostProcessingAoEnabled } from './post-processing-config';
 import { gameChannelFolder } from '../../shared/game-channel';
@@ -23,7 +25,6 @@ import { normalizeWar3RootPath } from './war3-path';
 const PROFILE_ENV_MARKER = '.quenching-public-environment';
 const PROFILE_SHADER_MARKER = '.quenching-shader-profile';
 const PROFILE_DNC_MARKER = '.quenching-dnc-profile';
-const PROFILE_SKIN_MARKER = '.quenching-profile-skin';
 
 async function writeProfileMarker(dir: string, name: string): Promise<void> {
   await fs.ensureDir(dir);
@@ -46,13 +47,12 @@ export function getKnownShaderResourceRoots(quenchingDir: string): BundledResour
   ];
 }
 
-function lightingResourceSources(quenchingDir: string, profile: ModProfile, lighting: string): Array<[string, string]> {
+function lightingResourceSources(quenchingDir: string, profile: ModProfile, lighting: string, shaderQuenchingDir = quenchingDir): Array<[string, string]> {
   return [
     ['DNC', getDncResourcePath(quenchingDir, profile)],
-    ['shader', getShaderResourcePath(quenchingDir, profile, lighting)],
-    ...(profile.shaderPack === 'shaders-300-hd' || profile.shaderPack === 'shaders-ptr-hd'
-      ? [['shader VS', path.join(getQuenchingResourcePath(quenchingDir,
-          profile.shaderPack === 'shaders-ptr-hd' ? 'shadersPtrHd' : 'shaders300Hd'), 'vs')] as [string, string]]
+    ['shader', getShaderResourcePath(shaderQuenchingDir, profile, lighting)],
+    ...(isHdShaderPack(profile.shaderPack)
+      ? [['shader VS', path.join(getShaderPackRoot(shaderQuenchingDir, profile), 'vs')] as [string, string]]
       : []),
   ];
 }
@@ -66,7 +66,7 @@ function postProcessingAoFor(profile: ModProfile, lighting: unknown): boolean {
  * Public environment is active for every profile except DE standard/battle.
  * DE RPG uses it too, so switching lighting under DE installs or parks it.
  */
-async function syncPublicEnvironment(retailDir: string, quenchingDir: string, profile: ModProfile): Promise<void> {
+async function syncPublicEnvironment(retailDir: string, quenchingDir: string, profile: ModProfile, force = false): Promise<void> {
   const environmentDir = path.join(retailDir, 'environment');
   const environmentMarker = path.join(environmentDir, PROFILE_ENV_MARKER);
   if (!profile.usesPublicEnvironment) {
@@ -80,11 +80,12 @@ async function syncPublicEnvironment(retailDir: string, quenchingDir: string, pr
   const { restoreHdPublicEnvironment } = await import('./environment-layout-service');
   const restored = await restoreHdPublicEnvironment(retailDir);
   const environmentZip = getQuenchingResourcePath(quenchingDir, 'environmentPublic');
-  if (restored) {
+  if (restored && !force) {
     await writeProfileMarker(environmentDir, PROFILE_ENV_MARKER);
   } else if (!(await fs.pathExists(environmentZip))) {
+    if (force) throw new Error(`Public environment package not found: ${environmentZip}`);
     console.warn(`[AssetSync] Public environment package not found: ${environmentZip}`);
-  } else if (!(await fs.pathExists(environmentMarker))) {
+  } else if (force || !(await fs.pathExists(environmentMarker))) {
     const staging = await fs.mkdtemp(path.join(retailDir, '.quenching-public-environment-'));
     try {
       await AssetSyncService.extractZip(environmentZip, staging);
@@ -109,7 +110,9 @@ export async function syncLightingResources(
   quenchingDir: string,
   modSettings: any,
   resolvedProfile?: ModProfile,
+  options: { forceEnvironment?: boolean } = {},
 ): Promise<void> {
+  if (!getChannelModEnabled(getSelectedGameChannel())) return;
   const lighting = modSettings?.lighting || 'standard';
   const profile = resolvedProfile ?? await resolveModProfile(war3Path, {
     versionSelection: modSettings?.versionSelection,
@@ -118,41 +121,66 @@ export async function syncLightingResources(
     lighting,
   });
   if (profile.graphics === 'sd') return;
-  for (const [label, source] of lightingResourceSources(quenchingDir, profile, lighting)) {
+  const retailDir = await resolveRetailDir(war3Path);
+  return withShaderBundle(quenchingDir, profile.shaderPack, retailDir, async shaderQuenchingDir => {
+  for (const [label, source] of lightingResourceSources(quenchingDir, profile, lighting, shaderQuenchingDir)) {
     if (!(await fs.pathExists(source))) {
       throw new Error(`Missing ${label} resource for ${profile.version}/${profile.graphics}: ${source}`);
     }
   }
-  const retailDir = await resolveRetailDir(war3Path);
-  await syncPublicEnvironment(retailDir, quenchingDir, profile);
+  if (options.forceEnvironment && profile.usesPublicEnvironment &&
+      !await fs.pathExists(getQuenchingResourcePath(quenchingDir, 'environmentPublic'))) {
+    throw new Error('Public environment package is missing');
+  }
   const dncDir = path.join(retailDir, 'environment', 'dnc');
   const shadersDir = path.join(retailDir, 'shaders');
-  const shaderSource = getShaderResourcePath(quenchingDir, profile, lighting);
+  const shaderSource = getShaderResourcePath(shaderQuenchingDir, profile, lighting);
   const sourceCache = createResourceSourceCache();
-
-  await syncBundledResourceFiles(dncDir, [{ source: getDncResourcePath(quenchingDir, profile) }], getKnownDncRoots(quenchingDir), PROFILE_DNC_MARKER, {
-    sourceCache,
+  const existing = await fs.lstat(shadersDir).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return null;
+    throw error;
   });
-  await applyDncLighting(dncDir, effectiveLightingMode(profile, lighting), modSettings?.lightingBrightness, {
-    deMode: profile.graphics === 'de',
-    isVersion30: profile.version === 'v30',
-  });
+  if (existing && (!existing.isDirectory() || existing.isSymbolicLink())) throw new Error('Shader target is not an ordinary directory');
 
-  const desiredShaderRoots = profile.shaderPack === 'shaders-300-hd' || profile.shaderPack === 'shaders-ptr-hd'
+  const desiredShaderRoots = isHdShaderPack(profile.shaderPack)
     ? [
-        { source: path.join(getQuenchingResourcePath(quenchingDir,
-            profile.shaderPack === 'shaders-ptr-hd' ? 'shadersPtrHd' : 'shaders300Hd'), 'vs'), targetPrefix: 'vs' },
+        { source: path.join(getShaderPackRoot(shaderQuenchingDir, profile), 'vs'), targetPrefix: 'vs' },
         { source: shaderSource, targetPrefix: 'ps' },
       ]
     : [{ source: shaderSource }];
-  // Shader overlays are exclusively client-managed; replace the directory
-  // with the selected bundled profile instead of preserving unknown files.
-  await fs.remove(shadersDir);
-  await syncBundledResourceFiles(shadersDir, desiredShaderRoots, [], PROFILE_SHADER_MARKER, { sourceCache, removeAbsent: false });
-  await fs.writeFile(path.join(shadersDir, '.quenching-shader-pack'), `${profile.shaderPack}\n`, 'utf8');
-  await applyShaderToggles(shadersDir, quenchingDir, profile, modSettings);
-  await AssetSyncService.ensurePostProcessingConfig(war3Path, postProcessingAoFor(profile, lighting));
+  // Build first; invalid inputs must not erase the working shader directory.
+  const staging = await fs.mkdtemp(path.join(retailDir, '.quenching-rendering-'));
+  const prepared = path.join(staging, 'shaders');
+  const previous = path.join(staging, 'previous-shaders');
+  let preserveBackup = false;
+  try {
+    await syncBundledResourceFiles(prepared, desiredShaderRoots, [], PROFILE_SHADER_MARKER, { sourceCache, removeAbsent: false });
+    await fs.writeFile(path.join(prepared, '.quenching-shader-pack'), `${profile.shaderPack}\n`, 'utf8');
+    await applyShaderToggles(prepared, shaderQuenchingDir, profile, modSettings);
+    await applyIntelAmdBloomForProfile(prepared, shaderSource, profile, modSettings);
+    await syncPublicEnvironment(retailDir, quenchingDir, profile, options.forceEnvironment);
+    await syncBundledResourceFiles(dncDir, [{ source: getDncResourcePath(quenchingDir, profile) }], getKnownDncRoots(quenchingDir), PROFILE_DNC_MARKER, { sourceCache });
+    await applyDncLighting(dncDir, effectiveLightingMode(profile, lighting), modSettings?.lightingBrightness, {
+      deMode: profile.graphics === 'de', isVersion30: isVersion30OrLater(profile.version),
+    });
+    await AssetSyncService.ensurePostProcessingConfig(war3Path, postProcessingAoFor(profile, lighting));
+    if (existing) await fs.rename(shadersDir, previous);
+    try { await fs.rename(prepared, shadersDir); }
+    catch (error) {
+      if (existing) {
+        try { await fs.rename(previous, shadersDir); }
+        catch (restoreError) {
+          preserveBackup = true;
+          console.error(`[AssetSync] Shader backup retained in ${previous}`, restoreError);
+        }
+      }
+      throw error;
+    }
+  } finally {
+    if (!preserveBackup) await rm(staging, { recursive: true, force: true, maxRetries: 8, retryDelay: 200 });
+  }
   console.log(`[AssetSync] Lighting resources: ${profile.shaderPack} + ${profile.dncPack} (${lighting})`);
+  });
 }
 
 export async function syncProfileResources(
@@ -169,18 +197,18 @@ export async function syncProfileResources(
     lighting,
   });
   const retailDir = await resolveRetailDir(war3Path);
-  const unitsDir = path.join(retailDir, 'units');
   const skinProfile = skinProfileForGraphics(profile.graphics,
     configManager.get('retroSkinUnits') === true, configManager.get('retroSkinBuildings') === true);
   const skinEra = skinEraForVersion(profile.version);
   const skinOnly = profile.graphics === 'sd';
+  const hasShaderBundle = await fs.pathExists(shaderBundlePath(quenchingDir, profile.shaderPack));
 
   // A Home profile change must not be reported as successful when its pack is
   // absent. Check before replacing the active profile resources.
   for (const [label, source] of [
-    ...(skinOnly ? [] : lightingResourceSources(quenchingDir, profile, lighting)),
-    ...(profile.graphics === 'de'
-      ? [['DE destructable skin', path.join(quenchingDir, 'skin', 'destructableskin-de.txt')]]
+    ...(skinOnly ? [] : lightingResourceSources(quenchingDir, profile, lighting).filter(([label]) => !hasShaderBundle || !label.startsWith('shader'))),
+    ...(!skinOnly
+      ? [['destructable skin', destructableSkinTemplate(quenchingDir, profile.graphics, profile.version, modSettings?.tree || 'original')]]
       : []),
     ['unit skin', unitSkinTemplate(quenchingDir, skinProfile, skinEra)],
   ]) {
@@ -220,13 +248,11 @@ export async function syncProfileResources(
   onProgress?.('environment', 30);
   await syncLightingResources(war3Path, quenchingDir, modSettings, profile);
 
-  const previousGraphics = modSettings?.resolvedGraphics;
-  if (previousGraphics !== profile.graphics && (profile.graphics === 'de' || previousGraphics === 'de')) {
-    onProgress?.('skin', 72);
-    const skinSource = path.join(quenchingDir, 'skin',
-      profile.graphics === 'de' ? 'destructableskin-de.txt' : 'destructableskin.txt');
-    await installBundledResourceFile(unitsDir, 'destructableskin.txt', skinSource, [], PROFILE_SKIN_MARKER);
-  }
+  // Rebuild from this version's table while retaining the player's tree choice.
+  // This also replaces tables left by older clients on startup/package install.
+  onProgress?.('skin', 72);
+  const { applyTreeSettings } = await import('../ipc/tree-handlers');
+  await applyTreeSettings(war3Path, modSettings?.tree || 'original', profile, quenchingDir);
 
   onProgress?.('layout', 80);
   const layout = await syncGraphicsLayout(war3Path, profile.graphics, {

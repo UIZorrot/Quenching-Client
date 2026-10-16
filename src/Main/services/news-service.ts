@@ -36,7 +36,7 @@ export class NewsService {
             if (/^\s*(?:<!doctype\s+html|<html\b)/i.test(content)) {
                 throw new Error('news endpoint returned HTML instead of Markdown');
             }
-            const newsItems = this.parseMarkdown(content);
+            const newsItems = this.parseMarkdown(content, mappedLang);
             await this.saveToCache(mappedLang, newsItems);
             return newsItems;
         } catch (error) {
@@ -94,7 +94,7 @@ export class NewsService {
         });
     }
 
-    private parseMarkdown(md: string): NewsItem[] {
+    private parseMarkdown(md: string, lang: 'cn' | 'en' = 'cn'): NewsItem[] {
         const items: NewsItem[] = [];
         if (!md) return items;
 
@@ -109,12 +109,12 @@ export class NewsService {
             for (let i = 1; i < h1Splits.length; i += 2) {
                 const title = h1Splits[i].trim();
                 const body = h1Splits[i + 1];
-                this.parseSection(title, body, items);
+                this.parseSection(title, body, items, lang);
             }
         } else {
             // 没有 H1 标题，或者格式只有纯文本/H2
             // 尝试提取页面标题（仅作兼容，实际上可能不存在）
-            this.parseSection('', cleanMd, items);
+            this.parseSection('', cleanMd, items, lang);
         }
 
 
@@ -125,7 +125,7 @@ export class NewsService {
             const fallbackContent = cleanMd.trim();
             items.push({
                 id: `news-${date}-fallback-0`,
-                title: globalDate ? `更新公告 ${date}` : '网站新闻',
+                title: globalDate ? `${lang === 'cn' ? '更新公告' : 'Update'} ${date}` : lang === 'cn' ? '网站新闻' : 'News',
                 content: fallbackContent,
                 date,
                 type: 'announcement',
@@ -136,7 +136,7 @@ export class NewsService {
         return items.sort((a, b) => b.date.localeCompare(a.date));
     }
 
-    private parseSection(defaultTitle: string, contentBody: string, items: NewsItem[]) {
+    private parseSection(defaultTitle: string, contentBody: string, items: NewsItem[], lang: 'cn' | 'en') {
         // 使用正则分割，匹配以 ## 开头的行
         // 注意：split 会保留分隔符前面的内容在前一个数组元素，分隔符本身如果没捕获则消失
         // 这里我们主要找 ## Date 这样的结构
@@ -171,7 +171,7 @@ export class NewsService {
 
                 const restOfLine = firstLine.replace(date, '').trim();
                 if (!title) {
-                    title = restOfLine || `更新公告 ${date}`;
+                    title = restOfLine || `${lang === 'cn' ? '更新公告' : 'Update'} ${date}`;
                 }
 
                 // 内容去掉第一行（日期行）

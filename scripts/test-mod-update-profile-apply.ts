@@ -7,7 +7,7 @@ const calls: string[] = [];
 const fixture = {
   handlers,
   calls,
-  result: { applied: true, status: { decision: 'patch' } },
+  result: { applied: true, status: { decision: 'patch' } } as { applied: boolean; status: { decision: string }; appliedPatches?: number },
   warnings: ['missing shader pack'],
 };
 (globalThis as any).__modUpdateProfileFixture = fixture;
@@ -59,4 +59,10 @@ const unchanged = await apply(event, 'game');
 assert.equal(unchanged.applied, false);
 assert.deepEqual(calls, ['patch']);
 assert.deepEqual(progress, []);
+calls.length = 0;
+fixture.result = { applied: false, appliedPatches: 1, status: { decision: 'patch' } };
+const partial = await apply(event, 'game');
+assert.equal(partial.applied, false);
+assert.deepEqual(calls, ['patch', 'profile']);
+assert.ok(progress.every(event => event.phase !== 'complete'), 'partial ZIP chain must not announce overall completion');
 console.log('PASS: MOD update applies the profile only after a committed patch and reports profile warnings');

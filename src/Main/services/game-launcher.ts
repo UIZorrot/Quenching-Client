@@ -1,5 +1,5 @@
 import { getChannelModEnabled, getSelectedGameChannel, getSelectedGameFolder, hasGameChannelDirectory } from './game-channel';
-import { spawn } from 'child_process';
+import { spawn, type SpawnOptions } from 'child_process';
 import path from 'path';
 import fs from 'fs-extra';
 import { configManager } from './config-manager';
@@ -7,8 +7,12 @@ import { AssetSyncService } from './asset-sync';
 import { syncBundledResourceFiles } from './managed-resource-files';
 import { isFullPackageInstalled } from './full-package-service';
 import { resolveModProfile } from './mod-profile';
-import { readShaderPackMarker } from './war3-version';
+import { detectWar3Version, readShaderPackMarker } from './war3-version';
 import { UIService } from './ui-service';
+import { setBranchModEnabledOnDisk } from './branch-mod-toggle';
+import { app } from 'electron';
+import { launchViaBattleNet, resolveBattleNetExe } from './battle-net-launcher';
+import { writeMapName } from './map-name';
 
 async function assertSelectedGameBuild(gamePath: string): Promise<void> {
     if (!(await hasGameChannelDirectory(gamePath, getSelectedGameChannel()))) {
@@ -16,10 +20,34 @@ async function assertSelectedGameBuild(gamePath: string): Promise<void> {
     }
 }
 
+function spawnGameProcess(command: string, args: string[], options: SpawnOptions): Promise<void> {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command, args, options);
+        // Missing/blocked executables fail asynchronously. Let the launch IPC
+        // reject so the existing renderer error prompt can report the failure.
+        child.once('error', reject);
+        child.once('spawn', () => {
+            child.unref();
+            resolve();
+        });
+    });
+}
+
 export class GameLauncher {
 
+    private static async supportsBattleNetLaunch(gamePath: string): Promise<boolean> {
+        if (process.platform !== 'win32' && process.platform !== 'darwin') return false;
+        const detected = await detectWar3Version(gamePath);
+        return detected.source !== 'unknown' && (detected.parts[0] || 0) >= 3;
+    }
+
     private static async syncDetectedVersionBeforeLaunch(gamePath: string): Promise<void> {
-        if (!getChannelModEnabled(getSelectedGameChannel())) return;
+        if (!getChannelModEnabled(getSelectedGameChannel())) {
+            await setBranchModEnabledOnDisk(path.join(gamePath, getSelectedGameFolder()), false, {
+                quenchingDir: path.join(await AssetSyncService.getAssetsDir(), 'quenching'),
+            });
+            return;
+        }
         const settings = configManager.get('modSettings') || {};
         const profile = await resolveModProfile(gamePath, settings);
         const shadersDir = path.join(gamePath, getSelectedGameFolder(), 'shaders');
@@ -66,6 +94,7 @@ export class GameLauncher {
             if (isMac) {
                 // macOS logic
                 const possibleMacExes = [
+                    path.join(gamePath, getSelectedGameFolder(), 'x86_64', 'Warcraft III.app'),
                     path.join(gamePath, getSelectedGameFolder(), 'Warcraft III.app'),
                     ...(getSelectedGameChannel() === 'retail' ? [path.join(gamePath, 'Warcraft III.app')] : []),
                 ];
@@ -109,23 +138,26 @@ export class GameLauncher {
 
         await this.syncDetectedVersionBeforeLaunch(gamePath);
 
+        // Resource settings must be applied before either Battle.net or direct launch.
+        if (!executablePath && await this.supportsBattleNetLaunch(gamePath) && await launchViaBattleNet(gamePath, getSelectedGameChannel())) {
+            return true;
+        }
+
         console.log(`Launching game from: ${exePath}`);
 
         try {
             if (isMac) {
                 // Use 'open' on macOS to launch the app bundle
-                const child = spawn('open', [exePath, '--args', '-launch', '-uid', 'w3'], {
+                await spawnGameProcess('open', [exePath, '--args', '-launch', '-uid', 'w3'], {
                     detached: true,
                     stdio: 'ignore'
                 });
-                child.unref();
             } else {
-                const child = spawn(exePath, ['-launch', '-uid', 'w3'], {
+                await spawnGameProcess(exePath, ['-launch', '-uid', 'w3'], {
                     detached: true,
                     cwd: path.dirname(exePath),
                     stdio: 'ignore'
                 });
-                child.unref();
             }
             return true;
         } catch (e) {
@@ -149,6 +181,7 @@ export class GameLauncher {
         let exePath = '';
         if (isMac) {
             const possibleMacExes = [
+                path.join(gamePath, getSelectedGameFolder(), 'x86_64', 'Warcraft III.app'),
                 path.join(gamePath, getSelectedGameFolder(), 'Warcraft III.app'),
                 ...(getSelectedGameChannel() === 'retail' ? [path.join(gamePath, 'Warcraft III.app')] : []),
             ];
@@ -200,18 +233,16 @@ export class GameLauncher {
             ];
 
             if (isMac) {
-                const child = spawn('open', [exePath, '--args', ...args], {
+                await spawnGameProcess('open', [exePath, '--args', ...args], {
                     detached: true,
                     stdio: 'ignore'
                 });
-                child.unref();
             } else {
-                const child = spawn(exePath, args, {
+                await spawnGameProcess(exePath, args, {
                     detached: true,
                     cwd: path.dirname(exePath),
                     stdio: 'ignore'
                 });
-                child.unref();
             }
             return true;
         } catch (e) {
@@ -220,11 +251,15 @@ export class GameLauncher {
         }
     }
 
-    /**
-     * Unlock official campaign progress by launching the built-in cfix.w3x map
-     * (same flow as the legacy client: mapdiff 1 + WorldEdit profile + fixedseed).
-     */
-    static async unlockCampaign(): Promise<boolean> {
+    /** Battle.net users run the prepared map from Custom Game; other routes retain -loadfile. */
+    static async getCampaignUnlockMode(): Promise<'battlenet' | 'direct'> {
+        const gamePath = configManager.get('war3Path');
+        if (!gamePath || !await this.supportsBattleNetLaunch(gamePath)) return 'direct';
+        return await resolveBattleNetExe(gamePath, getSelectedGameChannel()) ? 'battlenet' : 'direct';
+    }
+
+    /** Prepare the built-in unlock map; only its copied version receives a localized name. */
+    static async unlockCampaign(mapName?: string): Promise<boolean> {
         const isMac = process.platform === 'darwin';
         const gamePath = configManager.get('war3Path');
 
@@ -236,6 +271,7 @@ export class GameLauncher {
         let exePath = '';
         if (isMac) {
             const possibleMacExes = [
+                path.join(gamePath, getSelectedGameFolder(), 'x86_64', 'Warcraft III.app'),
                 path.join(gamePath, getSelectedGameFolder(), 'Warcraft III.app'),
                 ...(getSelectedGameChannel() === 'retail' ? [path.join(gamePath, 'Warcraft III.app')] : []),
             ];
@@ -273,6 +309,16 @@ export class GameLauncher {
             throw new Error(`Campaign unlock map not found: ${sourceMap}`);
         }
 
+        // Battle.net cannot pass -loadfile. Prepare a named copy for Custom Game instead.
+        if (await this.supportsBattleNetLaunch(gamePath) && await resolveBattleNetExe(gamePath, getSelectedGameChannel())) {
+            const gameName = getSelectedGameChannel() === 'ptr' ? 'Warcraft III Public Test' : 'Warcraft III';
+            const userRoot = isMac ? path.join(app.getPath('appData'), 'Blizzard') : app.getPath('documents');
+            const userMap = path.join(userRoot, gameName, 'Maps', 'Quenching', 'cfix.w3x');
+            await fs.copy(sourceMap, userMap, { overwrite: true });
+            await writeMapName(userMap, mapName || 'Quenching: Unlock Campaign');
+            if (await launchViaBattleNet(gamePath, getSelectedGameChannel())) return true;
+        }
+
         const exeDir = path.dirname(exePath);
         const targetMap = path.join(exeDir, 'cfix.w3x');
         await fs.copy(sourceMap, targetMap, { overwrite: true });
@@ -290,18 +336,16 @@ export class GameLauncher {
 
         try {
             if (isMac) {
-                const child = spawn('open', [exePath, '--args', ...args], {
+                await spawnGameProcess('open', [exePath, '--args', ...args], {
                     detached: true,
                     stdio: 'ignore'
                 });
-                child.unref();
             } else {
-                const child = spawn(exePath, args, {
+                await spawnGameProcess(exePath, args, {
                     detached: true,
                     cwd: exeDir,
                     stdio: 'ignore'
                 });
-                child.unref();
             }
             return true;
         } catch (e) {

@@ -8,6 +8,8 @@ import {
   VersionSelection,
   normalizeGraphicsSelection,
   normalizeVersionSelection,
+  isVersion30OrLater,
+  isHdShaderPack,
 } from '../../shared/mod-profile';
 import { detectWar3Version } from './war3-version';
 import { getSelectedGameChannel } from './game-channel';
@@ -24,12 +26,15 @@ export type ResourcePathKey =
   | 'shaders300De'
   | 'shadersPtrHd'
   | 'shadersPtrDe'
+  | 'shaders300LegacyHd'
+  | 'shaders300LegacyDe'
   | 'environmentPublic'
   | 'skin';
 
 function versionFromDetected(parts: number[]): EffectiveVersion {
   const [major = 0, minor = 0, patch = 0] = parts;
-  if (major >= 3) return 'v30';
+  if (major > 3 || (major === 3 && (minor > 0 || patch >= 1))) return 'v301';
+  if (major === 3) return 'v30';
   if (major > 2 || (major === 2 && (minor > 0 || patch >= 3))) return 'v203';
   if (major === 2) return 'v20';
   return 'v1';
@@ -50,15 +55,17 @@ export async function resolveModProfile(
   let graphics: EffectiveGraphics = selection?.classicMode === true ? 'sd' : graphicsSelection;
 
   // A saved DE choice must not silently install 3.0 shaders into a 2.x game.
-  if (graphics === 'de' && version !== 'v30') {
+  if (graphics === 'de' && !isVersion30OrLater(version)) {
     graphics = 'hd';
   }
 
-  const is3 = version === 'v30';
+  const is3 = isVersion30OrLater(version);
   const isDe = is3 && graphics === 'de';
   // DE RPG lighting keeps the DE shaders but uses a brightened HD DNC and the public environment.
   const deRpg = isDe && selection?.lighting === 'rpg';
-  const shaderPack = is3
+  const shaderPack = version === 'v30'
+    ? (isDe ? 'shaders-300-legacy-de' : 'shaders-300-legacy-hd')
+    : is3
     ? (getSelectedGameChannel() === 'ptr'
       ? (isDe ? 'shaders-ptr-de' : 'shaders-ptr-hd')
       : (isDe ? 'shaders-300-de' : 'shaders-300-hd'))
@@ -93,6 +100,8 @@ export function getQuenchingResourcePath(quenchingDir: string, key: ResourcePath
     shaders300De: path.join(quenchingDir, 'shaders', 'shaders-300-de'),
     shadersPtrHd: path.join(quenchingDir, 'shaders', 'shaders-ptr-hd'),
     shadersPtrDe: path.join(quenchingDir, 'shaders', 'shaders-ptr-de'),
+    shaders300LegacyHd: path.join(quenchingDir, 'shaders', 'shaders-300-legacy-hd'),
+    shaders300LegacyDe: path.join(quenchingDir, 'shaders', 'shaders-300-legacy-de'),
     environmentPublic: path.join(quenchingDir, 'env-20-30-public.zip'),
     skin: path.join(quenchingDir, 'skin'),
   };
@@ -100,7 +109,11 @@ export function getQuenchingResourcePath(quenchingDir: string, key: ResourcePath
 }
 
 export function getShaderResourcePath(quenchingDir: string, profile: ModProfile, lighting: string = 'standard'): string {
-  const root = getQuenchingResourcePath(quenchingDir, profile.shaderPack === 'shaders136'
+  const root = getQuenchingResourcePath(quenchingDir, profile.shaderPack === 'shaders-300-legacy-hd'
+    ? 'shaders300LegacyHd'
+    : profile.shaderPack === 'shaders-300-legacy-de'
+    ? 'shaders300LegacyDe'
+    : profile.shaderPack === 'shaders136'
     ? 'shaders136'
     : profile.shaderPack === 'shaders200'
       ? 'shaders200'
@@ -113,15 +126,19 @@ export function getShaderResourcePath(quenchingDir: string, profile: ModProfile,
             : profile.shaderPack === 'shaders-ptr-hd'
               ? 'shadersPtrHd'
               : 'shaders300Hd');
-  if (profile.shaderPack === 'shaders-300-hd' || profile.shaderPack === 'shaders-ptr-hd') {
+  if (isHdShaderPack(profile.shaderPack)) {
     const effective = effectiveLightingMode(profile, lighting);
-    // Retail HD battle shares standard shaders; PTR ships a separate melee set.
+    // Retail 3.0 and PTR both ship standard, melee and RPG shader sets.
     const folder = effective === 'rpg' ? 'rpg'
-      : effective === 'battle' && profile.shaderPack === 'shaders-ptr-hd' ? 'melee'
+      : effective === 'battle' ? 'melee'
       : 'standard';
     return path.join(root, 'ps', folder);
   }
   return root;
+}
+
+export function getShaderPackRoot(quenchingDir: string, profile: Pick<ModProfile, 'shaderPack'>): string {
+  return path.join(quenchingDir, 'shaders', profile.shaderPack);
 }
 
 /** DE RPG patches its DNC as standard lighting. */

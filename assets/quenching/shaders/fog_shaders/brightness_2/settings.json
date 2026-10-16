@@ -5,7 +5,15 @@
   "ao_radius": 80,
   "build": "builds\\ao_0.680",
   "sha256": {
-    "fog": "2ca1ca39f182c7466b52dffbc290d5ef7ddea78f9f95c66dcab8522b6c255ab2",
-    "volumetricfog": "336916b974a35089703ee0f015684676453979c298679e7c67404d22cd2d0bc8"
+    "fog": "f0930ed3040adaf337993e003c2e594037917146a1871ff0d65b3ebd54aa8dc1",
+    "volumetricfog": "491818d5fae452793135c92a52db5f24f58d348772a325a666bef4347d057fbd"
+  },
+  "source_package": "D:\\Quenching\\QM\\shaders\\05_Builds\\fog_brightness_1-6_20261009_021700",
+  "sky_coverage": {
+    "enabled": true,
+    "linear": 0.8,
+    "exponential": 0.75,
+    "height": 0.75,
+    "respect_map_flag": false
   }
 }

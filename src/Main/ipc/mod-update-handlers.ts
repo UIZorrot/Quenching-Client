@@ -26,14 +26,14 @@ export function registerModUpdateHandlers() {
         if (progress.phase !== 'complete' && !event.sender.isDestroyed()) event.sender.send('mod-update:progress', progress);
       },
     });
-    if (!result.applied) return result;
+    if (!result.applied && !result.appliedPatches) return result;
     // The patch is already committed. Report profile failures separately so
     // users never mistake "updated files" for "settings applied".
     if (!event.sender.isDestroyed()) event.sender.send('mod-update:progress', {
       phase: 'finalizing', percent: 99, message: '正在应用当前资源设置',
     });
     const warnings = await applyInstalledProfile(war3Path);
-    if (!event.sender.isDestroyed()) event.sender.send('mod-update:progress', {
+    if (result.applied && !event.sender.isDestroyed()) event.sender.send('mod-update:progress', {
       phase: 'complete', percent: 100, message: warnings.length ? '更新完成，部分设置未生效' : 'MOD 更新完成',
     });
     return { ...result, configurationError: warnings.join('；') || undefined };

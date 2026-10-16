@@ -29,6 +29,8 @@
 .inputAction button { flex: 0 0 auto; min-width: 84px; height: 39px; padding: 0 12px; border: 1px solid #77612b; border-left: 0; border-radius: 0 3px 3px 0; background: rgba(109,83,27,.35); color: #e2c76b; font-size: 11px; cursor: pointer; }
 .inputAction button:hover { background: rgba(212,175,55,.27); }
 .inputAction button:disabled { opacity: .5; cursor: wait; }
+.portraitReset { align-self: flex-start; padding: 3px 0; border: 0; border-bottom: 1px solid #77612b; background: transparent; color: #e2c76b; font-size: 11px; cursor: pointer; }
+.portraitReset:disabled { opacity: .5; cursor: wait; }
 .sourceChoices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .sourceChoice { display: flex; flex-direction: column; align-items: flex-start; min-height: 106px; padding: 12px 14px; border: 1px solid #4e4435; border-radius: 4px; background: rgba(12,12,13,.78); color: #b8b1a6; text-align: left; cursor: pointer; transition: border-color .2s, background .2s; }
 .sourceChoice:hover, .sourceActive { border-color: #c7a53b; background: linear-gradient(145deg, rgba(212,175,55,.18), rgba(20,18,17,.8)); }
@@ -49,6 +51,11 @@
 .checkList span { display: grid; place-items: center; width: 23px; height: 23px; border: 1px solid #605943; border-radius: 50%; color: #9d937c; font: 11px Georgia, serif; }
 .checkList .checkDone { border-color: #b89a39; background: rgba(212,175,55,.2); color: #e4ca68; font-family: 'Microsoft YaHei', sans-serif; }
 .textureBox { margin-top: 22px; padding-top: 18px; border-top: 1px solid rgba(212,175,55,.15); }
+.autoSearch { width: 100%; margin-top: 18px; padding: 9px 12px; border: 1px solid #b99d48; border-radius: 3px; background: rgba(212,175,55,.12); color: #e2c76b; cursor: pointer; }
+.autoSearch:hover { background: rgba(212,175,55,.24); }
+.autoSearch:disabled { opacity: .5; cursor: not-allowed; }
+.searchHint { color: #9d9486; font-size: 11px; line-height: 1.6; }
+.gameTexture { flex: 0 0 auto; color: #bdab54; font-size: 10px; }
 .textureBox > strong { display: block; color: #e1d1a4; font-size: 13px; font-weight: 500; }
 .textureBox > small { display: block; margin: 4px 0 10px; color: #9d9486; font-size: 11px; }
 .textureRow { display: flex; align-items: center; gap: 5px; padding: 8px 0; border-bottom: 1px solid rgba(212,175,55,.1); }

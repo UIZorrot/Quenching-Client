@@ -32,8 +32,21 @@ const manualPackage = buildCombinedUpdatePrompt(
   '',
   { decision: 'requiresFullPackage', current: null, target: { version: '3.6', displayVersion: '3.6' } },
 );
-assert.equal(manualPackage?.mod?.automatic, false);
-assert.equal(manualPackage?.mod?.currentVersion, null);
+assert.equal(manualPackage, null, 'a missing package is a first install, not an available update');
+assert.equal(buildCombinedUpdatePrompt(null, '', {
+  decision: 'unknownInstallation', current: null, target: { version: '3.6', displayVersion: '3.6' },
+}), null);
+const existingManualPackage = buildCombinedUpdatePrompt(null, '', {
+  decision: 'requiresFullPackage', current: { version: '3.4' }, target: { version: '3.6', displayVersion: '3.6' },
+});
+assert.equal(existingManualPackage?.mod?.automatic, false);
+assert.equal(existingManualPackage?.mod?.currentVersion, '3.4');
+const clientWithNoPackage = buildCombinedUpdatePrompt(
+  { decision: 'available', currentVersion: '3.5.0' }, '3.5.1',
+  { decision: 'requiresFullPackage', current: null, target: { version: '3.6', displayVersion: '3.6' } },
+);
+assert(clientWithNoPackage?.client);
+assert.equal(clientWithNoPackage?.mod, null, 'a client update must not imply a missing MOD needs updating');
 
 assert.equal(buildCombinedUpdatePrompt(
   { decision: 'upToDate', currentVersion: '3.5.1' },

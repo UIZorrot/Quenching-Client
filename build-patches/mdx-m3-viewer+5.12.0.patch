@@ -21,11 +21,19 @@ index 6e2f671..a0ee730 100644
          }
          // Restore the alignment to the default, in case it changed.
 diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/batchgroup.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/batchgroup.js
-index e1a5eca..874d279 100644
+index e1a5eca..3f538a7 100644
 --- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/batchgroup.js
 +++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/batchgroup.js
-@@ -71,12 +71,13 @@ class BatchGroup {
-                 if (layerAlpha > 0) {
+@@ -67,16 +67,19 @@ class BatchGroup {
+                 const geoset = batch.geoset;
+                 const material = batch.material;
+                 const [diffuseLayer, normalsLayer, ormLayer, emissiveLayer, teamColorLayer, environmentMapLayer] = material.layers;
+-                const layerAlpha = layerAlphas[diffuseLayer.index];
+-                if (layerAlpha > 0) {
++                // Upgrade stages share one model. GEOA hides the geosets of
++                // other stages, just as it does in the SD rendering branch.
++                const layerAlpha = layerAlphas[diffuseLayer.index] * instance.geosetColors[geoset.index][3] * instance.vertexColor[3];
++                if (layerAlpha > 0.01) {
                      gl.uniform1f(uniforms['u_layerAlpha'], layerAlpha);
                      gl.uniform1f(uniforms['u_filterMode'], diffuseLayer.filterMode);
 -                    const diffuseId = diffuseLayer.textureId;
@@ -44,8 +52,20 @@ index e1a5eca..874d279 100644
                      const diffuseTexture = textures[diffuseId];
                      const normalsTexture = textures[normalsId];
                      const ormTexture = textures[ormId];
+@@ -152,7 +155,10 @@ class BatchGroup {
+                         }
+                     }
+                     webgl.bindTextureAndWrap(texture, 0, layerTexture.wrapS, layerTexture.wrapT);
+-                    if (skinningType === batch_1.SkinningType.ExtendedVertexGroups) {
++                    if (skinningType === batch_1.SkinningType.Skin) {
++                        geoset.bindSdSkin(shader, layer.coordId);
++                    }
++                    else if (skinningType === batch_1.SkinningType.ExtendedVertexGroups) {
+                         geoset.bindExtended(shader, layer.coordId);
+                     }
+                     else {
 diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/geoset.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/geoset.js
-index 541e0e9..3b586cb 100644
+index 541e0e9..5a388e1 100644
 --- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/geoset.js
 +++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/geoset.js
 @@ -45,8 +45,9 @@ class Geoset {
@@ -60,6 +80,71 @@ index 541e0e9..3b586cb 100644
      }
      bind(shader, coordId) {
          const gl = this.model.viewer.gl;
+@@ -60,6 +61,12 @@ class Geoset {
+         this.bindShared(gl, attribs, coordId);
+         this.bindVertexGroupsExtended(gl, attribs);
+     }
++    bindSdSkin(shader, coordId) {
++        const gl = this.model.viewer.gl;
++        const attribs = shader.attribs;
++        this.bindShared(gl, attribs, coordId);
++        this.bindSkin(gl, attribs);
++    }
+     bindHd(shader, skinningType, coordId) {
+         const gl = this.model.viewer.gl;
+         const attribs = shader.attribs;
+diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/handler.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/handler.js
+index c2b2eb7..f9e6419 100644
+--- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/handler.js
++++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/handler.js
+@@ -31,6 +31,7 @@ exports.default = {
+         }
+         // Shaders. Lots of them.
+         const sdExtendedVert = '#define EXTENDED_BONES\n' + sd_vert_1.default;
++        const sdSkinVert = '#define SKIN\n' + sd_vert_1.default;
+         const sdDiffuse = '#define ONLY_DIFFUSE\n' + sd_frag_1.default;
+         const sdTexcoords = '#define ONLY_TEXCOORDS\n' + sd_frag_1.default;
+         const sdNormals = '#define ONLY_NORMALS\n' + sd_frag_1.default;
+@@ -48,6 +49,7 @@ exports.default = {
+         const hdTangents = '#define ONLY_TANGENTS\n' + hd_frag_1.default;
+         const sdShader = webgl.createShader(sd_vert_1.default, sd_frag_1.default);
+         const sdExtendedShader = webgl.createShader(sdExtendedVert, sd_frag_1.default);
++        const sdSkinShader = webgl.createShader(sdSkinVert, sd_frag_1.default);
+         const hdShader = webgl.createShader(hd_vert_1.default, hd_frag_1.default);
+         const hdExtendedShader = webgl.createShader(hdExtendedVert, hd_frag_1.default);
+         const hdSkinShader = webgl.createShader(hdSkinVert, hd_frag_1.default);
+@@ -65,6 +67,11 @@ exports.default = {
+         shaders[viewer_1.DebugRenderMode.Normals] = webgl.createShader(sdExtendedVert, sdNormals);
+         sdDebugShaders[batch_1.SkinningType.ExtendedVertexGroups] = shaders;
+         shaders = [];
++        shaders[viewer_1.DebugRenderMode.Diffuse] = webgl.createShader(sdSkinVert, sdDiffuse);
++        shaders[viewer_1.DebugRenderMode.TexCoords] = webgl.createShader(sdSkinVert, sdTexcoords);
++        shaders[viewer_1.DebugRenderMode.Normals] = webgl.createShader(sdSkinVert, sdNormals);
++        sdDebugShaders[batch_1.SkinningType.Skin] = shaders;
++        shaders = [];
+         shaders[viewer_1.DebugRenderMode.Diffuse] = webgl.createShader(hd_vert_1.default, hdDiffuse);
+         shaders[viewer_1.DebugRenderMode.NormalMap] = webgl.createShader(hd_vert_1.default, hdNormalMap);
+         shaders[viewer_1.DebugRenderMode.Occlusion] = webgl.createShader(hd_vert_1.default, hdOcclusion);
+@@ -109,6 +116,7 @@ exports.default = {
+             // Shaders.
+             sdShader,
+             sdExtendedShader,
++            sdSkinShader,
+             hdShader,
+             hdExtendedShader,
+             hdSkinShader,
+@@ -323,7 +331,10 @@ exports.default = {
+                     }
+                 }
+             }
+-            if (skinningType === batch_1.SkinningType.VertexGroups) {
++            if (skinningType === batch_1.SkinningType.Skin) {
++                return mdxCache.sdSkinShader;
++            }
++            else if (skinningType === batch_1.SkinningType.VertexGroups) {
+                 return mdxCache.sdShader;
+             }
+             else {
 diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/setupgeosets.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/setupgeosets.js
 index 23f9f62..3cbd67f 100644
 --- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/setupgeosets.js
@@ -103,7 +188,7 @@ index 23f9f62..3cbd67f 100644
                  else {
                      for (const layer of material.layers) {
 diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/hd.frag.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/hd.frag.js
-index a6ca98b..7b51eba 100644
+index a6ca98b..8b95f3b 100644
 --- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/hd.frag.js
 +++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/hd.frag.js
 @@ -30,7 +30,7 @@ varying vec3 v_tangent;
@@ -115,7 +200,11 @@ index a6ca98b..7b51eba 100644
  }
  
  const vec2 invAtan = vec2(0.1591, 0.3183);
-@@ -268,7 +268,9 @@ void lambert() {
+@@ -44,2 +44,3 @@ vec2 sampleEnvironmentMap(vec3 normal) {
+ vec4 getDiffuseColor() {
+   vec4 color = texture2D(u_diffuseMap, v_uv);
++  color.a *= v_layerAlpha;
+@@ -268,7 +269,9 @@ void lambert() {
      color *= tc * tcFactor;
    }
    
@@ -147,3 +236,19 @@ index c9a42eb..c662790 100644
    gl_FragColor = color;
  }
  
+diff --git a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/sd.vert.js b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/sd.vert.js
+index 0755100..743832a 100644
+--- a/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/sd.vert.js
++++ b/node_modules/mdx-m3-viewer/dist/cjs/viewer/handlers/mdx/shaders/sd.vert.js
+@@ -34,3 +34,11 @@ void main() {
+   if (u_hasBones) {
++    #ifdef SKIN
++      // Modern SD models can use weighted SKIN without HD/PBR materials.
++      vec3 tangent = vec3(0.0);
++      vec3 binormal = vec3(0.0);
++      transformSkin(position, normal, tangent, binormal);
++      normal = normalize(normal);
++    #else
+     transformVertexGroups(position, normal);
++    #endif
+   }

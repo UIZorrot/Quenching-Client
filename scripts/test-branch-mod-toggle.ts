@@ -17,17 +17,61 @@ try {
   await fs.outputFile(path.join(retail, 'textures', 'same.txt'), 'retail active custom');
   await fs.outputFile(path.join(retail, 'QMoff', 'textures', 'same.txt'), 'retail SD parked custom');
   await fs.outputFile(path.join(ptr, 't00', 'mod.txt'), 'ptr mod');
+  const basicFiles = [
+    'PostProcessingConfig.txt', 'units/unitskin.txt', 'units/destructableskin.txt',
+    'environment/dnc/dncashenvale/dncashenvaleterrain/dncashenvaleterrain.mdl',
+    'shaders/ps/client-extra.bls', 'shaders/.quenching-shader-pack',
+    'ui/console/client-extra.mdx', 'ui/.quenching-ui-style',
+    'webui/index.html', 'webui/QuenchingOn.png', 'webui/Webms/mainmenu.webm',
+    'terrainart/terrain.slk', 'textures/fx/flare/heroglow_bw.dds',
+    'cos/custom/hd/heroes/Hamg/example/model.mdx',
+    'ReplaceableTextures/CommandButtons/BTNQCustom_0123456789abcdef01234567.blp',
+    'ReplaceableTextures/CommandButtonsDisabled/DISBTNQCustom_0123456789abcdef01234567.blp',
+  ];
+  for (const file of basicFiles) await fs.outputFile(path.join(ptr, file), `basic:${file}`);
+  await fs.outputFile(path.join(ptr, 'ui', 'unrelated-user.txt'), 'unrelated UI');
+  await fs.outputFile(path.join(ptr, 'textures', 'player-custom.blp'), 'player texture');
   await fs.outputFile(path.join(retail, 't00', 'player-custom.txt'), 'leave me active');
   // Enabling a valid branch is a logical switch and must never require a full
   // package, version marker, sentinel folders, or ownership manifest.
   await setBranchModEnabledOnDisk(ptr, true);
   assert.equal(await fs.pathExists(path.join(ptr, '.quenching', 'branch-toggle.json')), false);
   // A branch without a full package can still toggle basic client features.
-  // Its loose files are not package-owned and must not be moved.
+  // Basic files still switch off without a package ownership manifest.
   await applyBranchModFilesForSwitch(ptr, false);
+  for (const file of basicFiles) {
+    assert.equal(await fs.pathExists(path.join(ptr, file)), false, `basic resource stays active: ${file}`);
+    assert.equal(await fs.readFile(path.join(ptr, 'QMoff', file), 'utf8'), `basic:${file}`);
+  }
+  assert.equal(await fs.readFile(path.join(ptr, 'textures', 'player-custom.blp'), 'utf8'), 'player texture');
   await applyBranchModFilesForSwitch(ptr, true);
+  for (const file of basicFiles) assert.equal(await fs.readFile(path.join(ptr, file), 'utf8'), `basic:${file}`);
   assert.equal(await fs.readFile(path.join(ptr, 't00', 'mod.txt'), 'utf8'), 'ptr mod');
   assert.equal(await fs.pathExists(path.join(ptr, '.quenching', 'branch-toggle.json')), false);
+  // Upgrade an old disabled record that omitted the client's UI, DNC and post-processing.
+  await fs.outputJson(path.join(ptr, '.quenching', 'branch-toggle.json'), { schema: 1, phase: 'disabled', moves: [] });
+  assert.equal(await recoverBranchModToggle(ptr), false);
+  for (const file of basicFiles) assert.equal(await fs.pathExists(path.join(ptr, file)), false);
+  // A newly generated override while already off is parked too, keeping the original for rollback.
+  await fs.outputFile(path.join(ptr, 'PostProcessingConfig.txt'), 'updated while off');
+  await setBranchModEnabledOnDisk(ptr, false);
+  assert.equal(await fs.pathExists(path.join(ptr, 'PostProcessingConfig.txt')), false);
+  await setBranchModEnabledOnDisk(ptr, true);
+  assert.equal(await fs.readFile(path.join(ptr, 'PostProcessingConfig.txt'), 'utf8'), 'updated while off');
+  for (const file of basicFiles.filter(file => file !== 'PostProcessingConfig.txt'))
+    assert.equal(await fs.readFile(path.join(ptr, file), 'utf8'), `basic:${file}`);
+  // An interrupted repair of an already-off branch rolls back only the newly moved files.
+  await setBranchModEnabledOnDisk(ptr, false);
+  const previous = await fs.readJson(path.join(ptr, '.quenching', 'branch-toggle.json'));
+  const addition = { active: 'webui/QuenchingOn.png', parked: 'QMoff/branch-residuals/crash/webui/QuenchingOn.png' };
+  await fs.outputFile(path.join(ptr, addition.parked), 'interrupted new icon');
+  await fs.outputJson(path.join(ptr, '.quenching', 'branch-toggle.json'), {
+    schema: 1, phase: 'disabling', moves: previous.moves, previousMoves: previous.moves, pendingMoves: [addition],
+  });
+  assert.equal(await recoverBranchModToggle(ptr), false);
+  assert.equal(await fs.readFile(path.join(ptr, addition.active), 'utf8'), 'interrupted new icon');
+  assert.equal(await fs.pathExists(path.join(ptr, 'PostProcessingConfig.txt')), false);
+  await setBranchModEnabledOnDisk(ptr, true);
   const owned = ['t00/mod.txt', 'textures/same.txt'];
   const records = owned.map((file) => {
     const value = file === 't00/mod.txt' ? 'retail mod' : 'retail active custom';
@@ -65,6 +109,22 @@ try {
   assert.equal(await recoverBranchModToggle(retail), true);
   assert.equal(await fs.readFile(path.join(retail, 't00', 'mod.txt'), 'utf8'), 'retail mod');
   assert.equal(await fs.pathExists(path.join(retail, '.quenching', 'branch-toggle.json')), false);
+
+  // A previous profile or package update can remove a parked DNC after disable.
+  // Missing optional resources must not block restoring remaining files.
+  await setBranchModEnabledOnDisk(retail, false);
+  const staleMove = { active: 'environment/dnc/dncashenvale/dncashenvaleterrain/dncashenvaleterrain.mdl', parked: 'QMoff/environment/dnc/dncashenvale/dncashenvaleterrain/dncashenvaleterrain.mdl' };
+  const journal = await fs.readJson(path.join(retail, '.quenching', 'branch-toggle.json'));
+  journal.moves.push(staleMove);
+  await fs.outputJson(path.join(retail, '.quenching', 'branch-toggle.json'), journal);
+  await setBranchModEnabledOnDisk(retail, true);
+  assert.equal(await isBranchModDisabled(retail), false);
+  assert.equal(await fs.readFile(path.join(retail, 't00', 'mod.txt'), 'utf8'), 'retail mod');
+  assert.equal(await fs.readFile(path.join(retail, 't00', 'player-custom.txt'), 'utf8'), 'leave me active');
+  await fs.outputJson(path.join(retail, '.quenching', 'branch-toggle.json'), { schema: 1, phase: 'enabling', moves: [staleMove] });
+  assert.equal(await recoverBranchModToggle(retail), false);
+  await setBranchModEnabledOnDisk(retail, true);
+  assert.equal(await isBranchModDisabled(retail), false);
 
   const legacyOwned = ['Rbuildings/owned.txt', 'RetroTex/owned.txt', 'RUnits/owned.txt'];
   const legacyRecords = legacyOwned.map((file) => ({

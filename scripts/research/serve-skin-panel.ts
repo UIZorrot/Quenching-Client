@@ -3,7 +3,7 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { build } from 'esbuild';
 import { Storage } from '@jamiephan/casclib';
-import { ModelResourceService } from '../../src/Main/services/model-resource-service';
+import { createRequire } from 'node:module';
 import { parseSkinSections } from '../../src/shared/skin-versions';
 import less from 'less';
 const game = process.argv[2];
@@ -11,7 +11,17 @@ if (!game) throw new Error('Usage: tsx scripts/research/serve-skin-panel.ts GAME
 const storage = new Storage(); storage.open(game + '*w3');
 const file = storage.openFile('war3.w3mod:units\\unitskin.txt');
 const baseline = parseSkinSections(file.readAll().toString('utf8')); file.close(); storage.close();
-const resources = new ModelResourceService();
+const backend = await build({
+  stdin: { contents: 'export { ModelResourceService } from "./src/Main/services/model-resource-service";', resolveDir: process.cwd(), loader: 'ts' },
+  platform: 'node', format: 'cjs', packages: 'external', bundle: true, write: false,
+  plugins: [{ name: 'read-only-branch', setup(plugin) {
+    plugin.onResolve({ filter: /\/game-channel$/ }, args => ({ path: args.path, namespace: 'fixture' }));
+    plugin.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: 'export const getSelectedGameFolder = () => "_retail_";' }));
+  } }],
+});
+const backendModule = { exports: {} as any };
+new Function('require', 'module', 'exports', backend.outputFiles[0].text)(createRequire(import.meta.url), backendModule, backendModule.exports);
+const resources = new backendModule.exports.ModelResourceService();
 const bundle = await build({ entryPoints: [path.resolve('scripts/research/skin-panel-browser.tsx')], bundle: true, platform: 'browser', format: 'esm', write: false,
   plugins: [{ name: 'fixture-hooks', setup(build) {
     build.onResolve({ filter: /hooks\/(useWar3Detector|useWar3Settings|useSound)$/ }, args => ({ path: args.path, namespace: 'fixture' }));

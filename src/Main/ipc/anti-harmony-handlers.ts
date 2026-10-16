@@ -13,7 +13,7 @@ export function registerAntiHarmonyHandlers() {
     ipcMain.handle('anti-harmony:set-enabled', async (event, war3Path: string | undefined, enabled: boolean) => {
         const path = war3Path || (configManager.get('war3Path') as string | undefined);
         if (!path) {
-            throw new Error('δ����ħ������III·��');
+            throw new Error('请先选择魔兽争霸安装目录');
         }
 
         const sender = event.sender;
@@ -32,7 +32,7 @@ export function registerAntiHarmonyHandlers() {
     ipcMain.handle('anti-harmony:install', async (event, war3Path?: string) => {
         const path = war3Path || (configManager.get('war3Path') as string | undefined);
         if (!path) {
-            throw new Error('δ����ħ������III·��');
+            throw new Error('请先选择魔兽争霸安装目录');
         }
         const sender = event.sender;
         return await setAntiHarmonyEnabled(path, true, (progress) => {

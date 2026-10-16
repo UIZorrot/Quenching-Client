@@ -4,9 +4,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yauzl from 'yauzl';
+import { readSkinTable } from './full-package-sync-utils.mjs';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const root = path.resolve(process.argv[2] || 'D:/Quenching/QM/3.5/QMF3.5');
+const root = path.resolve(process.argv[2] || 'D:/Quenching/QM/Latest');
 const assets = path.join(repo, 'assets', 'quenching');
 const sha = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
 
@@ -108,6 +109,29 @@ assert.match(treeSkin, /doodads\/que\/d20\//);
 for (const relative of ['doodads/que/d20', 'replaceabletextures/tree/t20']) {
   assert.equal(await exists(path.join(root, relative)), true, `Missing HD tree resource: ${relative}`);
 }
+const nativeDestructables = readSkinTable(await fs.readFile(path.join(assets, 'skin/destructableskin.txt'), 'utf8'));
+const packageDestructables = readSkinTable(await fs.readFile(path.join(root, 'units/destructableskin.txt'), 'utf8'));
+assert.deepEqual([...packageDestructables.keys()], [...nativeDestructables.keys()], 'Modern destructable IDs missing or obsolete IDs retained');
+const shortTreeOverrides = JSON.parse(await fs.readFile(path.join(repo, 'scripts/fixtures/destructable-short-overrides.json'), 'utf8')).overrides;
+const expectedOverrides = new Map();
+for (const { section, field, value } of shortTreeOverrides) {
+  const baseline = nativeDestructables.get(section);
+  assert.ok(baseline, section);
+  const key = field === 'texFile' && !baseline.has(field) && baseline.has('texFile:sd') ? 'texFile:sd' : field;
+  expectedOverrides.set(`${section}.${key}`, value);
+}
+for (const id of ['OTip', 'OTis']) expectedOverrides.set(`${id}.file`, '.mdl');
+for (const [id, row] of nativeDestructables) {
+  const actual = packageDestructables.get(id);
+  for (const [field, value] of row) {
+    const override = expectedOverrides.get(`${id}.${field}`);
+    if (override !== undefined) assert.equal(actual.get(field)?.replaceAll('\\', '/').toLowerCase(), override.replaceAll('\\', '/').toLowerCase(), `${id}.${field}: configured tree/platform changed`);
+    else assert.equal(actual.get(field), value, `${id}.${field}: native baseline differs`);
+  }
+  for (const [field, value] of actual) {
+    if (!row.has(field)) assert.equal(value, expectedOverrides.get(`${id}.${field}`), `${id}.${field}: unexpected legacy field`);
+  }
+}
 
 await same(path.join(root, 'terrainart/terrain.slk'), path.join(assets, 'tile/terrain20.slk'));
 await same(path.join(root, 'terrainart/clifftypes.slk'), path.join(assets, 'tile/clifftypes20.slk'));
@@ -118,6 +142,9 @@ for (const name of ['ashenvale', 'cityscape', 'cityscaperuins', 'felwood', 'lord
 }
 
 const dnc = await sameTree(path.join(root, 'environment/dnc'), path.join(assets, 'dnc/dnc30-hd'));
+const manual20Dnc = await sameTree(path.join(root, '_manual/_20/environment/dnc'), path.join(assets, 'dnc/dnc20'));
+const manualHdDnc = await sameTree(path.join(root, '_manual/_30/env-hd/dnc'), path.join(assets, 'dnc/dnc30-hd'));
+const manualDeDnc = await sameTree(path.join(root, '_manual/_30/env-de/dnc'), path.join(assets, 'dnc/dnc30-de'));
 const activeShaders = await sameComposedTree(path.join(root, 'shaders'), [
   { root: path.join(assets, 'shaders/shaders-300-hd/vs'), prefix: 'vs' },
   { root: path.join(assets, 'shaders/shaders-300-hd/ps/standard'), prefix: 'ps' },
@@ -127,4 +154,4 @@ const manualHdShaders = await sameTree(path.join(root, '_manual/_30/shaders-hd')
 const manualDeShaders = await sameTree(path.join(root, '_manual/_30/shaders-de'), path.join(assets, 'shaders/shaders-300-de'));
 const publicEnvironment = await verifyPublicEnvironment(path.join(assets, 'env-20-30-public.zip'), path.join(root, 'environment'));
 
-console.log(JSON.stringify({ result: 'HD full-package audit passed', dncFiles: dnc, activeShaderFiles: activeShaders, manual20ShaderFiles: manual20Shaders, hdShaderFiles: manualHdShaders, deShaderFiles: manualDeShaders, publicEnvironmentFiles: publicEnvironment, water: 'Warcraft default', terrain: 't20/HD', units: 'unitskin/HD', t30: 'parked' }, null, 2));
+console.log(JSON.stringify({ result: 'HD full-package audit passed', dncFiles: dnc, manual20DncFiles: manual20Dnc, manualHdDncFiles: manualHdDnc, manualDeDncFiles: manualDeDnc, activeShaderFiles: activeShaders, manual20ShaderFiles: manual20Shaders, hdShaderFiles: manualHdShaders, deShaderFiles: manualDeShaders, publicEnvironmentFiles: publicEnvironment, destructables: packageDestructables.size, preservedOverrides: expectedOverrides.size, water: 'Warcraft default', terrain: 't20/HD', units: 'unitskin/HD', t30: 'parked' }, null, 2));

@@ -7,7 +7,7 @@ import {
   LeftOutlined,
   RightOutlined
 } from '@ant-design/icons';
-import { useNews } from '../../utils/news';
+import { newsLanguage, useNews } from '../../utils/news';
 import { useTranslation } from '../../utils/i18n';
 import { useSound } from '../../hooks/useSound';
 import ReactMarkdown from 'react-markdown';
@@ -48,13 +48,13 @@ export const NewsPanel: React.FC<NewsPanelProps> = ({
   // 初始化拉取新闻
   useEffect(() => {
     if (isExpanded) {
-      const lang = currentLanguage === 'zh-CN' ? 'cn' : 'en';
+      const lang = newsLanguage(currentLanguage);
       fetchNews(false, lang);
     }
-  }, [isExpanded, currentLanguage]);
+  }, [isExpanded, currentLanguage, fetchNews]);
 
   const handleRefresh = () => {
-    const lang = currentLanguage === 'zh-CN' ? 'cn' : 'en';
+    const lang = newsLanguage(currentLanguage);
     fetchNews(true, lang);
   };
 
@@ -69,7 +69,10 @@ export const NewsPanel: React.FC<NewsPanelProps> = ({
       <div className={s.newsModalContent}>
         {isLoading ? (
           <div className={s.loadingContainer} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
-            <Spin size="large" tip={t('news.loading')} />
+            <Space direction="vertical" align="center">
+              <Spin size="large" />
+              <Text>{t('news.loading')}</Text>
+            </Space>
           </div>
         ) : filteredNews.length > 0 ? (
           <div className={s.newsListContainer} style={{ padding: '20px' }}>

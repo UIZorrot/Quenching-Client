@@ -1,10 +1,21 @@
 import http from 'node:http';
 import path from 'node:path';
 import { build } from 'esbuild';
-import { ModelResourceService } from '../../src/Main/services/model-resource-service';
+import { createRequire } from 'node:module';
 const game = process.argv[2];
 if (!game) throw new Error('Usage: tsx scripts/research/serve-de-preview.ts GAME_PATH');
-const resources = new ModelResourceService();
+// Keep this read-only Node harness independent of Electron configuration.
+const backend = await build({
+  stdin: { contents: 'export { ModelResourceService } from "./src/Main/services/model-resource-service";', resolveDir: process.cwd(), loader: 'ts' },
+  platform: 'node', format: 'cjs', packages: 'external', bundle: true, write: false,
+  plugins: [{ name: 'read-only-branch', setup(plugin) {
+    plugin.onResolve({ filter: /\/game-channel$/ }, args => ({ path: args.path, namespace: 'fixture' }));
+    plugin.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: 'export const getSelectedGameFolder = () => "_retail_";' }));
+  } }],
+});
+const backendModule = { exports: {} as any };
+new Function('require', 'module', 'exports', backend.outputFiles[0].text)(createRequire(import.meta.url), backendModule, backendModule.exports);
+const resources = new backendModule.exports.ModelResourceService();
 const bundle = await build({ entryPoints: [path.resolve('scripts/research/de-preview-browser.ts')], bundle: true,
   platform: 'browser', format: 'iife', write: false, sourcemap: 'inline' });
 const server = http.createServer(async (request, response) => {

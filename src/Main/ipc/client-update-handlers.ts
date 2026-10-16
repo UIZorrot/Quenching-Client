@@ -6,8 +6,8 @@ export function registerClientUpdateHandlers(): void {
   ipcMain.handle('client-update:apply', async event => {
     const status = await getClientUpdateStatus();
     if (status.decision !== 'available') throw new Error(status.reason);
-    await prepareClientUpdate((message, completed, total) => {
-      if (!event.sender.isDestroyed()) event.sender.send('client-update:progress', { message, completed, total });
+    await prepareClientUpdate((message, completed, total, detail) => {
+      if (!event.sender.isDestroyed()) event.sender.send('client-update:progress', { message, completed, total, ...detail });
     });
     return { restarting: true };
   });

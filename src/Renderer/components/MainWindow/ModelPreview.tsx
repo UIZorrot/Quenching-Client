@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from '../../utils/i18n';
-import { describePreviewError, resolvePreviewStatus, type PreviewStatus } from './preview-status';
 
 interface ModelPreviewProps {
+  unitId?: string;
   modelPath?: string;
   fallback?: string;
   alt: string;
@@ -16,15 +16,21 @@ interface ModelPreviewProps {
   paused?: boolean;
 }
 function decode(value: string) { return Uint8Array.from(atob(value), c => c.charCodeAt(0)); }
+type PreviewStatus = { key: string; params?: Record<string, string | number> };
+function previewError(error: unknown): PreviewStatus {
+  const detail = error instanceof Error ? error.message : String(error);
+  if (/no handler registered|readModelResource is not a function/i.test(detail))
+    return { key: 'skin.preview.serviceNotReady' };
+  if (/chunkloaderror|loading chunk/i.test(detail))
+    return { key: 'skin.preview.moduleNotReady' };
+  return { key: 'skin.preview.loadError', params: { detail } };
+}
 
-export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback, alt, scale = 1, className, enabled = true, artSet = 'hd', teamColor = 8, transparent = false, viewDistance = 1, paused = false }) => {
+export const ModelPreview: React.FC<ModelPreviewProps> = ({ unitId, modelPath, fallback, alt, scale = 1, className, enabled = true, artSet = 'hd', teamColor = 8, transparent = false, viewDistance = 1, paused = false }) => {
   const { t } = useTranslation();
   const host = useRef<HTMLDivElement>(null);
   const suspended = useRef(paused);
-  const [status, setStatus] = useState<PreviewStatus | null>(null);
-  const state = resolvePreviewStatus(status, t);
-  const [isLoadingModel, setIsLoadingModel] = useState(true);
-  const showState = (next: PreviewStatus) => { setStatus(next); setIsLoadingModel(false); };
+  const [state, setState] = useState<PreviewStatus>({ key: 'skin.preview.loading' });
   const [ready, setReady] = useState(false);
   const [retry, setRetry] = useState(0);
   const [placeholder, setPlaceholder] = useState<'model' | 'logo' | 'none'>('model');
@@ -42,7 +48,7 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback,
     canvas.setAttribute('aria-label', alt);
     Object.assign(canvas.style, { width: '100%', height: '100%', position: 'absolute', inset: '0', opacity: '0', cursor: 'grab' });
     host.current?.appendChild(canvas);
-    setReady(false); setStatus(null); setIsLoadingModel(true);
+    setReady(false); setState({ key: 'skin.preview.loading' });
     const read = async (path: string, basePath?: string) => {
       const resource = await window.electronAPI.readModelResource(path, basePath, mode);
       return { bytes: decode(resource.data), resolvedPath: resource.resolvedPath };
@@ -57,8 +63,8 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback,
     canvas.onpointerup = () => { lastX = undefined; };
     canvas.onpointercancel = () => { lastX = undefined; };
     (async () => {
-      if (!enabled) { showState({ key: 'skin.panel.model.unavailableSkin', fallback: '当前皮肤的模型预览暂不可用' }); return; }
-      if (!modelPath) { showState({ key: 'skin.panel.model.noPath', fallback: '未找到这个单位的模型路径' }); return; }
+      if (!enabled) { setState({ key: 'skin.preview.unavailable' }); return; }
+      if (!modelPath) { setState({ key: 'skin.preview.noPath' }); return; }
       try {
         if (typeof window.electronAPI?.readModelResource !== 'function')
           throw new Error('readModelResource is not a function');
@@ -69,10 +75,11 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback,
         const { createPreview } = await import('../../model-preview/create-preview');
         const source = await read(modelPath);
         if (abort.signal.aborted) return;
-        preview = await createPreview(canvas, source, read, { scale, signal: abort.signal, teamColor, transparent, viewDistance });
+        preview = await createPreview(canvas, source, read, { scale, signal: abort.signal, teamColor, transparent, viewDistance, unitId });
         if (abort.signal.aborted) { preview.dispose(); return; }
         canvas.style.opacity = '1'; setReady(true);
-        showState(preview.missing.length ? { key: 'skin.panel.model.missing', fallback: '缺少 {{count}} 项资源', params: { count: String(preview.missing.length) } } : Object.values(preview.omitted).some(Boolean) ? { key: 'skin.panel.model.liveSimplified', fallback: '实时模型 · 简化特效/面部' } : { key: 'skin.panel.model.live', fallback: '实时模型' });
+        setState(preview.missing.length ? { key: 'skin.preview.missing', params: { count: preview.missing.length } }
+          : { key: Object.values(preview.omitted).some(Boolean) ? 'skin.preview.simplified' : 'skin.preview.live' });
         let previous = performance.now();
         const step = (now: number) => {
           if (abort.signal.aborted) return;
@@ -83,30 +90,31 @@ export const ModelPreview: React.FC<ModelPreviewProps> = ({ modelPath, fallback,
               previous = now;
             }
           }
-          catch (error) { console.warn('[ModelPreview]', error); setReady(false); showState({ key: 'skin.panel.model.renderFailed', fallback: '模型渲染失败：{{detail}}', params: { detail: error instanceof Error ? error.message : String(error) } }); canvas.style.opacity = '0'; preview.dispose(); return; }
+          catch (error) { console.warn('[ModelPreview]', error); setReady(false); setState({ key: 'skin.preview.renderError', params: { detail: error instanceof Error ? error.message : String(error) } }); canvas.style.opacity = '0'; preview.dispose(); return; }
           frame = requestAnimationFrame(step);
         };
         frame = requestAnimationFrame(step);
       } catch (error) {
-        if (!abort.signal.aborted) { console.warn('[ModelPreview]', error); showState(describePreviewError(error)); }
+        if (!abort.signal.aborted) { console.warn('[ModelPreview]', error); setState(previewError(error)); }
       }
     })();
     return () => { abort.abort(); cancelAnimationFrame(frame); observer.disconnect(); preview?.dispose(); canvas.remove(); };
-  }, [enabled, modelPath, mode, scale, alt, teamColor, transparent, viewDistance, retry]);
+  }, [enabled, modelPath, mode, scale, alt, teamColor, transparent, viewDistance, unitId, retry]);
   return <div className={className} style={{ position: 'relative', width: '100%', height: '100%', background: transparent ? 'transparent' : '#090a0d', overflow: 'hidden' }}>
     {!transparent && fallback && <img src={fallback} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'contain', opacity: ready ? 0 : 1 }} />}
     <div ref={host} style={{ position: 'absolute', inset: 0 }} />
+    {ready && state.key === 'skin.preview.missing' && <span role="status" style={{ position: 'absolute', bottom: 8, left: 8, color: '#e7c35a', fontSize: 12 }}>{t(state.key, state.params)} · {t('skin.preview.checkTextures')}</span>}
     {transparent && !ready && <div role="status" style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 32, textAlign: 'center', color: '#dbd2bd', pointerEvents: 'none' }}>
       {placeholder !== 'none' && <img src={placeholder === 'model' ? './assets/quenching/model-preview-3d.svg' : './assets/quenching/logo.png'} alt="" onError={() => setPlaceholder(value => value === 'model' ? 'logo' : 'none')}
         style={{ width: 126, height: 126, objectFit: 'contain', opacity: .86, filter: 'drop-shadow(0 4px 20px rgba(0,0,0,.6))' }} />}
-      <strong style={{ fontSize: 18, fontWeight: 400, textShadow: '0 2px 8px #000' }}>{isLoadingModel ? t('skin.panel.model.loading', '正在加载模型…') : t('skin.panel.model.failedTitle', '加载失败')}</strong>
-      {!isLoadingModel && <>
-        <span style={{ lineHeight: 1.5, textShadow: '0 2px 8px #000' }}>{t('skin.panel.model.checkHint', '请检查魔兽目录或模型')}</span>
-        <small style={{ maxWidth: 390, color: '#a9a396', lineHeight: 1.5, overflowWrap: 'anywhere' }}>{state}</small>
+      <strong style={{ fontSize: 18, fontWeight: 400, textShadow: '0 2px 8px #000' }}>{t(state.key === 'skin.preview.loading' ? 'skin.preview.loading' : 'skin.preview.failed')}</strong>
+      {state.key !== 'skin.preview.loading' && <>
+        <span style={{ lineHeight: 1.5, textShadow: '0 2px 8px #000' }}>{t('skin.preview.checkModel')}</span>
+        <small style={{ maxWidth: 390, color: '#a9a396', lineHeight: 1.5, overflowWrap: 'anywhere' }}>{t(state.key, state.params)}</small>
       </>}
-      {enabled && modelPath && !isLoadingModel && <button type="button" onClick={() => setRetry(value => value + 1)} style={{ pointerEvents: 'auto', padding: '5px 14px', border: '1px solid #d4af37', background: 'rgba(0,0,0,.5)', color: '#e6c45b', cursor: 'pointer' }}>{t('skin.panel.model.retry', '重试加载')}</button>}
+      {enabled && modelPath && state.key !== 'skin.preview.loading' && <button type="button" onClick={() => setRetry(value => value + 1)} style={{ pointerEvents: 'auto', padding: '5px 14px', border: '1px solid #d4af37', background: 'rgba(0,0,0,.5)', color: '#e6c45b', cursor: 'pointer' }}>{t('skin.preview.retry')}</button>}
     </div>}
     {!transparent && enabled && modelPath && <span style={{ position: 'absolute', top: 4, right: 4, color: '#ddd', fontSize: 11 }}>{artSet.toUpperCase()}</span>}
-    {!transparent && <span title={state} style={{ position: 'absolute', bottom: 3, left: 4, fontSize: 10, color: '#bbb', pointerEvents: 'none' }}>{state}</span>}
+    {!transparent && <span title={t(state.key, state.params)} style={{ position: 'absolute', bottom: 3, left: 4, fontSize: 10, color: '#bbb', pointerEvents: 'none' }}>{t(state.key, state.params)}</span>}
   </div>;
 };

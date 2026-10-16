@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Button, Layout, Typography, Dropdown, MenuProps, message, Modal, Spin } from 'antd';
+import { Button, Layout, Typography, message, Modal, Spin } from 'antd';
 import {
   PlayCircleOutlined,
   SettingOutlined,
@@ -9,7 +9,9 @@ import {
   GlobalOutlined,
   CloseOutlined,
   MinusOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  DownloadOutlined,
+  FolderOpenOutlined
 } from '@ant-design/icons';
 import { useTranslation } from '../../utils/i18n';
 import { useWar3Detector } from '../../hooks/useWar3Detector';
@@ -24,18 +26,21 @@ import { AboutModal } from './AboutModal';
 import { NewsPanel } from './NewsPanel';
 import { SkinModal } from './SkinModal';
 import { ThirdPartyModal } from './ThirdPartyModal';
+import { FullPackageInstallModal } from './FullPackageInstallModal';
+import { ForumPanel } from './ForumPanel';
 import { useGlobalLoading } from '../GlobalLoadingProvider';
 import { APP_VERSION } from '../../version';
 import { isNewerClientVersion } from '../../../shared/client-version';
 import { GameChannel, gameChannelFolder } from '../../../shared/game-channel';
-import { GraphicsSelection, VersionSelection } from '../../../shared/mod-profile';
+import { GraphicsSelection, VersionSelection, isVersion30OrLater } from '../../../shared/mod-profile';
 import { activeSkinArtSet } from '../../../shared/active-skin-art-set';
 import { buildCombinedUpdatePrompt } from '../../../shared/combined-update-prompt';
+import { reportUpdateFailure } from '../../utils/update-feedback';
 // import styles from './MainWindow.module.less';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
-const FULL_PACKAGE_GUIDE_URL = 'https://qm.txzy.net/special/players';
+const FULL_PACKAGE_GUIDE_URL = 'https://qm.txzy.net';
 const UPDATE_INITIAL_CHECK_DELAY_MS = 10_000;
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
 const UPDATE_FOCUS_RECHECK_MS = 5 * 60 * 1000;
@@ -131,7 +136,7 @@ export const MainWindow: React.FC = () => {
   const [clientUpdateVersion, setClientUpdateVersion] = useState('');
   const [clientUpdateStatus, setClientUpdateStatus] = useState<ClientUpdateStatus | null>(null);
   const [updatingClient, setUpdatingClient] = useState(false);
-  const [clientUpdateProgress, setClientUpdateProgress] = useState('');
+  const [clientUpdateProgress, setClientUpdateProgress] = useState<ClientUpdateProgress | null>(null);
   const [modUpdateChecked, setModUpdateChecked] = useState(false);
   const [clientUpdateChecked, setClientUpdateChecked] = useState(false);
   const modStatusRequestId = useRef(0);
@@ -149,10 +154,24 @@ export const MainWindow: React.FC = () => {
   } = useWar3Detector();
 
 
-  const { modSettings, settings: war3Settings, saveModSettings, saveSettings, loadSettings } = useWar3Settings();
+  const { modSettings, settings: war3Settings, saveModSettings, saveSettings, loadSettings, loadModSettings } = useWar3Settings();
+
+  useEffect(() => {
+    const unsubscribe = window.electronAPI?.onStartupRenderingResult?.(result => {
+      if (result.status === 'failed') {
+        message.warning(`${t('settings.basic.resetRendering')}: ${result.error || t('msg.settings.save.failed')}`, 8);
+      } else if (result.status === 'applied') {
+        void window.electronAPI.getConfig('war3Path').then(path => {
+          if (path) return loadModSettings(path);
+        }).catch(error => console.warn('[StartupRendering] Could not refresh settings:', error));
+      }
+    });
+    return typeof unsubscribe === 'function' ? unsubscribe : undefined;
+  }, [t, loadModSettings]);
 
   const [isFullPackageInstalled, setIsFullPackageInstalled] = useState(false);
   const [installingFullPackage, setInstallingFullPackage] = useState(false);
+  const [installWizardOpen, setInstallWizardOpen] = useState(false);
   const [modEnabledUI, setModEnabledUI] = useState(modSettings?.modEnabled ?? true);
   const [branchModStates, setBranchModStates] = useState<Record<GameChannel, { available: boolean; installed: boolean; enabled: boolean }> | null>(null);
   const [isModToggling, setIsModToggling] = useState(false);
@@ -165,6 +184,8 @@ export const MainWindow: React.FC = () => {
   const [detectedVersion, setDetectedVersion] = useState('');
   const [installSpace, setInstallSpace] = useState<InstallSpaceStatus | null>(null);
   const [savedGamePath, setSavedGamePath] = useState('');
+  const [choosingWar3Path, setChoosingWar3Path] = useState(false);
+  const hasWar3Directory = !!savedGamePath && !!branchModStates?.[gameChannel]?.available;
 
   useEffect(() => {
     // The detector's first scan may run while the renderer is still mounting.
@@ -245,6 +266,15 @@ export const MainWindow: React.FC = () => {
         modUpdateProgress?.percent ?? 0,
         byteDetail,
       );
+    } else if (updatingClient) {
+      const byteDetail = clientUpdateProgress?.totalBytes
+        ? `${formatUpdateBytes(clientUpdateProgress.completedBytes || 0)} / ${formatUpdateBytes(clientUpdateProgress.totalBytes)}`
+        : undefined;
+      showLoading(
+        t('msg.update.client_applying', '正在下载并安装客户端更新…'),
+        clientUpdateProgress?.total ? Math.min(99, 99 * clientUpdateProgress.completed / clientUpdateProgress.total) : undefined,
+        [clientUpdateProgress?.message, byteDetail].filter(Boolean).join(' · '),
+      );
     } else if (switchingGraphics || switchingChannel) {
       showLoading(
         applyStatus?.title || t('msg.settings.updating'),
@@ -254,7 +284,7 @@ export const MainWindow: React.FC = () => {
     } else {
       hideLoading();
     }
-  }, [isModToggling, modToggleStatus, installingFullPackage, installProgress, updatingMod, modUpdateProgress, switchingGraphics, switchingChannel, applyStatus, showLoading, hideLoading, t]);
+  }, [isModToggling, modToggleStatus, installingFullPackage, installProgress, updatingMod, modUpdateProgress, updatingClient, clientUpdateProgress, switchingGraphics, switchingChannel, applyStatus, showLoading, hideLoading, t]);
 
   // 窗口控制
   const handleMinimize = useCallback(() => {
@@ -441,20 +471,21 @@ export const MainWindow: React.FC = () => {
   }, []);
 
   useEffect(() => window.electronAPI.onClientUpdateProgress(progress => {
-    setClientUpdateProgress(`${progress.message} (${progress.completed}/${progress.total})`);
+    setClientUpdateProgress(progress);
   }), []);
 
   const applyClientUpdateNow = useCallback(async (): Promise<boolean> => {
+    setClientUpdateProgress(null);
     setUpdatingClient(true);
     try {
       await window.electronAPI.applyClientUpdate();
       return true;
     } catch (error: any) {
-      message.error(`客户端更新失败：${error?.message || String(error)}`);
+      message.error(reportUpdateFailure(error, t));
       setUpdatingClient(false);
       return false;
     }
-  }, []);
+  }, [t]);
 
   const startClientUpdate = useCallback(() => {
     Modal.confirm({
@@ -462,7 +493,7 @@ export const MainWindow: React.FC = () => {
       content: '更新包校验完成后，客户端会自动关闭、替换文件并重新启动。请先保存正在进行的操作。',
       okText: '下载并更新',
       cancelText: '取消',
-      onOk: applyClientUpdateNow,
+      onOk: () => { void applyClientUpdateNow(); },
     });
   }, [applyClientUpdateNow]);
 
@@ -524,7 +555,7 @@ export const MainWindow: React.FC = () => {
 
     const nextVersion = selection.versionSelection ?? modSettings.versionSelection;
     const nextGraphics = selection.graphicsSelection ?? selectedGraphics;
-    const deAllowed = nextVersion === 'v30' || (nextVersion === 'auto' && /^3\./.test(detectedVersion));
+    const deAllowed = isVersion30OrLater(nextVersion) || (nextVersion === 'auto' && /^3\./.test(detectedVersion));
     if (selection.graphicsSelection === 'de' && !deAllowed) return;
     // Switching to an older build must also leave DE in the same resource transition.
     const change: { versionSelection?: VersionSelection; graphicsSelection?: GraphicsSelection; classicMode?: boolean } = nextGraphics === 'de' && !deAllowed
@@ -542,7 +573,7 @@ export const MainWindow: React.FC = () => {
       if (value === 'v1') return t('main.home.v1', '1.36 及以下');
       if (value === 'v20') return '2.0–2.02';
       if (value === 'v203') return '2.03–2.04';
-      return t('main.home.v30', '3.0 及以上');
+      return value === 'v301' ? t('main.home.v301', '3.0.1 及以上') : t('main.home.v30', '3.0');
     };
     const graphicsLabel = (value: GraphicsSelection) => {
       if (value === 'sd') return t('main.home.sd', 'SD · 经典');
@@ -591,8 +622,7 @@ export const MainWindow: React.FC = () => {
   }, [branchModStates, gameChannel]);
 
   const handleBranchModToggle = async (channel: GameChannel) => {
-    if (isModToggling || updatingMod || installingFullPackage) return;
-    if (!branchModStates?.[channel]?.available) return;
+    if (choosingWar3Path || !hasWar3Directory || isModToggling || updatingMod || installingFullPackage) return;
     const enabled = !(branchModStates?.[channel]?.enabled ?? false);
     setIsModToggling(true);
     setModToggleStatus({ message: `${channel === 'ptr' ? 'PTR' : 'Retail'} MOD ${enabled ? '启用' : '关闭'}中…`, percent: 0 });
@@ -603,8 +633,9 @@ export const MainWindow: React.FC = () => {
         return;
       }
       setBranchModStates(result.states);
-      if (enabled && channel === gameChannel && currentInstallation?.path) {
-        await window.electronAPI.syncUISettings(currentInstallation.path);
+      if (enabled && channel === await window.electronAPI.getConfig('gameChannel')) {
+        const root = await window.electronAPI.getConfig('war3Path');
+        if (root) await window.electronAPI.syncUISettings(root);
       }
       await refreshFullPackageStatus();
       message.success(`${channel === 'ptr' ? 'PTR' : 'Retail'} MOD 已${enabled ? '启用' : '关闭'}`);
@@ -679,22 +710,42 @@ export const MainWindow: React.FC = () => {
     }
   };
 
-  // 更换魔兽目录（仅选择并保存，不直接启动）
-  const handleChangeWar3Path = async () => {
-    if (updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel) return;
-    if (!window.electronAPI?.selectGamePath) {
-      return;
-    }
-    const path = await window.electronAPI.selectGamePath();
-    if (path) {
-      setSavedGamePath(path);
-      message.success(`${t('msg.war3.path.set')}: ${path}`);
-      // 重新检测安装信息，刷新当前安装显示
-      detectInstallations();
+  const confirmInstallDirectory = async (): Promise<boolean> => {
+    try {
+      const path = await window.electronAPI.getConfig('war3Path');
       const selected = await window.electronAPI.getConfig('gameChannel');
-      setGameChannel(selected === 'ptr' ? 'ptr' : 'retail');
-      await refreshBranchModStates();
+      const channel: GameChannel = selected === 'ptr' ? 'ptr' : 'retail';
+      const states = await window.electronAPI.getBranchModStates();
+      setSavedGamePath(path || '');
+      setGameChannel(channel);
+      setBranchModStates(states);
+      if (!path || !states[channel].available) {
+        setIsFullPackageInstalled(false);
+        message.warning(t('install.fullPackage.needDirectory'));
+        return false;
+      }
+      void detectInstallations();
+      void refreshFullPackageStatus(path);
       refreshInstallSpace();
+      return true;
+    } catch (error: any) {
+      setBranchModStates(null);
+      message.error(error?.message || t('install.fullPackage.needDirectory'));
+      return false;
+    }
+  };
+
+  const handleChangeWar3Path = async (): Promise<boolean> => {
+    if (choosingWar3Path || isModToggling || updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel) return false;
+    setChoosingWar3Path(true);
+    try {
+      if (!await window.electronAPI.selectGamePath()) return false;
+      return await confirmInstallDirectory();
+    } catch (error: any) {
+      message.error(error?.message || t('install.fullPackage.needDirectory'));
+      return false;
+    } finally {
+      setChoosingWar3Path(false);
     }
   };
 
@@ -819,7 +870,13 @@ export const MainWindow: React.FC = () => {
 
       if (status.decision === 'patch') {
         const result = await window.electronAPI.applyModUpdate(war3Path);
-        if (!result.applied) throw new Error(result.error || result.status.reason);
+        if (!result.applied) {
+          if (result.appliedPatches) {
+            await refreshFullPackageStatus(war3Path);
+            await refreshModUpdateStatus(war3Path);
+          }
+          throw new Error(result.error || result.status.reason);
+        }
         if (result.configurationError) {
           Modal.warning({
             title: t('msg.update.configuration_pending', 'MOD 已更新，但部分资源设置未生效'),
@@ -849,10 +906,7 @@ export const MainWindow: React.FC = () => {
       }
       return false;
     } catch (error: any) {
-      const detail = String(error?.message || error);
-      message.error(/public key is not configured|all manifest sources failed/.test(detail)
-        ? t('msg.update.service_unavailable', '更新服务暂不可用，请稍后再试')
-        : `${t('msg.update.failed', 'MOD 更新失败')}: ${detail}`);
+      message.error(reportUpdateFailure(error, t));
       return false;
     } finally {
       setUpdatingMod(false);
@@ -862,7 +916,7 @@ export const MainWindow: React.FC = () => {
 
   useEffect(() => {
     if (!clientUpdateChecked || !modUpdateChecked || combinedUpdatePromptOpen.current ||
-        updatingClient || updatingMod || installingFullPackage || switchingGraphics || switchingChannel || isModToggling) return;
+        updatingClient || updatingMod || installingFullPackage || installWizardOpen || activeModal === 'forum' || choosingWar3Path || switchingGraphics || switchingChannel || isModToggling) return;
 
     const prompt = buildCombinedUpdatePrompt(clientUpdateStatus, clientUpdateVersion, modUpdateStatus);
     if (!prompt || promptedUpdateSignature.current === prompt.signature) return;
@@ -922,10 +976,10 @@ export const MainWindow: React.FC = () => {
           if (prompt.client?.automatic) {
             await applyClientUpdateNow();
           } else if (prompt.client) {
-            await window.electronAPI.openExternal('https://qm.txzy.net/qm/qmdownload.html');
+            await window.electronAPI.openExternal(FULL_PACKAGE_GUIDE_URL);
           }
         })().catch((error: any) => {
-          message.error(`更新失败：${error?.message || String(error)}`);
+          message.error(reportUpdateFailure(error, t));
         });
       },
       afterClose: () => {
@@ -934,29 +988,30 @@ export const MainWindow: React.FC = () => {
     });
   }, [
     clientUpdateChecked, modUpdateChecked, clientUpdateStatus, clientUpdateVersion, modUpdateStatus,
-    updatingClient, updatingMod, installingFullPackage, switchingGraphics, switchingChannel, isModToggling,
+    updatingClient, updatingMod, installingFullPackage, installWizardOpen, activeModal, choosingWar3Path, switchingGraphics, switchingChannel, isModToggling,
     applyClientUpdateNow, t,
   ]);
 
-  const handleInstallFullPackage = async () => {
-    if (updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel) return;
+  const handleInstallFullPackage = async (source: 'zip' | 'folder'): Promise<boolean> => {
+    if (!hasWar3Directory || choosingWar3Path || updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel) return false;
     if (!window.electronAPI?.installFullPackage) {
-      return;
+      return false;
     }
 
     try {
-      setInstallingFullPackage(true);
-      setInstallProgress(null);
-      const zipPaths = await window.electronAPI.selectFiles({
-        title: t('msg.install.select_zip'),
+      const folder = source === 'folder'
+        ? await window.electronAPI.selectDirectory(t('msg.install.select_folder')) : null;
+      const zipPaths = source === 'folder' ? (folder ? [folder] : []) : await window.electronAPI.selectFiles({
+        title: t('install.fullPackage.selectZip'),
         filters: [{ name: 'Zip Archive', extensions: ['zip'] }]
       });
 
       if (!zipPaths.length) {
-        setInstallingFullPackage(false);
-        return;
+        return false;
       }
 
+      setInstallingFullPackage(true);
+      setInstallProgress(null);
       const result = await window.electronAPI.installFullPackage(zipPaths);
 
       if (result && result.success) {
@@ -970,10 +1025,11 @@ export const MainWindow: React.FC = () => {
         } else {
           message.success(t('msg.install.success'));
         }
-        await refreshFullPackageStatus();
+        const war3Path = await window.electronAPI.getConfig('war3Path');
+        await refreshFullPackageStatus(war3Path);
         await refreshBranchModStates();
-        const war3Path = currentInstallation?.path || await window.electronAPI.getConfig('war3Path');
         if (war3Path) await refreshModUpdateStatus(war3Path);
+        return true;
       } else if (result && result.error === 'incompletePackage') {
         await refreshFullPackageStatus();
         message.error(t('main.status.full_not_installed'));
@@ -991,11 +1047,12 @@ export const MainWindow: React.FC = () => {
         message.error(`${t('msg.install.failed')}: ${(result && result.error) || '未知错误'}`);
       }
     } catch (e: any) {
-      message.error(`安装失败: ${e && e.message ? e.message : '未知错误'}`);
+      message.error(`${t('msg.install.failed')}: ${e && e.message ? e.message : t('msg.install.invalid_zip')}`);
     } finally {
       setInstallingFullPackage(false);
       refreshInstallSpace();
     }
+    return false;
   };
 
   const modUpdateAvailable = isFullPackageInstalled && modUpdateStatus?.current && modUpdateStatus.target &&
@@ -1116,6 +1173,8 @@ export const MainWindow: React.FC = () => {
             {t('main.btn.about')}
           </Button>
 
+          <Button type="text" className={styles.titleBarButton} onClick={() => void openModal('forum')}
+            style={{ fontSize: '12px' }}>{t('main.btn.forum')}</Button>
           <LanguageSelector />
         </div>
 
@@ -1160,38 +1219,40 @@ export const MainWindow: React.FC = () => {
                 <h1>{t('main.title.primary')}</h1>
                 <p>{t('main.home.subtitle', 'Choose your game version and graphics profile before launching.')}</p>
                 <span className="home-mod-state">{modEnabledUI ? t('main.home.modOn', 'Quenching MOD enabled') : t('main.home.modOff', 'Quenching MOD disabled')}</span>
-                <div className="home-mod-toggle">
-                  <button type="button" role="switch" aria-checked={modEnabledUI}
-                    disabled={!branchModStates?.[gameChannel]?.available || isModToggling || switchingChannel || switchingGraphics || installingFullPackage || updatingMod}
-                    onClick={() => void handleBranchModToggle(gameChannel)}>
-                    {isModToggling ? t('main.home.switchingMod', '正在切换 MOD…')
-                      : modEnabledUI ? t('main.home.disableMod', '关闭 MOD') : t('main.home.enableMod', '开启 MOD')}
-                  </button>
-                  {!isFullPackageInstalled && <small>{t('main.home.basicModeHint', '无需完整包也能开启 MOD 基础功能；完整资源功能需另行安装。')}</small>}
-                </div>
               </div>
             </div>
             <div className="home-hero-status">
-              <span className={`home-status-dot ${currentInstallation && isFullPackageInstalled ? 'is-ready' : ''}`} />
-              <div>
-                <strong>{currentInstallation
+              <span className={`home-status-dot ${hasWar3Directory && isFullPackageInstalled ? 'is-ready' : ''}`} />
+              <div className="home-directory-details">
+                <strong>{hasWar3Directory
                   ? (isFullPackageInstalled ? t('main.status.full_installed') : t('main.status.full_not_installed'))
                   : t('main.status.no_war3')}</strong>
-                <small>{currentInstallation?.path || savedGamePath || t('main.home.selectDirectory', 'Select your Warcraft III directory to begin.')}</small>
+                <small>{savedGamePath || currentInstallation?.path || t('main.home.selectDirectory', 'Select your Warcraft III directory to begin.')}</small>
               </div>
+              <button type="button" className="home-directory-choice"
+                disabled={choosingWar3Path || isModToggling || updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel}
+                onClick={() => void handleChangeWar3Path()}>
+                <FolderOpenOutlined />
+                {hasWar3Directory ? t('install.fullPackage.changeDirectory') : t('main.home.chooseWar3Directory')}
+              </button>
             </div>
             <div className="home-hero-footer">
               <div className="home-hero-actions">
-                <button type="button" disabled={updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel}
-                  onClick={() => void handleChangeWar3Path()}>{t('main.home.chooseWar3Directory', '选择魔兽目录')}</button>
-                <button type="button" onClick={() => void openFullPackageGuide()}>
-                  {t('main.home.openFullPackageGuide', '获取资源包')}
+                <button type="button" className="home-mod-action" role="switch" aria-checked={modEnabledUI}
+                  disabled={!hasWar3Directory || choosingWar3Path || isModToggling || switchingChannel || switchingGraphics || installingFullPackage || updatingMod}
+                  onClick={() => void handleBranchModToggle(gameChannel)}>
+                  {isModToggling ? t('main.home.switchingMod', '正在切换 MOD…')
+                    : modEnabledUI ? t('main.home.disableMod', '关闭 MOD') : t('main.home.enableMod', '开启 MOD')}
                 </button>
-                <button type="button" disabled={!branchModStates?.[gameChannel]?.available || installingFullPackage || checkingFullPackageUpdate || updatingMod || switchingGraphics || switchingChannel}
-                  onClick={() => void handleInstallFullPackage()}>
-                  {installingFullPackage ? t('msg.install.installing', '正在安装...') : t('main.home.installFullPackage', '安装资源包')}
+                <button type="button" className="home-install-full-package"
+                  disabled={!hasWar3Directory || choosingWar3Path || updatingMod || checkingFullPackageUpdate || installingFullPackage || switchingGraphics || switchingChannel || isModToggling}
+                  onClick={() => { playMain(); setInstallWizardOpen(true); }}>
+                  <DownloadOutlined />
+                  {installingFullPackage ? t('msg.install.installing')
+                    : isFullPackageInstalled ? t('main.home.reinstallFullPackage') : t('main.home.installFullPackage')}
                 </button>
               </div>
+              <small className="home-mod-install-hint">{t('main.home.modInstallHint')}</small>
             </div>
           </section>
 
@@ -1215,11 +1276,11 @@ export const MainWindow: React.FC = () => {
                     <div className="home-update-actions">
                       {clientUpdateStatus?.decision === 'available' && (
                         <button type="button" disabled={updatingClient} onClick={startClientUpdate}>
-                          {updatingClient ? (clientUpdateProgress || '正在准备更新…') : '自动更新客户端'}
+                          {updatingClient ? (clientUpdateProgress?.message || '正在准备更新…') : '自动更新客户端'}
                         </button>
                       )}
                       {clientUpdateStatus?.decision !== 'available' && (
-                        <button type="button" onClick={() => void window.electronAPI.openExternal('https://qm.txzy.net/qm/qmdownload.html')}>
+                        <button type="button" onClick={() => void window.electronAPI.openExternal(FULL_PACKAGE_GUIDE_URL)}>
                           {t('main.home.downloadClient', '下载客户端')}
                         </button>
                       )}
@@ -1272,7 +1333,8 @@ export const MainWindow: React.FC = () => {
                   ['v1', t('main.home.v1', '1.36 or earlier')],
                   ['v20', '2.0–2.02'],
                   ['v203', '2.03–2.04'],
-                  ['v30', t('main.home.v30', '3.0 or later')],
+                  ['v30', t('main.home.v30', '3.0')],
+                  ['v301', t('main.home.v301', '3.0.1 or later')],
                 ] as [VersionSelection, string][]).map(([value, label]) => (
                   <button key={value} type="button"
                     className={`home-option ${modSettings.versionSelection === value ? 'is-active' : ''}`}
@@ -1295,7 +1357,7 @@ export const MainWindow: React.FC = () => {
                   ['de', t('main.home.de', 'DE · Definitive')],
                 ] as [GraphicsSelection, string][]).map(([value, label]) => {
                   const deUnavailable = value === 'de' &&
-                    modSettings.versionSelection !== 'v30' &&
+                    !isVersion30OrLater(modSettings.versionSelection) &&
                     !(modSettings.versionSelection === 'auto' && /^3\./.test(detectedVersion));
                   return (
                     <button key={value} type="button"
@@ -1352,6 +1414,12 @@ export const MainWindow: React.FC = () => {
       <NewsPanel isExpanded={isNewsPanelOpen} onToggle={setIsNewsPanelOpen} />
 
       {/* 模态框 */}
+      <ForumPanel open={activeModal === 'forum'} onClose={closeModal} />
+      <FullPackageInstallModal open={installWizardOpen} onClose={() => setInstallWizardOpen(false)}
+        war3Path={savedGamePath || currentInstallation?.path || ''} channel={gameChannel} installing={installingFullPackage}
+        isFullPackageInstalled={isFullPackageInstalled}
+        onChooseDirectory={handleChangeWar3Path} onConfirmDirectory={confirmInstallDirectory}
+        onInstall={handleInstallFullPackage} onDownload={openFullPackageGuide} />
       <SettingsModal
         open={activeModal === 'settings'}
         onClose={closeModal}

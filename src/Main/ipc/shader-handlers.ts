@@ -14,7 +14,9 @@ import {
     writeShaderPackMarker,
     type War3VersionInfo,
 } from '../services/war3-version';
-import { getQuenchingResourcePath, getShaderResourcePath, resolveModProfile } from '../services/mod-profile';
+import { getShaderPackRoot, getShaderResourcePath, resolveModProfile } from '../services/mod-profile';
+import { ModProfile, isHdShaderPack, isVersion30OrLater } from '../../shared/mod-profile';
+import { shaderBundlePath, withShaderBundle } from '../services/shader-bundle';
 import { syncProfileResources } from '../services/asset-sync';
 import { syncBundledResourceFiles } from '../services/managed-resource-files';
 import { getInstalledModState } from '../services/mod-update-service';
@@ -25,6 +27,15 @@ import { applyShaderToggles, OBJECT_SHADER_FILES, POST_PROCESSING_GLOW_FILES, PO
 const SHADER_PROFILE_MARKER = '.quenching-shader-profile';
 
 const INTEL_AMD_BLOOM_FILE = 'bloomextract.bls';
+
+interface ResolvedShaderSource {
+    zipName: string;
+    zipPath: string;
+    isDirectory: boolean;
+    bundledArchive?: boolean;
+    profile?: ModProfile;
+    shaderQuenchingDir?: string;
+}
 
 async function resolveShadersBaseDir(war3Path: string): Promise<string> {
     const retailPath = path.join(war3Path, getSelectedGameFolder());
@@ -41,10 +52,11 @@ async function applyCurrentShaderToggles(war3Path: string, overrides: Record<str
     });
     const shadersDir = path.join(await resolveShadersBaseDir(war3Path), 'shaders');
     const quenchingDir = path.join(await AssetSyncService.getAssetsDir(), 'quenching');
-    await applyShaderToggles(shadersDir, quenchingDir, profile, modSettings);
+    await withShaderBundle(quenchingDir, profile.shaderPack, path.dirname(shadersDir), shaderQuenchingDir =>
+        applyShaderToggles(shadersDir, shaderQuenchingDir, profile, modSettings));
 }
 
-async function resolveVersionedShaderZipPath(war3Path: string): Promise<{ zipName: string; zipPath: string; isDirectory: boolean } | null> {
+async function resolveVersionedShaderZipPath(war3Path: string): Promise<ResolvedShaderSource | null> {
     const assetsDir = await AssetSyncService.getAssetsDir();
     const modSettings = configManager.get('modSettings') || {};
     const profile = await resolveModProfile(war3Path, {
@@ -54,11 +66,13 @@ async function resolveVersionedShaderZipPath(war3Path: string): Promise<{ zipNam
         lighting: modSettings.lighting,
     });
     const quenchingDir = path.join(assetsDir, 'quenching');
+    const bundle = shaderBundlePath(quenchingDir, profile.shaderPack);
+    if (await fs.pathExists(bundle)) return { zipName: profile.shaderPack, zipPath: bundle, isDirectory: false, bundledArchive: true, profile };
     const sourceDir = getShaderResourcePath(quenchingDir, profile, modSettings.lighting || 'standard');
     if (await fs.pathExists(sourceDir)) {
         return { zipName: profile.shaderPack, zipPath: sourceDir, isDirectory: true };
     }
-    if (profile.version === 'v30') {
+    if (isVersion30OrLater(profile.version)) {
         throw new Error(`Missing ${profile.shaderPack} shader resources: ${sourceDir}`);
     }
     const zipName = await resolveShaderZipName(war3Path);
@@ -102,7 +116,7 @@ export async function ensureVersionedShaders(
     }
 
     console.log(`[Shader] Applying versioned shaders: ${resolved.zipName} (War3 ${version.version || 'unknown'})`);
-    if (resolved.isDirectory) {
+    if (resolved.isDirectory || resolved.bundledArchive) {
         const modSettings = configManager.get('modSettings') || {};
         await syncProfileResources(war3Path, path.join(await AssetSyncService.getAssetsDir(), 'quenching'), modSettings);
     } else {
@@ -151,8 +165,12 @@ async function applyIntelAmdBloomFix(war3Path: string, enabled: boolean): Promis
     if (enabled) {
         if (!glowEnabled) return true;
         const resolved = await resolveVersionedShaderZipPath(war3Path);
+        if (resolved?.bundledArchive) {
+            await installShaderFiles(war3Path, resolved, [`ps/${INTEL_AMD_BLOOM_FILE}`]);
+            return true;
+        }
         const source = resolved?.isDirectory
-            ? path.join(resolved.zipPath, ...(['shaders-300-hd', 'shaders-ptr-hd'].includes(resolved.zipName) ? [] : ['ps']), INTEL_AMD_BLOOM_FILE)
+            ? path.join(resolved.zipPath, ...(['shaders-300-hd', 'shaders-ptr-hd', 'shaders-300-legacy-hd'].includes(resolved.zipName) ? [] : ['ps']), INTEL_AMD_BLOOM_FILE)
             : path.join(assetsDir, 'quenching', 'tx', INTEL_AMD_BLOOM_FILE);
         if (!(await fs.pathExists(source))) {
             console.warn(`[Shader] Intel/AMD bloom fix file not found: ${source}`);
@@ -211,10 +229,17 @@ async function extractSpecificFiles(zipPath: string, outputDir: string, filesToE
 }
 
 async function stageProfileShaderFiles(
-    resolved: { zipName: string; zipPath: string; isDirectory: boolean },
+    resolved: ResolvedShaderSource,
     files: string[],
     outputDir: string,
 ): Promise<number> {
+    if (resolved.bundledArchive) {
+        const profile = resolved.profile!;
+        const quenchingDir = path.join(await AssetSyncService.getAssetsDir(), 'quenching');
+        return withShaderBundle(quenchingDir, profile.shaderPack, path.dirname(outputDir), shaderQuenchingDir =>
+            stageProfileShaderFiles({ ...resolved, bundledArchive: false, isDirectory: true, shaderQuenchingDir,
+                zipPath: getShaderResourcePath(shaderQuenchingDir, profile, (configManager.get('modSettings') || {}).lighting || 'standard') }, files, outputDir));
+    }
     if (!resolved.isDirectory) {
         await extractSpecificFiles(resolved.zipPath, outputDir, files);
         let copied = 0;
@@ -225,13 +250,12 @@ async function stageProfileShaderFiles(
     }
 
     const assetsDir = await AssetSyncService.getAssetsDir();
-    const quenchingDir = path.join(assetsDir, 'quenching');
+    const quenchingDir = resolved.shaderQuenchingDir || path.join(assetsDir, 'quenching');
     const candidatesFor = (key: string): string[] => {
         const [stage, name] = key.split('/');
         const candidates: string[] = [];
-        if (resolved.zipName === 'shaders-300-hd' || resolved.zipName === 'shaders-ptr-hd') {
-            const hdRoot = getQuenchingResourcePath(quenchingDir,
-                resolved.zipName === 'shaders-ptr-hd' ? 'shadersPtrHd' : 'shaders300Hd');
+        if (isHdShaderPack(resolved.zipName as ModProfile['shaderPack'])) {
+            const hdRoot = getShaderPackRoot(quenchingDir, { shaderPack: resolved.zipName as ModProfile['shaderPack'] });
             if (stage === 'ps') {
                 candidates.push(path.join(resolved.zipPath, name));
                 for (const variant of ['standard', 'melee', 'rpg']) {
@@ -270,7 +294,7 @@ async function stageProfileShaderFiles(
 
 async function installShaderFiles(
     war3Path: string,
-    resolved: { zipName: string; zipPath: string; isDirectory: boolean },
+    resolved: ResolvedShaderSource,
     files: string[],
 ): Promise<void> {
     const baseDir = await resolveShadersBaseDir(war3Path);

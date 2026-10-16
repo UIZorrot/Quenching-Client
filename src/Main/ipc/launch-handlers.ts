@@ -18,7 +18,7 @@ import { getSelectedGameChannel } from '../services/game-channel';
 import { gameChannelFolder } from '../../shared/game-channel';
 import { applyBranchModFilesForSwitch, isBranchModDisabled, recoverBranchModToggle } from '../services/branch-mod-toggle';
 import { assertNoPendingBranchCopy } from '../services/branch-package-copy';
-import { installPackageArchives, resolvePackageArchives } from '../services/full-package-install';
+import { installPackageSources } from '../services/full-package-install';
 import { assertWarcraftNotRunning } from '../services/mod-update-service';
 import { applyInstalledProfile } from '../services/post-install-profile';
 
@@ -78,9 +78,11 @@ export function registerLaunchHandlers() {
         }
     });
 
-    ipcMain.handle('campaign:unlock', async () => {
+    ipcMain.handle('campaign:unlock-mode', async () => GameLauncher.getCampaignUnlockMode());
+
+    ipcMain.handle('campaign:unlock', async (_event, mapName?: string) => {
         try {
-            return await GameLauncher.unlockCampaign();
+            return await GameLauncher.unlockCampaign(typeof mapName === 'string' ? mapName.slice(0, 120).replace(/\0/g, '') : undefined);
         } catch (e: any) {
             console.error(e);
             throw e;
@@ -241,9 +243,14 @@ export function registerLaunchHandlers() {
         if (!(await hasGameChannelDirectory(root, channel))) throw new Error('The selected game branch is not installed');
         await assertNoPendingBranchCopy(build);
         await recoverBranchModToggle(build);
-        await applyBranchModFilesForSwitch(build, enabled);
+        await applyBranchModFilesForSwitch(build, enabled, {
+            quenchingDir: path.join(await AssetSyncService.getAssetsDir(), 'quenching'),
+        });
         setChannelModEnabled(channel, enabled);
-        if (enabled) await AssetSyncService.ensurePostProcessingConfig(root);
+        if (enabled && channel === getSelectedGameChannel()) {
+            await AssetSyncService.ensurePostProcessingConfig(root);
+            if (await isFullPackageInstalled(root)) await applyInstalledProfile(root);
+        }
         return { needsZip: false, states: await branchStates(root) };
     });
 
@@ -290,7 +297,6 @@ export function registerLaunchHandlers() {
 
         try {
             await assertWarcraftNotRunning();
-            const zipPaths = await resolvePackageArchives(requestedZips);
             const normalizedWar3Path = normalizeWar3RootPath(war3Path);
             if (normalizedWar3Path !== war3Path) {
                 configManager.set('war3Path', normalizedWar3Path);
@@ -308,15 +314,27 @@ export function registerLaunchHandlers() {
             if (space.insufficient) {
                 return { success: false, error: 'insufficientSpace', ...space };
             }
-            const archiveBytes = await installPackageArchives(zipPaths, targetPath, (percent, message) => {
-                event.sender.send('mod:install-progress', { percent, message });
-            });
+            await recoverBranchModToggle(targetPath);
+            const modEnabled = getChannelModEnabled(channel) && !await isBranchModDisabled(targetPath);
+            let prepared = false;
+            let archiveBytes: number;
+            try {
+                archiveBytes = await installPackageSources(requestedZips, targetPath, (percent, message) => {
+                    event.sender.send('mod:install-progress', { percent, message });
+                }, async () => {
+                    // Merge the package with restored files, then retain the user's switch state.
+                    await applyBranchModFilesForSwitch(targetPath, true);
+                    prepared = true;
+                });
+            } finally {
+                if (prepared && !modEnabled) await applyBranchModFilesForSwitch(targetPath, false);
+            }
             configManager.set('lastFullPackageBytes', archiveBytes);
-            setChannelModEnabled(channel, true);
-            const warnings = await applyInstalledProfile(normalizedWar3Path, {
+            setChannelModEnabled(channel, modEnabled);
+            const warnings = modEnabled ? await applyInstalledProfile(normalizedWar3Path, {
                 forceUnitSkinBaseline: true,
                 onProgress: (message) => event.sender.send('mod:install-progress', { percent: 99, message }),
-            });
+            }) : [];
             event.sender.send('mod:install-progress', { percent: 100, message: '安装完成' });
             return {
                 success: true,

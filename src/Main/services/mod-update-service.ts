@@ -5,7 +5,6 @@ import { statfs } from 'node:fs/promises';
 import http from 'http';
 import https from 'https';
 import path from 'path';
-import { Transform } from 'stream';
 import { pipeline } from 'stream/promises';
 import { promisify } from 'util';
 import { fileURLToPath } from 'url';
@@ -13,6 +12,11 @@ import { extractZipArchive } from './zip-extraction';
 import { isFullPackageInstalled, resolveRetailDir } from './full-package-service';
 import { fetchReleaseGate, previewUpdatesEnabled } from './release-gate-service';
 import { hasLegacy34Sentinels, resolveManagedSequence } from './mod-version-detection';
+import { FileSyncDescriptor, planFileSync, syncFileArtifact, validateFileSync } from '../../shared/file-sync';
+import { ModZipPatch, ModZipPolicy, planModZipChain, validateModZipPolicy } from '../../shared/mod-zip-update';
+import { decodeSnapshot, encodeSnapshot } from './file-sync-snapshot';
+import { downloadUpdateFile, rememberUpdateDownloadSource, SlowUpdateDownloadError, updateDownloadSources } from './update-download';
+import { updateTestUrls } from './update-channel';
 import {
   loadIntegrityManifest,
   MOD_INTEGRITY_PATHS,
@@ -26,7 +30,6 @@ import {
 } from './mod-integrity-service';
 
 const PRODUCT = 'quenching-mod';
-const MAX_PATCH_GAP = 6;
 const MIN_MANAGED_SEQUENCE = 35;
 const MAX_MANIFEST_BYTES = 4 * 1024 * 1024;
 const MAX_REDIRECTS = 5;
@@ -54,7 +57,7 @@ export interface ModPatchArtifact extends ModUpdateArtifact {
 }
 
 export interface ModUpdateManifest {
-  schema: 1;
+  schema: 1 | 2 | 3;
   product: typeof PRODUCT;
   sequence: number;
   version: string;
@@ -64,6 +67,8 @@ export interface ModUpdateManifest {
   minClientVersion?: string;
   fullPackage?: ModUpdateArtifact;
   patches?: ModPatchArtifact[];
+  fileSync?: FileSyncDescriptor;
+  zipPolicy?: ModZipPolicy;
   /** Optional detached signature. Verification is enabled when a public key is configured. */
   signature?: { algorithm: 'ed25519'; keyId?: string; value: string };
 }
@@ -90,6 +95,9 @@ export interface ModUpdateStatus {
   current: InstalledModState | null;
   target: { sequence: number; version: string; displayVersion: string } | null;
   patch?: ModPatchArtifact;
+  patchChain?: ModZipPatch[];
+  githubMirrors?: string[];
+  fileSync?: FileSyncDescriptor;
   fullPackage?: ModUpdateArtifact;
   reason: string;
   manifestSource?: string;
@@ -120,14 +128,22 @@ export interface ModUpdateResult {
   downloadedFrom?: string;
   error?: string;
   configurationError?: string;
+  /** Committed ZIP steps; a later failed step does not undo an earlier success. */
+  appliedPatches?: number;
 }
 
 const DEFAULT_MANIFEST_URLS = [
+  'https://qm.txzy.net/api/quenching/mod-zip-manifest.json',
+  'https://qm.txzy.net/quenching/mod-zip-manifest.json',
+  'https://qm.txzy.net/api/quenching/mod-sync-manifest.json',
+  'https://qm.txzy.net/quenching/mod-sync-manifest.json',
   'https://qm.txzy.net/api/quenching/manifest.json',
   'https://qm.txzy.net/quenching/manifest.json',
 ];
 
 function manifestUrls(options?: ModUpdateOptions): string[] {
+  const testUrls = updateTestUrls('mod-zip-manifest.json');
+  if (testUrls) return [...testUrls, ...updateTestUrls('mod-sync-manifest.json')!];
   const configured = process.env.QUENCHING_MANIFEST_URL?.trim();
   return Array.from(new Set([
     ...(configured ? [configured] : []),
@@ -222,13 +238,13 @@ function validateArtifact(value: any, label: string): ModUpdateArtifact {
 }
 
 function validateManifest(value: any): ModUpdateManifest {
-  if (value.schema !== 1 || value.product !== PRODUCT) throw new Error('unsupported manifest schema or product');
+  if (![1, 2, 3].includes(value.schema) || value.product !== PRODUCT) throw new Error('unsupported manifest schema or product');
   if (!Number.isSafeInteger(value.sequence) || value.sequence < MIN_MANAGED_SEQUENCE || typeof value.version !== 'string' || !/^\d+(?:\.\d+){1,2}$/.test(value.version)) {
     throw new Error('manifest sequence/version is invalid');
   }
   if (value.displayVersion !== undefined && (typeof value.displayVersion !== 'string' || !value.displayVersion.trim())) throw new Error('manifest displayVersion is invalid');
   const manifest: ModUpdateManifest = {
-    schema: 1,
+    schema: value.schema,
     product: PRODUCT,
     sequence: value.sequence,
     version: value.version,
@@ -239,6 +255,14 @@ function validateManifest(value: any): ModUpdateManifest {
     patches: [],
     signature: value.signature,
   };
+  if (value.schema === 3) {
+    manifest.zipPolicy = validateModZipPolicy(value);
+    return manifest;
+  }
+  if (value.schema === 2) {
+    manifest.fileSync = validateFileSync(value.fileSync);
+    return manifest;
+  }
   if (!Array.isArray(value.patches)) throw new Error('manifest.patches is missing');
   manifest.patches = value.patches.map((patch: any, index: number) => {
     const artifact = validateArtifact(patch, `patches[${index}]`);
@@ -438,8 +462,14 @@ export async function getModUpdateStatus(war3Path: string, options?: ModUpdateOp
   if (current.sequence >= manifest.sequence) {
     return { decision: 'upToDate', current, target, reason: 'installed MOD is current', manifestSource: source };
   }
-  if (manifest.sequence - current.sequence > MAX_PATCH_GAP) {
-    return { decision: 'requiresFullPackage', current, target, fullPackage: manifest.fullPackage, reason: `version gap exceeds ${MAX_PATCH_GAP}`, manifestSource: source };
+  if (manifest.zipPolicy) {
+    const plan = planModZipChain(current, target, manifest.zipPolicy);
+    return { decision: plan.reason ? 'requiresFullPackage' : 'patch', current, target,
+      patchChain: plan.reason ? undefined : plan.patches, githubMirrors: manifest.zipPolicy.githubMirrors,
+      fullPackage: manifest.fullPackage, reason: plan.reason || `${plan.patches.length} successive MOD ZIP patches are available`, manifestSource: source };
+  }
+  if (manifest.fileSync) {
+    return { decision: 'patch', current, target, fileSync: manifest.fileSync, reason: 'latest official file synchronization is available', manifestSource: source };
   }
   const patch = manifest.patches
     ?.filter((item) => item.fromSequence <= current.sequence && item.toSequence === manifest.sequence)
@@ -455,10 +485,13 @@ async function downloadArtifact(
   destination: string,
   onDownload?: (completed: number, total: number) => void,
   onVerifying?: () => void,
+  githubMirrors: readonly string[] = [],
 ): Promise<string> {
   const errors: string[] = [];
   const partPath = `${destination}.part`;
-  for (const source of artifact.sources) {
+  const sources = updateDownloadSources(artifact.sources, githubMirrors);
+  for (const [sourceIndex, source] of sources.entries()) {
+    const slowFallback = sourceIndex < sources.length - 1;
     const label = typeof source === 'string' ? source : `chunked:${source.parts[0].url}`;
     try {
       await fs.ensureDir(path.dirname(destination));
@@ -466,13 +499,17 @@ async function downloadArtifact(
         await fs.copyFile(fileURLToPath(source), destination);
         onDownload?.(artifact.size, artifact.size);
       } else if (typeof source === 'string') {
-        await downloadUrl(source, destination, artifact.size, 0, (received) => onDownload?.(received, artifact.size));
+        await downloadUpdateFile(source, destination, artifact.size, {
+          slowFallback, allowHttpLoopback: true, onProgress: received => onDownload?.(received, artifact.size),
+        });
       } else {
         let completed = 0;
         for (const part of source.parts) {
           for (let attempt = 1; attempt <= 3; attempt += 1) {
             try {
-              await downloadUrl(part.url, partPath, part.size, 0, (received) => onDownload?.(completed + received, artifact.size));
+              await downloadUpdateFile(part.url, partPath, part.size, {
+                slowFallback, allowHttpLoopback: true, onProgress: received => onDownload?.(completed + received, artifact.size),
+              });
               const partStat = await fs.stat(partPath);
               if (partStat.size !== part.size) throw new Error(`part size mismatch: expected ${part.size}, got ${partStat.size}`);
               const partHash = await sha256File(partPath);
@@ -480,7 +517,7 @@ async function downloadArtifact(
               break;
             } catch (error) {
               await fs.remove(partPath).catch(() => undefined);
-              if (attempt === 3) throw error;
+              if (error instanceof SlowUpdateDownloadError || attempt === 3) throw error;
               await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
             }
           }
@@ -495,6 +532,7 @@ async function downloadArtifact(
       onVerifying?.();
       const hash = await sha256File(destination);
       if (hash !== artifact.sha256.toLowerCase()) throw new Error(`sha256 mismatch: expected ${artifact.sha256}, got ${hash}`);
+      rememberUpdateDownloadSource(source, githubMirrors);
       return label;
     } catch (error: any) {
       const detail = `${label}: ${error?.message || String(error)}`;
@@ -505,60 +543,6 @@ async function downloadArtifact(
     }
   }
   throw new Error(`all artifact sources failed: ${errors.join('; ')}`);
-}
-
-async function downloadUrl(
-  url: string,
-  destination: string,
-  expectedSize: number,
-  redirects = 0,
-  onProgress?: (received: number) => void,
-): Promise<void> {
-  // Keep patch downloads on the same direct connection path as manifest requests.
-  return new Promise((resolve, reject) => {
-    const client = url.startsWith('https://') ? https : http;
-    const request = client.get(url, { headers: { 'User-Agent': 'Quenching-Mod-Updater/1' } }, (response) => {
-      if (response.statusCode && response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        response.resume();
-        if (redirects >= MAX_REDIRECTS) return reject(new Error('too many redirects'));
-        return downloadUrl(new URL(response.headers.location, url).toString(), destination, expectedSize, redirects + 1, onProgress).then(resolve, reject);
-      }
-      if (response.statusCode !== 200) {
-        response.resume();
-        return reject(new Error(`HTTP ${response.statusCode || 0}`));
-      }
-      const declared = Number(response.headers['content-length'] || 0);
-      if (declared > expectedSize) {
-        response.resume();
-        return reject(new Error(`download exceeds declared artifact size: ${declared} > ${expectedSize}`));
-      }
-      let received = 0;
-      let lastReportAt = 0;
-      let lastReportedPercent = -1;
-      const limiter = new Transform({
-        transform(chunk, _encoding, callback) {
-          received += chunk.length;
-          if (received > expectedSize) return callback(new Error(`download exceeds declared artifact size: ${received} > ${expectedSize}`));
-          const now = Date.now();
-          const percent = Math.floor(received / Math.max(expectedSize, 1) * 100);
-          if (received === expectedSize || (percent !== lastReportedPercent && now - lastReportAt >= 200)) {
-            lastReportAt = now;
-            lastReportedPercent = percent;
-            onProgress?.(received);
-          }
-          callback(null, chunk);
-        },
-      });
-      const output = fs.createWriteStream(destination);
-      response.pipe(limiter).pipe(output);
-      output.on('finish', () => output.close(() => resolve()));
-      output.on('error', reject);
-      limiter.on('error', reject);
-      response.on('error', reject);
-    });
-    request.setTimeout(60_000, () => request.destroy(new Error('download timeout')));
-    request.on('error', reject);
-  });
 }
 
 interface PatchFileRecord {
@@ -575,7 +559,8 @@ interface PatchDeleteRecord {
   acceptedPreviousSha256?: string[];
   allowMissing?: boolean;
 }
-interface PatchDocument { schema: 1; product: typeof PRODUCT; fromSequence: number; toSequence: number; files: PatchFileRecord[]; deleted?: PatchDeleteRecord[] }
+interface PatchDocument { schema: 1; product: typeof PRODUCT; fromSequence: number; toSequence: number;
+  fromVersion?: string; version?: string; files: PatchFileRecord[]; deleted?: PatchDeleteRecord[] }
 
 async function assertPatchSpace(unpackedBytes: number, gameDir: string): Promise<void> {
   const stats = await statfs(gameDir);
@@ -598,6 +583,7 @@ async function applyPatchArchive(
   stagingRoot: string,
   checkSpace: boolean,
   onProgress?: (percent: number, message: string) => void,
+  zipPatch?: ModZipPatch,
 ): Promise<void> {
   let lastProgressPercent = -1;
   let lastProgressMessage = '';
@@ -616,6 +602,40 @@ async function applyPatchArchive(
     onProgress: (percent) => progress(percent * 0.3, '正在解压 MOD 更新包'),
   });
   progress(34, '正在校验更新内容');
+  let inventory: Buffer | undefined;
+  if (zipPatch) {
+    const document: PatchDocument = await fs.readJson(path.join(patchRoot, 'patch.json'));
+    if (document.fromSequence !== current.sequence || document.fromVersion !== current.version ||
+        document.toSequence !== target.sequence || document.version !== target.version) {
+      throw new Error('ZIP patch does not match this exact resource release step');
+    }
+    inventory = await fs.readFile(path.join(patchRoot, 'inventory.json.gz'));
+    const latest = decodeSnapshot(inventory, PRODUCT, target.version);
+    if (latest.sequence !== target.sequence) throw new Error('ZIP inventory sequence does not match release');
+    const records = new Map(latest.files.map(file => [file.path.toLowerCase(), file]));
+    for (const file of document.files) {
+      const relative = normalizeRelativePath(file.path);
+      const official = records.get(relative.toLowerCase());
+      if (!official || file.size !== official.size || file.sha256 !== official.sha256 ||
+          (await fs.stat(resolveSafe(path.join(patchRoot, 'payload'), relative))).size !== file.size ||
+          await sha256File(resolveSafe(path.join(patchRoot, 'payload'), relative)) !== file.sha256) {
+        throw new Error(`ZIP payload does not match its official inventory: ${relative}`);
+      }
+    }
+    if ((document.deleted || []).some(file => records.has(file.path.toLowerCase()))) throw new Error('ZIP deletes a file still in its target inventory');
+  }
+  await applyPatchDirectory(patchRoot, war3Path, current, target, checkSpace, unpackedBytes, progress, inventory, !!zipPatch);
+}
+
+async function applyPatchDirectory(
+  patchRoot: string, war3Path: string, current: InstalledModState,
+  target: { sequence: number; version: string; displayVersion: string },
+  checkSpace: boolean, unpackedBytes: number,
+  progress: (percent: number, message: string) => void,
+  officialInventory?: Buffer,
+  preserveParkedLayout = false,
+): Promise<void> {
+  const legacy34 = current.sequence === 34 && current.version === '3.4';
   if (checkSpace) await assertPatchSpace(unpackedBytes, await resolveRetailDir(war3Path));
   const patchPath = path.join(patchRoot, 'patch.json');
   const document = JSON.parse(await fs.readFile(patchPath, 'utf8')) as PatchDocument;
@@ -624,6 +644,14 @@ async function applyPatchArchive(
   }
   if (!Array.isArray(document.files)) throw new Error('patch files are missing');
   const retailDir = await resolveRetailDir(war3Path);
+  // Inspect only affected paths, not the player's resource tree. Preserve SD/QMoff placement.
+  const fileTargets = new Map<string, string>();
+  for (const file of document.files) {
+    const relative = normalizeRelativePath(file.path);
+    const parked = `QMoff/${relative}`;
+    fileTargets.set(relative, preserveParkedLayout && !await fs.pathExists(resolveSafe(retailDir, relative)) &&
+      await fs.pathExists(resolveSafe(retailDir, parked)) ? parked : relative);
+  }
   const payloadRoot = path.join(patchRoot, 'payload');
   const files = document.files.map((item) => ({ ...item, path: normalizeRelativePath(item.path) }));
   for (const item of files) {
@@ -635,25 +663,27 @@ async function applyPatchArchive(
   const deleted = deletedRecords.map((item) => item.path);
   const deleteOnDisk: string[] = [];
   for (const item of deletedRecords) {
-    const absolute = resolveSafe(retailDir, item.path);
-    const stat = await fs.lstat(absolute).catch((error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
-      throw error;
-    });
-    if (!stat) continue;
-    if (!stat.isFile() || stat.isSymbolicLink()) {
-      console.warn(`[ModUpdate] Preserved non-file at deleted managed path: ${item.path}`);
-      continue;
+    for (const relative of preserveParkedLayout ? [item.path, `QMoff/${item.path}`] : [item.path]) {
+      const absolute = resolveSafe(retailDir, relative);
+      const stat = await fs.lstat(absolute).catch((error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
+        throw error;
+      });
+      if (!stat) continue;
+      if (!stat.isFile() || stat.isSymbolicLink()) {
+        console.warn(`[ModUpdate] Preserved non-file at deleted managed path: ${item.path}`);
+        continue;
+      }
+      const accepted = new Set([item.previousSha256, ...(item.acceptedPreviousSha256 ?? [])]
+        .filter((hash): hash is string => typeof hash === 'string' && /^[a-f0-9]{64}$/i.test(hash))
+        .map((hash) => hash.toLowerCase()));
+      if (accepted.size === 0) throw new Error(`patch deletion has no trusted previous hash: ${item.path}`);
+      const existingHash = await sha256File(absolute);
+      if (accepted.has(existingHash)) deleteOnDisk.push(relative);
+      else console.warn(`[ModUpdate] Preserved player-modified file removed from the official package: ${item.path}`);
     }
-    const accepted = new Set([item.previousSha256, ...(item.acceptedPreviousSha256 ?? [])]
-      .filter((hash): hash is string => typeof hash === 'string' && /^[a-f0-9]{64}$/i.test(hash))
-      .map((hash) => hash.toLowerCase()));
-    if (accepted.size === 0) throw new Error(`patch deletion has no trusted previous hash: ${item.path}`);
-    const existingHash = await sha256File(absolute);
-    if (accepted.has(existingHash)) deleteOnDisk.push(item.path);
-    else console.warn(`[ModUpdate] Preserved player-modified file removed from the official package: ${item.path}`);
   }
-  const nextIntegrity = await prepareUpdatedIntegrityManifest(
+  const nextIntegrity = officialInventory || await prepareUpdatedIntegrityManifest(
     war3Path,
     current.version,
     current.sequence,
@@ -668,8 +698,11 @@ async function applyPatchArchive(
   const updateRoot = path.join(retailDir, '.quenching', 'updates');
   const backupRoot = path.join(updateRoot, `backup-${current.sequence}-${target.sequence}-${Date.now()}`);
   const journalPath = path.join(updateRoot, 'apply-journal.json');
-  const touched = [...new Set([...files.map((item) => item.path), ...deleteOnDisk, MOD_INTEGRITY_PATHS.keep, integrityBackupRelativePath(target.version), ...(legacy34 ? ['patch/keep.que'] : [])])];
+  const touched = [...new Set([...fileTargets.values(), ...deleteOnDisk, MOD_INTEGRITY_PATHS.keep, integrityBackupRelativePath(target.version), ...(legacy34 ? ['patch/keep.que'] : [])])];
   const existedBefore = new Set<string>();
+  // Populate before backing up: a failed backup must never delete an existing,
+  // not-yet-backed-up player file during rollback.
+  for (const relative of touched) if (await fs.pathExists(resolveSafe(retailDir, relative))) existedBefore.add(relative);
   await fs.ensureDir(backupRoot);
   await fs.writeJson(journalPath, { product: PRODUCT, fromSequence: current.sequence, toSequence: target.sequence, touched, backupRoot, createdAt: new Date().toISOString() }, { spaces: 2 });
   try {
@@ -686,7 +719,7 @@ async function applyPatchArchive(
     }
     for (let index = 0; index < files.length; index += 1) {
       const item = files[index];
-      const targetPath = resolveSafe(retailDir, item.path);
+      const targetPath = resolveSafe(retailDir, fileTargets.get(item.path)!);
       await fs.ensureDir(path.dirname(targetPath));
       await fs.copy(resolveSafe(payloadRoot, item.path), targetPath, { overwrite: true });
       progress(65 + (index + 1) / Math.max(files.length, 1) * 30, '正在安装 MOD 更新');
@@ -696,7 +729,9 @@ async function applyPatchArchive(
     await writeUpdatedIntegrityManifest(war3Path, target.version, nextIntegrity);
     await writeCurrentModVersion(war3Path, target.version, target.sequence, target.displayVersion);
     progress(98, '正在写入版本信息');
-    const nextFiles = [...new Set([...current.files.map(normalizeRelativePath), ...files.map((item) => item.path)].filter((item) => !deleted.includes(item)))].sort();
+    const nextFiles = officialInventory
+      ? decodeSnapshot(officialInventory, PRODUCT, target.version).files.map(file => file.path).sort()
+      : [...new Set([...current.files.map(normalizeRelativePath), ...files.map((item) => item.path)].filter((item) => !deleted.includes(item)))].sort();
     await writeInstalledModState(war3Path, { product: PRODUCT, sequence: target.sequence, version: target.version, displayVersion: target.displayVersion, installedAt: new Date().toISOString(), files: nextFiles, filesDigest: stableFilesDigest(nextFiles) });
     // The transaction is committed once the state marker is atomically moved.
     // Cleanup failures are harmless and must not roll files back behind the new marker.
@@ -720,7 +755,7 @@ export async function applyModUpdate(war3Path: string, options?: ModUpdateOption
   };
   report('preparing', 0, '正在准备 MOD 更新');
   const status = await getModUpdateStatus(war3Path, options);
-  if (status.decision !== 'patch' || !status.patch || !status.current || !status.target) return { status, applied: false };
+  if (status.decision !== 'patch' || (!status.patch && !status.fileSync && !status.patchChain?.length) || !status.current || !status.target) return { status, applied: false };
   // A portable Warcraft install may live on a roomy game drive while the
   // system drive is nearly full. Keep download/extraction staging beside the
   // selected branch, and never spill a large patch into os.tmpdir by default.
@@ -728,12 +763,50 @@ export async function applyModUpdate(war3Path: string, options?: ModUpdateOption
   const base = options?.stagingRoot || path.join(retailDir, '.quenching', 'update-staging');
   const runRoot = path.join(base, `${status.current.sequence}-to-${status.target.sequence}-${Date.now()}`);
   const archivePath = path.join(runRoot, 'patch.qdelta');
+  let appliedPatches = 0;
   try {
     await assertWarcraftNotRunning();
     report('preparing', 3, '正在读取已安装版本');
+    if (status.patchChain) {
+      // Each ZIP authenticates its complete target inventory. No old list or
+      // filesystem-wide matching is needed to qualify for an update.
+      let current = status.current;
+      let completedBytes = 0;
+      let highPercent = 3;
+      const totalBytes = status.patchChain.reduce((sum, patch) => sum + patch.size, 0);
+      const sources: string[] = [];
+      for (const [index, patch] of status.patchChain.entries()) {
+        const stepRoot = path.join(runRoot, `step-${index}`);
+        const stepArchive = path.join(stepRoot, 'update.zip');
+        const label = `MOD ${patch.fromVersion} → ${patch.displayVersion} (${index + 1}/${status.patchChain.length})`;
+        const stepProgress = (phase: ModUpdateProgress['phase'], fraction: number, message: string, bytes = completedBytes) => {
+          highPercent = Math.max(highPercent, 5 + (index + fraction) / status.patchChain!.length * 94);
+          report(phase, highPercent, `${label} · ${message}`, bytes, totalBytes);
+        };
+        sources.push(await downloadArtifact(patch, stepArchive,
+          received => stepProgress('downloading', received / Math.max(patch.size, 1) * 0.7, '正在下载 ZIP 补丁', completedBytes + received),
+          () => stepProgress('verifying', 0.7, '正在校验 ZIP 补丁', completedBytes + patch.size), status.githubMirrors));
+        completedBytes += patch.size;
+        const target = { sequence: patch.toSequence, version: patch.version, displayVersion: patch.displayVersion };
+        await applyPatchArchive(stepArchive, war3Path, current, target, stepRoot, !options?.stagingRoot,
+          (percent, message) => stepProgress(percent < 34 ? 'extracting' : percent < 98 ? 'installing' : 'finalizing', 0.7 + percent * 0.003, message), patch);
+        appliedPatches++;
+        current = lightweightState(target.sequence, target.version, target.displayVersion);
+        await fs.remove(stepRoot).catch(() => undefined);
+      }
+      report('complete', 100, 'MOD 更新完成', totalBytes, totalBytes);
+      return { status, applied: true, appliedPatches, downloadedFrom: sources.join('; ') };
+    }
     // The full file list is deliberately loaded only after the player has
     // accepted the update. It never participates in automatic version checks.
-    const baseline = await loadIntegrityManifest(war3Path, status.current.version);
+    let baseline = await loadIntegrityManifest(war3Path, status.current.version);
+    if (!baseline && status.fileSync?.baselines?.[status.current.version]) {
+      await fs.ensureDir(runRoot);
+      const previousPath = path.join(runRoot, 'previous.files.json.gz');
+      await downloadArtifact(status.fileSync.baselines[status.current.version], previousPath, undefined, undefined, status.fileSync.githubMirrors);
+      const snapshot = decodeSnapshot(await fs.readFile(previousPath), PRODUCT, status.current.version);
+      baseline = { manifest: snapshot, source: previousPath } as typeof baseline;
+    }
     if (!baseline || baseline.manifest.sequence !== status.current.sequence) {
       throw new Error(`no trusted file list is available for installed MOD ${status.current.version}`);
     }
@@ -744,8 +817,40 @@ export async function applyModUpdate(war3Path: string, options?: ModUpdateOption
       files: managedFiles,
       filesDigest: stableFilesDigest(managedFiles),
     };
+    if (status.fileSync) {
+      await fs.ensureDir(runRoot);
+      const inventoryPath = path.join(runRoot, 'latest.files.json.gz');
+      report('preparing', 4, '正在读取最新官方文件清单');
+      await downloadArtifact(status.fileSync.inventory, inventoryPath, undefined, undefined, status.fileSync.githubMirrors);
+      const latest = decodeSnapshot(await fs.readFile(inventoryPath), PRODUCT, status.target.version);
+      if (latest.sequence !== status.target.sequence) throw new Error('snapshot sequence does not match signed release');
+      for (const file of latest.files) assertPatchResourcePath(file.path);
+      const plan = planFileSync(baseline.manifest.files, latest.files);
+      const patchRoot = path.join(runRoot, 'patch');
+      const oldFiles = new Map(baseline.manifest.files.map(file => [file.path.toLowerCase(), file]));
+      let completed = 0;
+      for (const file of plan.changed) {
+        assertPatchResourcePath(file.path);
+        const destination = resolveSafe(path.join(patchRoot, 'payload'), file.path);
+        await downloadArtifact(syncFileArtifact(file, status.fileSync), destination, received =>
+          report('downloading', 5 + (completed + received) / Math.max(plan.downloadBytes, 1) * 65,
+            `正在下载变化文件 ${file.path}`, completed + received, plan.downloadBytes), undefined, status.fileSync.githubMirrors);
+        completed += file.size;
+      }
+      // Only explicit signed retirements that belonged to this official snapshot are eligible.
+      const latestPaths = new Set(latest.files.map(file => file.path.toLowerCase()));
+      const deleted = (status.fileSync.deleted || []).filter(file => !latestPaths.has(file.path.toLowerCase()) && oldFiles.has(file.path.toLowerCase()))
+        .map(file => ({ path: file.path, acceptedPreviousSha256: file.acceptedSha256 }));
+      await fs.ensureDir(patchRoot);
+      await fs.writeJson(path.join(patchRoot, 'patch.json'), { schema: 1, product: PRODUCT,
+        fromSequence: current.sequence, toSequence: status.target.sequence, files: plan.changed, deleted });
+      await applyPatchDirectory(patchRoot, war3Path, current, status.target, !options?.stagingRoot, plan.downloadBytes,
+        (percent, message) => report(percent < 98 ? 'installing' : 'finalizing', 74 + percent * 0.25, message), encodeSnapshot(latest));
+      report('complete', 100, `MOD 更新完成，补全 ${plan.changed.length} 个文件`);
+      return { status, applied: true, downloadedFrom: status.manifestSource };
+    }
     const downloadedFrom = await downloadArtifact(
-      status.patch,
+      status.patch!,
       archivePath,
       (completed, total) => report('downloading', 5 + completed / Math.max(total, 1) * 65, '正在下载 MOD 更新', completed, total),
       () => report('verifying', 72, '正在校验下载文件', status.patch?.size, status.patch?.size),
@@ -762,7 +867,8 @@ export async function applyModUpdate(war3Path: string, options?: ModUpdateOption
     report('complete', 100, 'MOD 更新完成');
     return { status, applied: true, downloadedFrom };
   } catch (error: any) {
-    return { status, applied: false, error: error?.message || String(error) };
+    const current = appliedPatches ? await getInstalledModState(war3Path) : status.current;
+    return { status: { ...status, current }, applied: false, appliedPatches, error: error?.message || String(error) };
   } finally {
     await fs.remove(runRoot).catch(() => undefined);
   }
@@ -772,4 +878,4 @@ export async function getInstalledModState(war3Path: string): Promise<InstalledM
   return await readMarkedState(war3Path) || await readLegacy34State(war3Path);
 }
 
-export const MOD_UPDATE_DEFAULTS = { product: PRODUCT, minManagedSequence: MIN_MANAGED_SEQUENCE, maxPatchGap: MAX_PATCH_GAP, manifestUrls: DEFAULT_MANIFEST_URLS } as const;
+export const MOD_UPDATE_DEFAULTS = { product: PRODUCT, minManagedSequence: MIN_MANAGED_SEQUENCE, manifestUrls: DEFAULT_MANIFEST_URLS } as const;
