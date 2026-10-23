@@ -1,3 +1,24 @@
+# Quenching Client · 淬火客户端
+
+面向 Warcraft III 的 **Electron 客户端**，用于淬火 MOD 的设置、资源管理、更新与游戏启动。
+
+[下载稳定版 / Download](https://github.com/QuenchingCommunity/Quenching-Client/releases/latest) · [社区](https://qm.txzy.net/) · [使用手册](https://github.com/QuenchingCommunity/Quenching-Gitbook) · [反馈问题](https://github.com/QuenchingCommunity/Quenching-Client/issues/new/choose)
+
+## 玩家入口 / For players
+
+请在 Releases 中选择适合自己平台的便携包，解压后运行，并保留同目录的资源文件。具体系统与架构支持以该版本发布说明为准。
+
+**客户端和完整 MOD 资源包需要分别下载。** 资源包见 [Quenching-Assets](https://github.com/QuenchingCommunity/Quenching-Assets/releases/latest)。首次安装先阅读[安装指南](https://github.com/QuenchingCommunity/Quenching-Gitbook/blob/Main/an-zhuang/chang-gui-an-zhuang.md)，Mac 用户另见 [Mac 安装](https://github.com/QuenchingCommunity/Quenching-Gitbook/blob/Main/an-zhuang/mac-an-zhuang.md)。
+
+This is the Electron client for Quenching MOD. Get a portable build from Releases and download MOD resources separately. Platform and architecture support are described in each release.
+
+## 开发入口 / For contributors
+
+源码以 TypeScript、React 与 Electron 为主。依赖和实际构建命令见 [package.json](package.json)；已有依赖锁定文件为 `yarn.lock`。原有构建框架说明保留在下方。
+
+提交前请运行与改动相关的检查，并在 PR 中注明测试平台。反馈请区分客户端、MOD 资源和游戏版本，附系统、Retail/PTR、SD/HD/DE 及复现步骤。详见[贡献指南](https://github.com/QuenchingCommunity/.github/blob/main/CONTRIBUTING.md)。
+
+---
 
 # 项目构建
 
